@@ -48,7 +48,7 @@ After login you are taken directly to your role's dashboard.
 **URL:** `http://your-server/student-login/`
 
 1. Enter **Roll Number**
-2. Enter **Password** (given by school admin)
+2. Enter **Password** — default password is **`1234`** (change it after first login)
 3. Click **Login**
 
 ---
@@ -190,7 +190,7 @@ Block Admin can also create schools within their block:
 3. Select the file → click **Upload**
 4. Success message will show how many students were added
 
-> **Important:** After bulk upload, notify your District Admin to run the password setup command so students can log in.
+> **Default Password:** All newly added students (single or bulk upload) get the default password **`1234`**. Students should change this after their first login.
 
 > **File size limit:** Maximum 5 MB per upload.
 
@@ -293,7 +293,9 @@ Students access a separate portal at `/student-login/`.
 
 ### 8.1 Student Login
 - Username: **Roll Number**
-- Password: Set by school admin (or given during registration)
+- Password: **`1234`** (default for all new students)
+
+> Change the default password immediately after first login using the **Change Password** option in the student portal.
 
 ### 8.2 My Tests Page (`/student-tests/`)
 
