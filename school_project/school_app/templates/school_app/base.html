@@ -1,0 +1,323 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PadhaiWithAI</title>
+
+    <!-- Centralized CSS Includes -->
+    {% include 'partials/css_includes.html' %}
+
+    <style>
+        .pai-navbar {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            width: 100%;
+            z-index: 1030;
+            
+        }
+        .pai-navbar .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+        .pai-navbar .navbar-brand img {
+            height: 38px;
+            border-radius: 6px;
+        }
+        .pai-navbar .navbar-brand span {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .pai-navbar .navbar-nav {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin: 0;
+            padding: 0;
+        }
+        .pai-navbar .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 0.88rem;
+            white-space: nowrap;
+        }
+        .pai-navbar .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        .pai-navbar .nav-link.logout-link {
+            background: rgba(239, 68, 68, 0.2);
+        }
+        .pai-navbar .nav-link.logout-link:hover {
+            background: rgba(239, 68, 68, 0.4);
+        }
+        @media (max-width: 768px) {
+            .pai-navbar {
+                padding: 10px 15px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .pai-navbar .navbar-nav {
+                flex-direction: row;
+                gap: 8px;
+            }
+            .pai-navbar .nav-link {
+                padding: 5px 8px;
+                font-size: 0.8rem;
+            }
+            .pai-navbar .nav-link .link-text {
+                display: none;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <nav class="pai-navbar">
+        <a href="{% if user.is_superuser %}{% url 'system_admin_dashboard' %}{% elif user.is_state_user %}{% url 'state_dashboard' %}{% elif user.is_district_user %}{% url 'collector_dashboard' %}{% elif user.is_block_user %}{% url 'block_dashboard' %}{% else %}{% url 'dashboard' %}{% endif %}" class="navbar-brand">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+            <span>PadhaiWithAI</span>
+        </a>
+        <div class="navbar-nav">
+            {% if user.is_superuser %}
+                <a href="{% url 'system_admin_dashboard' %}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i> <span class="link-text">Dashboard</span>
+                </a>
+            {% elif user.is_state_user %}
+                <a href="{% url 'state_dashboard' %}" class="nav-link">
+                    <i class="fas fa-home"></i> <span class="link-text">Dashboard</span>
+                </a>
+            {% elif user.is_district_user %}
+                <a href="{% url 'collector_dashboard' %}" class="nav-link">
+                    <i class="fas fa-home"></i> <span class="link-text">Dashboard</span>
+                </a>
+            {% elif user.is_block_user %}
+                <a href="{% url 'block_dashboard' %}" class="nav-link">
+                    <i class="fas fa-home"></i> <span class="link-text">Dashboard</span>
+                </a>
+            {% else %}
+                <a href="{% url 'dashboard' %}" class="nav-link">
+                    <i class="fas fa-home"></i> <span class="link-text">Dashboard</span>
+                </a>
+                <a href="{% url 'question_paper_generator' %}" class="nav-link">
+                    <i class="fas fa-file-alt"></i> <span class="link-text">Question Paper</span>
+                </a>
+                <a href="{% url 'academic_calendar' %}" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i> <span class="link-text">Academic Calendar</span>
+                </a>
+            {% endif %}
+
+            {% if user.is_superuser or user.is_system_admin %}
+                <a href="{% url 'manage_states' %}" class="nav-link">
+                    <i class="fas fa-users-cog"></i> <span class="link-text">Manage States</span>
+                </a>
+            {% endif %}
+            {% if user.is_state_user %}
+                <a href="{% url 'manage_districts' %}" class="nav-link">
+                    <i class="fas fa-users-cog"></i> <span class="link-text">Manage Districts</span>
+                </a>
+            {% endif %}
+            {% if user.is_district_user %}
+                <a href="{% url 'manage_blocks' %}" class="nav-link">
+                    <i class="fas fa-users-cog"></i> <span class="link-text">Manage Blocks</span>
+                </a>
+                <a href="{% url 'manage_schools' %}" class="nav-link">
+                    <i class="fas fa-school"></i> <span class="link-text">Manage Schools</span>
+                </a>
+                <a href="{% url 'academic_calendar_manage' %}" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i> <span class="link-text">Academic Calendar</span>
+                </a>
+                <a href="{% url 'activity_logs' %}" class="nav-link">
+                    <i class="fas fa-shield-alt"></i> <span class="link-text">Activity Logs</span>
+                </a>
+            {% endif %}
+            {% if user.is_block_user %}
+                <a href="{% url 'manage_schools' %}" class="nav-link">
+                    <i class="fas fa-school"></i> <span class="link-text">Manage Schools</span>
+                </a>
+                <a href="{% url 'academic_calendar' %}" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i> <span class="link-text">Academic Calendar</span>
+                </a>
+            {% endif %}
+
+            <form method="POST" action="{% url 'logout' %}" style="display:inline;margin:0;padding:0;">
+                {% csrf_token %}
+                <button type="submit" class="nav-link logout-link">
+                    <i class="fas fa-sign-out-alt"></i> <span class="link-text">Log Out</span>
+                </button>
+            </form>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="container mt-4" style="margin-top: 80px !important;">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert-popup alert-{{ message.tags }}" id="alertPopup{{ forloop.counter }}">
+                    <div class="alert-content">
+                        <span class="alert-icon">
+                            {% if message.tags == 'success' %}✅{% elif message.tags == 'error' or message.tags == 'danger' %}❌{% elif message.tags == 'warning' %}⚠️{% else %}ℹ️{% endif %}
+                        </span>
+                        <span class="alert-message">{{ message }}</span>
+                        <button class="alert-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                    </div>
+                </div>
+            {% endfor %}
+            <style>
+                .alert-popup {
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    min-width: 320px;
+                    max-width: 450px;
+                    padding: 0;
+                    border-radius: 10px;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+                    z-index: 9999;
+                    animation: slideIn 0.4s ease-out;
+                    overflow: hidden;
+                }
+                .alert-popup .alert-content {
+                    display: flex;
+                    align-items: center;
+                    padding: 15px 20px;
+                    gap: 12px;
+                }
+                .alert-popup .alert-icon {
+                    font-size: 24px;
+                }
+                .alert-popup .alert-message {
+                    flex: 1;
+                    font-size: 15px;
+                    font-weight: 500;
+                }
+                .alert-popup .alert-close {
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    opacity: 0.7;
+                    padding: 0 5px;
+                }
+                .alert-popup .alert-close:hover {
+                    opacity: 1;
+                }
+                .alert-popup.alert-success {
+                    background: linear-gradient(135deg, #28a745, #20c997);
+                    color: white;
+                }
+                .alert-popup.alert-error, .alert-popup.alert-danger {
+                    background: linear-gradient(135deg, #dc3545, #e74c3c);
+                    color: white;
+                }
+                .alert-popup.alert-warning {
+                    background: linear-gradient(135deg, #ffc107, #fd7e14);
+                    color: #333;
+                }
+                .alert-popup.alert-info {
+                    background: linear-gradient(135deg, #17a2b8, #3498db);
+                    color: white;
+                }
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                }
+            </style>
+            <script>
+                // Auto-dismiss alerts after 4 seconds
+                document.addEventListener('DOMContentLoaded', function() {
+                    var alerts = document.querySelectorAll('.alert-popup');
+                    alerts.forEach(function(alert, index) {
+                        // Stagger multiple alerts
+                        alert.style.top = (80 + (index * 80)) + 'px';
+                        
+                        setTimeout(function() {
+                            alert.style.animation = 'slideOut 0.4s ease-in forwards';
+                            setTimeout(function() {
+                                alert.remove();
+                            }, 400);
+                        }, 4000 + (index * 500));
+                    });
+                });
+            </script>
+        {% endif %}
+        
+        {% block content %}
+        {% endblock %}
+    </div>
+
+    <!-- Centralized JS Includes -->
+    {% include 'partials/js_includes.html' %}
+
+    {% block extra_js %}{% endblock %}
+    <style>
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            text-align: center;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        .footer img {
+            height: 32px;
+            mix-blend-mode: multiply;
+        }
+        .footer img.pai-logo {
+            mix-blend-mode: normal;
+            border-radius: 6px;
+        }
+        .footer span {
+            opacity: 0.9;
+        }
+    </style>
+    <div style="height: 50px;"></div>
+    <div class="footer">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | All Right Reserved | Empowering Education Through Technology </span>
+        <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo">
+    </div>
+</body>
+</html>

@@ -1,0 +1,907 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PadhaiWithAI – User Manual</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #1e3c72;
+            --primary-light: #2a5298;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #8b5cf6;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+            --muted: #64748b;
+            --sidebar-w: 280px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--primary);
+            position: fixed; top: 0; left: 0; bottom: 0;
+            overflow-y: auto; z-index: 100;
+            display: flex; flex-direction: column;
+        }
+        .sidebar-logo {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; gap: 10px;
+        }
+        .sidebar-logo img { height: 40px; border-radius: 8px; }
+        .sidebar-logo span { color: white; font-weight: 700; font-size: 1.05rem; line-height: 1.3; }
+        .sidebar-logo small { color: rgba(255,255,255,0.6); font-size: 0.72rem; display: block; }
+
+        .sidebar-nav { padding: 16px 0; flex: 1; }
+        .nav-section-label {
+            color: rgba(255,255,255,0.45);
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; padding: 12px 20px 6px;
+        }
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 20px; color: rgba(255,255,255,0.8);
+            text-decoration: none; font-size: 0.85rem; font-weight: 500;
+            border-left: 3px solid transparent; transition: all 0.2s;
+        }
+        .nav-item:hover, .nav-item.active {
+            background: rgba(255,255,255,0.1);
+            color: white; border-left-color: #38bdf8;
+        }
+        .nav-item i { width: 18px; text-align: center; font-size: 0.9rem; }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.5); font-size: 0.75rem;
+        }
+
+        /* ── Main Content ── */
+        .main { margin-left: var(--sidebar-w); flex: 1; }
+
+        /* Top Bar */
+        .topbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 40px;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 50;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .topbar-title { font-size: 0.95rem; font-weight: 600; color: var(--muted); }
+        .topbar-actions { display: flex; gap: 10px; }
+        .btn-top {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 16px; border-radius: 8px; font-size: 0.82rem;
+            font-weight: 600; cursor: pointer; text-decoration: none;
+            border: none; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-light); }
+        .btn-outline { background: white; color: var(--primary); border: 1.5px solid var(--primary); }
+        .btn-outline:hover { background: #eff6ff; }
+
+        /* ── Content Area ── */
+        .content { padding: 40px; max-width: 960px; }
+
+        /* Cover */
+        .cover {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 16px; padding: 60px 50px;
+            color: white; margin-bottom: 48px; text-align: center;
+            box-shadow: 0 8px 30px rgba(30,60,114,0.3);
+        }
+        .cover img { height: 80px; border-radius: 14px; margin-bottom: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .cover h1 { font-size: 2.4rem; font-weight: 800; margin-bottom: 10px; }
+        .cover p { font-size: 1.05rem; opacity: 0.85; margin-bottom: 6px; }
+        .cover-meta { display: flex; justify-content: center; gap: 30px; margin-top: 28px; flex-wrap: wrap; }
+        .cover-meta span {
+            background: rgba(255,255,255,0.15); padding: 6px 16px;
+            border-radius: 20px; font-size: 0.82rem; font-weight: 500;
+        }
+
+        /* TOC */
+        .toc {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 12px; padding: 28px 32px; margin-bottom: 48px;
+        }
+        .toc h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 18px; color: var(--primary); }
+        .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 40px; }
+        .toc-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 6px 0; border-bottom: 1px dashed var(--border);
+            text-decoration: none; color: var(--text); font-size: 0.88rem;
+            transition: color 0.2s;
+        }
+        .toc-item:hover { color: var(--accent); }
+        .toc-num { color: var(--muted); font-size: 0.8rem; min-width: 24px; }
+        .toc-item i { color: var(--accent); font-size: 0.85rem; }
+
+        /* Section Headers */
+        .section { margin-bottom: 56px; scroll-margin-top: 80px; }
+        .section-heading {
+            display: flex; align-items: center; gap: 14px;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: 12px 12px 0 0; color: white; margin-bottom: 0;
+        }
+        .section-heading i { font-size: 1.3rem; }
+        .section-heading .num {
+            background: rgba(255,255,255,0.2); border-radius: 8px;
+            padding: 3px 10px; font-size: 0.78rem; font-weight: 700;
+        }
+        .section-heading h2 { font-size: 1.15rem; font-weight: 700; }
+        .section-body {
+            background: var(--surface); border: 1px solid var(--border);
+            border-top: none; border-radius: 0 0 12px 12px; padding: 28px 32px;
+        }
+
+        /* Role Badge */
+        .role-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+            margin-bottom: 16px;
+        }
+        .role-school  { background: #dbeafe; color: #1d4ed8; }
+        .role-block   { background: #d1fae5; color: #065f46; }
+        .role-district{ background: #fef3c7; color: #92400e; }
+        .role-state   { background: #fee2e2; color: #991b1b; }
+        .role-student { background: #ede9fe; color: #5b21b6; }
+        .role-all     { background: #f1f5f9; color: #475569; }
+
+        /* Steps */
+        .steps { counter-reset: step; }
+        .step {
+            display: flex; gap: 16px; margin-bottom: 18px; align-items: flex-start;
+        }
+        .step-num {
+            counter-increment: step;
+            min-width: 30px; height: 30px;
+            background: var(--primary); color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+        }
+        .step-content h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
+        .step-content p  { font-size: 0.87rem; color: var(--muted); line-height: 1.6; }
+
+        /* Screenshot Placeholder */
+        .screenshot {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            border: 2px dashed #cbd5e1; border-radius: 10px;
+            padding: 28px 20px; text-align: center; margin: 18px 0;
+            color: var(--muted);
+        }
+        .screenshot i { font-size: 2rem; margin-bottom: 8px; display: block; color: #94a3b8; }
+        .screenshot p { font-size: 0.82rem; font-style: italic; }
+        .screenshot strong { color: var(--text); font-style: normal; }
+
+        /* Info Boxes */
+        .info-box {
+            border-radius: 8px; padding: 14px 18px; margin: 16px 0;
+            display: flex; gap: 12px; align-items: flex-start; font-size: 0.87rem;
+        }
+        .info-box i { font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
+        .info-tip    { background: #eff6ff; border-left: 4px solid var(--accent); color: #1e40af; }
+        .info-note   { background: #fefce8; border-left: 4px solid var(--warning); color: #854d0e; }
+        .info-warn   { background: #fef2f2; border-left: 4px solid var(--danger);  color: #991b1b; }
+        .info-success{ background: #f0fdf4; border-left: 4px solid var(--success); color: #14532d; }
+
+        /* Feature Table */
+        .feature-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.87rem; }
+        .feature-table th {
+            background: var(--primary); color: white; padding: 10px 14px;
+            text-align: left; font-weight: 600; font-size: 0.82rem;
+        }
+        .feature-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+        .feature-table tr:hover td { background: #f8fafc; }
+        .feature-table tr:last-child td { border-bottom: none; }
+        .tag {
+            display: inline-block; padding: 2px 8px; border-radius: 12px;
+            font-size: 0.72rem; font-weight: 700;
+        }
+        .tag-yes  { background: #d1fae5; color: #065f46; }
+        .tag-no   { background: #fee2e2; color: #991b1b; }
+        .tag-part { background: #fef3c7; color: #92400e; }
+
+        /* Sub-section */
+        .sub-section { margin: 28px 0 0 0; }
+        .sub-heading {
+            font-size: 0.98rem; font-weight: 700; color: var(--primary);
+            padding: 0 0 8px 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .sub-heading i { color: var(--accent); }
+
+        /* Quick Reference */
+        .quick-ref {
+            display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin: 18px 0;
+        }
+        .quick-card {
+            background: #f8fafc; border: 1px solid var(--border); border-radius: 10px;
+            padding: 16px; text-align: center;
+        }
+        .quick-card i { font-size: 1.5rem; margin-bottom: 8px; display: block; }
+        .quick-card strong { font-size: 0.85rem; display: block; margin-bottom: 4px; }
+        .quick-card span { font-size: 0.78rem; color: var(--muted); }
+
+        /* Divider */
+        .divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+        /* FAQ */
+        .faq-item { margin-bottom: 18px; }
+        .faq-q {
+            font-weight: 700; font-size: 0.9rem; margin-bottom: 6px;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .faq-q::before { content: "Q."; color: var(--accent); flex-shrink: 0; font-weight: 800; }
+        .faq-a {
+            font-size: 0.87rem; color: var(--muted); line-height: 1.65;
+            padding-left: 24px;
+        }
+
+        /* Print */
+        @media print {
+            .sidebar, .topbar { display: none !important; }
+            .main { margin-left: 0 !important; }
+            .content { padding: 20px !important; max-width: 100% !important; }
+            .section { page-break-inside: avoid; }
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); }
+            .main { margin-left: 0; }
+            .quick-ref { grid-template-columns: repeat(2,1fr); }
+            .toc-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+        <span>PadhaiWithAI<small>User Manual</small></span>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section-label">Getting Started</div>
+        <a href="#intro"   class="nav-item active"><i class="fas fa-home"></i> Introduction</a>
+        <a href="#login"   class="nav-item"><i class="fas fa-sign-in-alt"></i> Login Guide</a>
+
+        <div class="nav-section-label">User Guides</div>
+        <a href="#school"  class="nav-item"><i class="fas fa-school"></i> School / Teacher</a>
+        <a href="#block"   class="nav-item"><i class="fas fa-sitemap"></i> Block Officer</a>
+        <a href="#district"class="nav-item"><i class="fas fa-building"></i> District Officer</a>
+        <a href="#state"   class="nav-item"><i class="fas fa-landmark"></i> State Admin</a>
+        <a href="#student" class="nav-item"><i class="fas fa-user-graduate"></i> Student Portal</a>
+
+        <div class="nav-section-label">AI Tools</div>
+        <a href="#ai-math"  class="nav-item"><i class="fas fa-calculator"></i> Math Solver</a>
+        <a href="#ai-sathi" class="nav-item"><i class="fas fa-robot"></i> AI Sathi (Tutor)</a>
+        <a href="#ai-qp"    class="nav-item"><i class="fas fa-file-alt"></i> Question Paper</a>
+        <a href="#ai-prac"  class="nav-item"><i class="fas fa-brain"></i> Practice Tests</a>
+
+        <div class="nav-section-label">Reference</div>
+        <a href="#roles"   class="nav-item"><i class="fas fa-shield-alt"></i> Role Permissions</a>
+        <a href="#faq"     class="nav-item"><i class="fas fa-question-circle"></i> FAQ</a>
+    </nav>
+    <div class="sidebar-footer">
+        © 2024–2026 PadhaiWithAI<br>Tonk, Rajasthan
+    </div>
+</aside>
+
+<!-- ── Top Bar ── -->
+<div class="main">
+<div class="topbar">
+    <span class="topbar-title"><i class="fas fa-book-open"></i>&nbsp; PadhaiWithAI – System User Manual</span>
+    <div class="topbar-actions">
+        <a href="{% url 'presentation' %}" class="btn-top btn-outline"><i class="fas fa-chalkboard"></i> Presentation</a>
+        <button class="btn-top btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Manual</button>
+    </div>
+</div>
+
+<!-- ── Content ── -->
+<div class="content">
+
+    <!-- Cover -->
+    <div class="cover" id="intro">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo">
+        <h1>PadhaiWithAI</h1>
+        <p>System User Manual &amp; Reference Guide</p>
+        <p style="opacity:0.65; font-size:0.88rem;">AI-Powered Education Management Platform — Tonk, Rajasthan</p>
+        <div class="cover-meta">
+            <span><i class="fas fa-users"></i> 5 User Roles</span>
+            <span><i class="fas fa-book"></i> Complete Guide</span>
+            <span><i class="fas fa-language"></i> Hindi + English</span>
+            <span><i class="fas fa-calendar"></i> Version 2026</span>
+        </div>
+    </div>
+
+    <!-- TOC -->
+    <div class="toc">
+        <h2><i class="fas fa-list"></i>&nbsp; Table of Contents</h2>
+        <div class="toc-grid">
+            <a href="#login"    class="toc-item"><span class="toc-num">1.</span><i class="fas fa-sign-in-alt"></i> Login &amp; Getting Started</a>
+            <a href="#school"   class="toc-item"><span class="toc-num">2.</span><i class="fas fa-school"></i> School / Teacher Guide</a>
+            <a href="#block"    class="toc-item"><span class="toc-num">3.</span><i class="fas fa-sitemap"></i> Block Officer Guide</a>
+            <a href="#district" class="toc-item"><span class="toc-num">4.</span><i class="fas fa-building"></i> District Officer Guide</a>
+            <a href="#state"    class="toc-item"><span class="toc-num">5.</span><i class="fas fa-landmark"></i> State Admin Guide</a>
+            <a href="#student"  class="toc-item"><span class="toc-num">6.</span><i class="fas fa-user-graduate"></i> Student Portal Guide</a>
+            <a href="#ai-math"  class="toc-item"><span class="toc-num">7.</span><i class="fas fa-calculator"></i> AI Math Solver</a>
+            <a href="#ai-sathi" class="toc-item"><span class="toc-num">8.</span><i class="fas fa-robot"></i> AI Sathi Tutor</a>
+            <a href="#ai-qp"    class="toc-item"><span class="toc-num">9.</span><i class="fas fa-file-alt"></i> Question Paper Generator</a>
+            <a href="#ai-prac"  class="toc-item"><span class="toc-num">10.</span><i class="fas fa-brain"></i> AI Practice Tests</a>
+            <a href="#roles"    class="toc-item"><span class="toc-num">11.</span><i class="fas fa-shield-alt"></i> Role Permissions Table</a>
+            <a href="#faq"      class="toc-item"><span class="toc-num">12.</span><i class="fas fa-question-circle"></i> Frequently Asked Questions</a>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 1 — LOGIN ═══════════════ -->
+    <div class="section" id="login">
+        <div class="section-heading">
+            <span class="num">01</span>
+            <i class="fas fa-sign-in-alt"></i>
+            <h2>Login &amp; Getting Started</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-all"><i class="fas fa-users"></i> All Users</span>
+            <p style="margin-bottom:20px; font-size:0.9rem; color:var(--muted);">
+                PadhaiWithAI has two separate login portals — one for staff (School, Block, District, State) and one for Students.
+            </p>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-user-tie"></i> Staff Login (School / Block / District / State)</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Open the login page</h4><p>Go to the system URL. The login page opens by default.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Enter Email &amp; Password</h4><p>Type your assigned email address and password in the fields provided.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Complete the CAPTCHA</h4><p>Solve the security CAPTCHA to confirm you are a real user. Click the refresh icon if the image is unclear.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "Login"</h4><p>You will be redirected to your role-specific dashboard automatically.</p></div></div>
+                </div>
+            </div>
+
+            <div class="screenshot">
+                <i class="fas fa-image"></i>
+                <p><strong>Screenshot: Login Page</strong><br>Login form with Email, Password, CAPTCHA fields and Login button</p>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-user-graduate"></i> Student Login</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to Student Login</h4><p>Navigate to <code>/student/login/</code> or click the "Student Login" link on the main login page.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Enter your Roll Number &amp; Password</h4><p>Use your school-assigned roll number and password. Default password is your roll number (change it after first login).</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Select your Class &amp; School</h4><p>Choose your class from the dropdown to ensure correct data is shown.</p></div></div>
+                </div>
+            </div>
+
+            <div class="info-box info-tip"><i class="fas fa-lightbulb"></i><div><strong>Tip:</strong> If you forget your password, contact your school admin (for students) or district officer (for school/block users) to reset it.</div></div>
+            <div class="info-box info-warn"><i class="fas fa-exclamation-triangle"></i><div><strong>Important:</strong> Do not share your password. Each login is tracked in the Activity Log.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 2 — SCHOOL ═══════════════ -->
+    <div class="section" id="school">
+        <div class="section-heading">
+            <span class="num">02</span>
+            <i class="fas fa-school"></i>
+            <h2>School / Teacher Guide</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-school"><i class="fas fa-school"></i> School Login</span>
+            <p style="margin-bottom:24px; font-size:0.9rem; color:var(--muted);">
+                After logging in, you land on the <strong>School Dashboard</strong> — your central hub for managing students, marks, attendance, and AI tools.
+            </p>
+
+            <div class="quick-ref">
+                <div class="quick-card"><i class="fas fa-users" style="color:#3b82f6;"></i><strong>Manage Students</strong><span>Add, edit, delete students</span></div>
+                <div class="quick-card"><i class="fas fa-clipboard-list" style="color:#10b981;"></i><strong>Enter Marks</strong><span>Test-wise marks entry</span></div>
+                <div class="quick-card"><i class="fas fa-calendar-check" style="color:#8b5cf6;"></i><strong>Attendance</strong><span>Daily attendance marking</span></div>
+                <div class="quick-card"><i class="fas fa-file-alt" style="color:#f59e0b;"></i><strong>Question Paper</strong><span>AI-generated papers</span></div>
+                <div class="quick-card"><i class="fas fa-calendar-alt" style="color:#ef4444;"></i><strong>Academic Calendar</strong><span>View district schedule</span></div>
+                <div class="quick-card"><i class="fas fa-robot" style="color:#6366f1;"></i><strong>AI Tools</strong><span>Math solver &amp; tutor</span></div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-user-plus"></i> Adding Students</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to Students → Add Student</h4><p>Click "Students" in the navigation, then "Add Student".</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Fill in the form</h4><p>Enter Student Name, Father's Name, Class (6–10), Roll Number, and Date of Birth.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click Save</h4><p>The student is added to your school. They will appear in your student list immediately.</p></div></div>
+                </div>
+                <div class="info-box info-tip"><i class="fas fa-lightbulb"></i><div><strong>Bulk Upload:</strong> To add many students at once, use <strong>Upload Student Data</strong> from the dashboard. Download the sample Excel file, fill it, and upload.</div></div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-pen"></i> Entering Test Marks</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to Active Test List</h4><p>From the dashboard, click "Enter Marks" or navigate to the active test list.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Select a Test</h4><p>Only tests activated by your District Officer will appear. Click "Enter Marks" next to the test.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Enter marks for each student</h4><p>A table shows all your students. Type marks in the input field. Marks must be between 0 and the maximum marks.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Save &amp; Submit</h4><p>Click "Save Marks". You can edit them later if needed before the test is deactivated.</p></div></div>
+                </div>
+                <div class="screenshot">
+                    <i class="fas fa-image"></i>
+                    <p><strong>Screenshot: Marks Entry Page</strong><br>Table with student names in rows and marks input fields</p>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-calendar-check"></i> Marking Daily Attendance</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Open Attendance</h4><p>Click "Attendance" in the top navigation menu.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Mark Present / Absent</h4><p>Each student has a Present / Absent toggle. Mark accordingly for today.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Submit</h4><p>Click "Submit Attendance". Today's attendance is saved and visible to block and district officers.</p></div></div>
+                </div>
+                <div class="info-box info-note"><i class="fas fa-clock"></i><div><strong>Note:</strong> Attendance should be marked daily. Missing dates will show as 0% attendance in reports.</div></div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-calendar-alt"></i> Academic Calendar</div>
+                <p style="font-size:0.88rem; color:var(--muted); margin-bottom:12px;">
+                    The Academic Calendar shows your district's teaching schedule, exam dates, and holidays — set by the District Officer.
+                </p>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "Academic Calendar" in the navigation</h4><p>A colour-coded monthly calendar is shown. Use Previous / Next to navigate months.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Read event colours</h4><p>🔵 Blue = Teaching days &nbsp;|&nbsp; 🔴 Red = Exam / Assessment &nbsp;|&nbsp; 🟢 Green = Holiday &nbsp;|&nbsp; 🟡 Yellow = Meeting</p></div></div>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-chart-bar"></i> Viewing Your Dashboard</div>
+                <p style="font-size:0.88rem; color:var(--muted);">Your dashboard shows: total students, active tests, attendance today, and recent performance charts. Use Quick Action buttons to navigate to common tasks.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 3 — BLOCK ═══════════════ -->
+    <div class="section" id="block">
+        <div class="section-heading">
+            <span class="num">03</span>
+            <i class="fas fa-sitemap"></i>
+            <h2>Block Officer Guide</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-block"><i class="fas fa-sitemap"></i> Block Login</span>
+            <p style="margin-bottom:24px; font-size:0.9rem; color:var(--muted);">
+                Block officers monitor all schools within their block. They can view performance, attendance, and manage schools — but cannot create tests.
+            </p>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-tachometer-alt"></i> Block Dashboard Overview</div>
+                <p style="font-size:0.88rem; color:var(--muted); margin-bottom:12px;">The Block Dashboard shows:</p>
+                <table class="feature-table">
+                    <thead><tr><th>Section</th><th>What It Shows</th></tr></thead>
+                    <tbody>
+                        <tr><td>Stats Cards</td><td>Total schools and students in your block</td></tr>
+                        <tr><td>Student Performance Charts</td><td>Doughnut charts showing how many students fall in each marks category (0–33%, 33–60% etc.) per test</td></tr>
+                        <tr><td>Test-Wise School Performance</td><td>Bar charts showing how many schools are in each category per test</td></tr>
+                        <tr><td>Previous Years Results</td><td>Historical comparison table by session year</td></tr>
+                        <tr><td>Scheduled Tests</td><td>List of all tests with question paper &amp; answer key downloads</td></tr>
+                        <tr><td>Registered Schools</td><td>Searchable list of all schools in your block</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-school"></i> Managing Schools</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "Manage Schools"</h4><p>View all schools in your block with their status (active/inactive).</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Edit or Toggle Status</h4><p>Edit school details or mark a school as inactive if it has stopped functioning.</p></div></div>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-chart-line"></i> Viewing Reports</div>
+                <p style="font-size:0.88rem; color:var(--muted); margin-bottom:12px;">From Quick Actions, access:</p>
+                <ul style="font-size:0.88rem; color:var(--muted); line-height:2; padding-left:20px;">
+                    <li><strong>School Report</strong> — average marks per school per test</li>
+                    <li><strong>Student Analysis</strong> — top and weakest students in your block</li>
+                    <li><strong>Report Dashboard</strong> — full analytics overview</li>
+                    <li><strong>Academic Calendar</strong> — district teaching schedule</li>
+                </ul>
+            </div>
+            <div class="info-box info-tip"><i class="fas fa-lightbulb"></i><div>All data shown is automatically filtered to only your block — you will never see data from other blocks.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 4 — DISTRICT ═══════════════ -->
+    <div class="section" id="district">
+        <div class="section-heading">
+            <span class="num">04</span>
+            <i class="fas fa-building"></i>
+            <h2>District Officer (Collector) Guide</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-district"><i class="fas fa-building"></i> District Login</span>
+            <p style="margin-bottom:24px; font-size:0.9rem; color:var(--muted);">
+                District officers have the most administrative power at the ground level. They manage schools, create tests, manage the academic calendar, and view district-wide analytics.
+            </p>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-vial"></i> Creating a Test</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to "Schedule New Test"</h4><p>From the dashboard or navigation, click "Add Test".</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Fill in Test Details</h4><p>Enter Test Name, Subject, Max Marks, Test Date. Optionally upload Question Paper PDF and Answer Key PDF.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Save the Test</h4><p>The test is created but NOT visible to schools yet.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Activate the Test</h4><p>From the test list, click "Activate" to make the test visible and allow schools to enter marks.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Deactivate when done</h4><p>Once all schools have entered marks, click "Deactivate" to close marks entry.</p></div></div>
+                </div>
+                <div class="info-box info-note"><i class="fas fa-info-circle"></i><div>Only <strong>Active</strong> tests appear in schools' marks entry screen. Deactivated tests are still visible for reporting.</div></div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-upload"></i> Uploading School Users (Bulk)</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to Upload Users</h4><p>Navigate to <code>/upload-users/</code> from the dashboard.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Download the Sample Excel</h4><p>Click the green <strong>"Download Sample Excel File"</strong> button. Open it and fill in your school data.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Fill Required Columns</h4><p>The file needs: <code>email, username, password, school_name, nic_code, block_id</code>. Get Block IDs from the Manage Blocks page.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Upload the file</h4><p>Choose your filled Excel file and click "Upload Users". School logins are created instantly.</p></div></div>
+                </div>
+                <div class="screenshot">
+                    <i class="fas fa-image"></i>
+                    <p><strong>Screenshot: Upload Users Page</strong><br>Green download button at top, file upload form below, with Hindi and English instructions</p>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-calendar-alt"></i> Managing Academic Calendar</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "Academic Calendar" → "Manage Events"</h4><p>This page is only available to District Officers.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Add a New Event</h4><p>Fill in the Event Title, Type (Teaching / Exam / Holiday / Meeting), Start Date, End Date, then click "Add".</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>View in Calendar Preview</h4><p>The calendar preview updates immediately. All schools and block officers in your district will see the changes.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Delete an Event</h4><p>Click the red 🗑 Delete button next to any event in the events list.</p></div></div>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-shield-alt"></i> Activity Logs</div>
+                <p style="font-size:0.88rem; color:var(--muted);">Go to <strong>Activity Logs</strong> to see a full record of all user logins and actions in your district. Useful for security monitoring and accountability.</p>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 5 — STATE ═══════════════ -->
+    <div class="section" id="state">
+        <div class="section-heading">
+            <span class="num">05</span>
+            <i class="fas fa-landmark"></i>
+            <h2>State Admin Guide</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-state"><i class="fas fa-landmark"></i> State Login</span>
+            <p style="margin-bottom:24px; font-size:0.9rem; color:var(--muted);">
+                State admins have a bird's-eye view of the entire state — all districts, blocks, schools, and students.
+            </p>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-tachometer-alt"></i> State Dashboard</div>
+                <p style="font-size:0.88rem; color:var(--muted); margin-bottom:14px;">Shows total districts, blocks, schools, students, tests, and active users across the state. Includes:</p>
+                <ul style="font-size:0.88rem; color:var(--muted); line-height:2; padding-left:20px;">
+                    <li>Bar chart — District-wise School &amp; Student distribution</li>
+                    <li>Today's attendance percentage across all schools</li>
+                    <li>Test performance doughnut charts (category-wise)</li>
+                    <li>District-wise summary table with searchable DataTable</li>
+                </ul>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-users-cog"></i> Manage Districts</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to "Manage Districts"</h4><p>View all districts. Click "Create District" to add a new district with its admin user.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Edit or Toggle</h4><p>Edit district name / admin, or toggle active/inactive status for a district.</p></div></div>
+                </div>
+            </div>
+
+            <div class="info-box info-success"><i class="fas fa-check-circle"></i><div>State admins can also access all reports — student ranking, school averages, top/weakest students — across the entire state.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 6 — STUDENT ═══════════════ -->
+    <div class="section" id="student">
+        <div class="section-heading">
+            <span class="num">06</span>
+            <i class="fas fa-user-graduate"></i>
+            <h2>Student Portal Guide</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-student"><i class="fas fa-user-graduate"></i> Student Login</span>
+            <p style="margin-bottom:24px; font-size:0.9rem; color:var(--muted);">
+                The Student Portal is your personal space to check marks, practice, and get help from AI — available on any device, any time.
+            </p>
+
+            <div class="quick-ref">
+                <div class="quick-card"><i class="fas fa-home" style="color:#3b82f6;"></i><strong>Dashboard</strong><span>Marks overview &amp; quick stats</span></div>
+                <div class="quick-card"><i class="fas fa-chart-line" style="color:#10b981;"></i><strong>My Performance</strong><span>Graphs across all tests</span></div>
+                <div class="quick-card"><i class="fas fa-clipboard-list" style="color:#f59e0b;"></i><strong>Test List</strong><span>All tests &amp; your marks</span></div>
+                <div class="quick-card"><i class="fas fa-brain" style="color:#8b5cf6;"></i><strong>Practice Test</strong><span>AI-generated practice</span></div>
+                <div class="quick-card"><i class="fas fa-robot" style="color:#6366f1;"></i><strong>AI Sathi</strong><span>24/7 AI tutor</span></div>
+                <div class="quick-card"><i class="fas fa-key" style="color:#ef4444;"></i><strong>Change Password</strong><span>Update login password</span></div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-chart-line"></i> Viewing Your Performance</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to "My Performance"</h4><p>Click Performance in the navigation. A chart shows your marks across all tests.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Read your category</h4><p>Each test shows your marks, maximum marks, and which category you fall in (0–33%, 33–60%, 60–80%, 80–90%, 90–100%, 100%).</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Identify weak areas</h4><p>Tests where you scored below 33% are highlighted in red. Focus on those topics in practice.</p></div></div>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-brain"></i> Taking a Practice Test</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to "Practice Test"</h4><p>Click Practice Test from your dashboard or navigation.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Select Subject &amp; Topic</h4><p>Choose your subject and the specific topic/chapter you want to practice.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>AI generates questions</h4><p>10 multiple-choice questions are generated instantly by AI. A timer starts.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Answer &amp; Submit</h4><p>Select your answers and click Submit. Your score is shown immediately with correct answers highlighted.</p></div></div>
+                </div>
+                <div class="screenshot">
+                    <i class="fas fa-image"></i>
+                    <p><strong>Screenshot: Practice Test Page</strong><br>Question cards with 4 options, progress bar, and timer displayed at top</p>
+                </div>
+            </div>
+
+            <div class="sub-section">
+                <div class="sub-heading"><i class="fas fa-key"></i> Changing Your Password</div>
+                <div class="steps">
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to "Change Password"</h4><p>Click the change password option in your portal.</p></div></div>
+                    <div class="step"><div class="step-num"></div><div class="step-content"><h4>Enter old password, then new password twice</h4><p>New password must be at least 8 characters. Use a mix of letters and numbers.</p></div></div>
+                </div>
+                <div class="info-box info-tip"><i class="fas fa-lightbulb"></i><div>Change your password from the default (your roll number) as soon as possible to keep your account secure.</div></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 7 — AI MATH ═══════════════ -->
+    <div class="section" id="ai-math">
+        <div class="section-heading">
+            <span class="num">07</span>
+            <i class="fas fa-calculator"></i>
+            <h2>AI Math Solver</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-school"><i class="fas fa-school"></i> School / Teacher</span>
+            <p style="margin-bottom:20px; font-size:0.9rem; color:var(--muted);">
+                The AI Math Solver solves any mathematics problem and gives a complete step-by-step explanation in Hindi or English.
+            </p>
+            <div class="steps">
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to Math Tools</h4><p>Click "Math Tools" in the top navigation (available for school login).</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Type or upload your problem</h4><p>Type the math question in the text box. You can also click the camera/image icon to upload a photo of a handwritten problem.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Select language</h4><p>Choose Hindi or English for the explanation.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "Solve"</h4><p>The AI returns a full solution with numbered steps, formulas (rendered as proper math equations), and an explanation.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Generate similar questions</h4><p>Click "Generate More" to get practice questions on the same topic.</p></div></div>
+            </div>
+            <div class="info-box info-tip"><i class="fas fa-lightbulb"></i><div>Works for Class 6–12 Mathematics including: Algebra, Geometry, Trigonometry, Statistics, and more.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 8 — AI SATHI ═══════════════ -->
+    <div class="section" id="ai-sathi">
+        <div class="section-heading">
+            <span class="num">08</span>
+            <i class="fas fa-robot"></i>
+            <h2>AI Sathi (Smart Tutor)</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-student"><i class="fas fa-user-graduate"></i> Students</span>
+            <span class="role-badge role-school" style="margin-left:8px;"><i class="fas fa-school"></i> School</span>
+            <p style="margin-bottom:20px; font-size:0.9rem; color:var(--muted);">
+                AI Sathi is a smart tutor that answers questions only from your specific subject, class, and chapter — so it stays focused and on-topic.
+            </p>
+            <div class="steps">
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "AI Sathi" in the navigation</h4><p>The tutor page opens with a chat interface.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Select Class, Subject, and Chapter</h4><p>The AI will only answer questions related to these selections — this keeps answers curriculum-aligned.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Type your question</h4><p>Ask in Hindi or English. For example: "त्रिभुज की परिभाषा क्या है?" or "What is the area formula for a triangle?"</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Read the answer</h4><p>The AI responds in the same language with a clear, step-by-step explanation. Click the speaker icon to have it read aloud.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Download as PDF</h4><p>Click "Download PDF" to save the answer for offline study.</p></div></div>
+            </div>
+            <div class="info-box info-success"><i class="fas fa-check-circle"></i><div>AI Sathi is available 24/7. Students can use it for homework help, exam revision, or understanding difficult concepts.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 9 — QUESTION PAPER ═══════════════ -->
+    <div class="section" id="ai-qp">
+        <div class="section-heading">
+            <span class="num">09</span>
+            <i class="fas fa-file-alt"></i>
+            <h2>AI Question Paper Generator</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-school"><i class="fas fa-school"></i> School / Teacher</span>
+            <p style="margin-bottom:20px; font-size:0.9rem; color:var(--muted);">
+                Generate a complete, print-ready question paper with answer key — in under 30 seconds.
+            </p>
+            <div class="steps">
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Go to "Question Paper" in navigation</h4><p>Available in the school login top menu.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Fill in paper details</h4><p>Enter: Subject, Class, Chapter/Topic, Language (Hindi/English), Total Marks, and Difficulty level.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Choose question types &amp; marks</h4><p>Set how many marks for MCQ, True/False, Fill in the Blank, Short Answer, and Long Answer sections.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Click "Generate Question Paper"</h4><p>AI generates all questions in 10–20 seconds. A spinner shows progress.</p></div></div>
+                <div class="step"><div class="step-num"></div><div class="step-content"><h4>Preview &amp; Print</h4><p>The paper appears with PadhaiWithAI branding. Click "Print Question Paper" or "Print Answer Key" to print.</p></div></div>
+            </div>
+            <div class="screenshot">
+                <i class="fas fa-image"></i>
+                <p><strong>Screenshot: Question Paper Generator</strong><br>Configuration form on left, generated paper preview on right with Print buttons</p>
+            </div>
+            <div class="info-box info-note"><i class="fas fa-clock"></i><div>Generation takes 10–30 seconds. Do not close the page while the spinner is showing.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 10 — PRACTICE ═══════════════ -->
+    <div class="section" id="ai-prac">
+        <div class="section-heading">
+            <span class="num">10</span>
+            <i class="fas fa-brain"></i>
+            <h2>AI Practice Tests (Student)</h2>
+        </div>
+        <div class="section-body">
+            <span class="role-badge role-student"><i class="fas fa-user-graduate"></i> Students</span>
+            <p style="margin-bottom:20px; font-size:0.9rem; color:var(--muted);">
+                Practice tests are AI-generated, timed multiple-choice tests on topics you choose. Score is instant.
+            </p>
+            <table class="feature-table">
+                <thead><tr><th>Feature</th><th>Details</th></tr></thead>
+                <tbody>
+                    <tr><td>Number of questions</td><td>10 MCQ questions per test</td></tr>
+                    <tr><td>Question source</td><td>AI-generated from NCERT curriculum</td></tr>
+                    <tr><td>Time limit</td><td>Timer shown — no forced cutoff</td></tr>
+                    <tr><td>Scoring</td><td>Instant — shown after submission</td></tr>
+                    <tr><td>Correct answers</td><td>Shown after submission with explanation</td></tr>
+                    <tr><td>Progress tracking</td><td>All attempts saved in Practice Progress</td></tr>
+                    <tr><td>Language</td><td>Hindi and English</td></tr>
+                </tbody>
+            </table>
+            <div class="info-box info-tip"><i class="fas fa-lightbulb"></i><div>Regular practice improves your score. Check "Practice Progress" to see which topics you have mastered and which need more work.</div></div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 11 — ROLES ═══════════════ -->
+    <div class="section" id="roles">
+        <div class="section-heading">
+            <span class="num">11</span>
+            <i class="fas fa-shield-alt"></i>
+            <h2>Role Permissions Summary</h2>
+        </div>
+        <div class="section-body">
+            <p style="margin-bottom:18px; font-size:0.88rem; color:var(--muted);">Quick reference — what each role can do in the system.</p>
+            <div style="overflow-x:auto;">
+            <table class="feature-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Student</th>
+                        <th>School</th>
+                        <th>Block</th>
+                        <th>District</th>
+                        <th>State</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>View own marks</td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>Enter student marks</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                    <tr><td>Mark attendance</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                    <tr><td>Add / edit students</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                    <tr><td>Create / manage tests</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>View block reports</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>Manage academic calendar</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>Upload school users</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>View activity logs</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>District-wide analytics</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-part">Block only</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>Manage districts / blocks</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-part">Own district</span></td><td><span class="tag tag-yes">Yes</span></td></tr>
+                    <tr><td>AI Math Solver</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                    <tr><td>AI Sathi Tutor</td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                    <tr><td>Question Paper Generator</td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                    <tr><td>Practice Tests</td><td><span class="tag tag-yes">Yes</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td><td><span class="tag tag-no">No</span></td></tr>
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ═══════════════ SECTION 12 — FAQ ═══════════════ -->
+    <div class="section" id="faq">
+        <div class="section-heading">
+            <span class="num">12</span>
+            <i class="fas fa-question-circle"></i>
+            <h2>Frequently Asked Questions</h2>
+        </div>
+        <div class="section-body">
+
+            <div class="faq-item">
+                <div class="faq-q">I forgot my password. What do I do?</div>
+                <div class="faq-a">Students should contact their school teacher. School admins should contact the Block or District Officer. District/Block officers should contact the State Admin to reset passwords.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">I cannot see any test in the marks entry screen.</div>
+                <div class="faq-a">Tests must be <strong>activated</strong> by the District Officer before schools can enter marks. Contact your District Officer to activate the test.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">The AI Math Solver is not giving an answer. What's wrong?</div>
+                <div class="faq-a">Check your internet connection. If the problem persists, try rephrasing the question. For image uploads, ensure the image is clear and well-lit. The AI may occasionally timeout — refresh and try again.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">Why does the block dashboard show no charts?</div>
+                <div class="faq-a">Charts appear only when there is marks data entered for your block's schools. Ensure schools have submitted marks for at least one active test.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">Can I upload students in bulk instead of one by one?</div>
+                <div class="faq-a">Yes. Go to <strong>Upload Student Data</strong> from the dashboard. Download the sample Excel file, fill in student details, and upload. All students are created at once.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">The Academic Calendar is not showing. What should I do?</div>
+                <div class="faq-a">Events are added by the District Officer. If no events are added yet, the calendar will be empty. Contact your District Officer to add the academic schedule.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">How many questions does AI Sathi answer per session?</div>
+                <div class="faq-a">There is no fixed limit. You can ask as many questions as needed in a session. Conversation history is maintained within the session.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-q">Why can I see tests from other districts?</div>
+                <div class="faq-a">This should not happen in the current version. Each user's test list is filtered by their district. If you see tests from other districts, please report this to your admin.</div>
+            </div>
+
+            <hr class="divider">
+            <p style="text-align:center; font-size:0.85rem; color:var(--muted); margin-top:8px;">
+                For additional support, contact your District Administration Office — Tonk, Rajasthan.<br>
+                <strong style="color:var(--primary);">PadhaiWithAI</strong> · Empowering Education Through Technology · © 2024–2026
+            </p>
+        </div>
+    </div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+    // Highlight active nav item on scroll
+    const sections = document.querySelectorAll('.section[id], .cover[id]');
+    const navItems = document.querySelectorAll('.nav-item');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(s => {
+            if (window.scrollY >= s.offsetTop - 120) current = s.id;
+        });
+        navItems.forEach(a => {
+            const href = a.getAttribute('href').replace('#','');
+            a.classList.toggle('active', href === current);
+        });
+    });
+</script>
+</body>
+</html>

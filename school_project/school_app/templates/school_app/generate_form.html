@@ -1,0 +1,280 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --accent: #38bdf8;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+    }
+    
+    .page-header-generate {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+    }
+    .page-header-generate h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .page-header-generate p {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin: 5px 0 0 0;
+    }
+    
+    .card-generate {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .card-generate .card-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        border: none;
+    }
+    .card-generate .card-body {
+        padding: 25px;
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+    }
+    .form-select, .form-control {
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 15px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    .form-select:focus, .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+    
+    .btn-generate {
+        background: linear-gradient(135deg, var(--warning), #d97706);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    .btn-generate:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+        color: white;
+    }
+    
+    .btn-cancel {
+        background: linear-gradient(135deg, #64748b, #475569);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+    .btn-cancel:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+        color: white;
+    }
+    
+    .instructions-box {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border-left: 4px solid var(--warning);
+        padding: 15px 20px;
+        border-radius: 0 10px 10px 0;
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        margin-top: 20px;
+    }
+    .instructions-box strong {
+        color: var(--primary);
+    }
+    
+    .generated-card {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-top: 25px;
+    }
+    .generated-card .card-header {
+        background: linear-gradient(135deg, var(--success), #059669);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        border: none;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header-generate">
+    <h1>🔄 {% if language == "Hindi" %}समान प्रश्न उत्पन्न करें{% else %}Generate Similar Questions{% endif %}</h1>
+    <p>{% if language == "Hindi" %}AI की मदद से नए अभ्यास प्रश्न बनाएं{% else %}Create new practice questions with AI{% endif %}</p>
+</div>
+
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            {% if chapter_name %}
+            <div style="margin-bottom: 20px;">
+                <div style="display: inline-flex; align-items: center; gap: 10px;
+                            background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+                            border: 1.5px solid #38bdf8; border-radius: 10px;
+                            padding: 10px 20px;">
+                    <span style="font-size: 1.3rem;">📖</span>
+                    <div>
+                        <div style="font-size: 0.75rem; font-weight: 600; color: #0369a1; text-transform: uppercase; letter-spacing: 0.05em;">Chapter</div>
+                        <div style="font-size: 1rem; font-weight: 700; color: #0c4a6e;">{{ chapter_name }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="card-generate">
+                <div class="card-header">
+                    📝 {% if language == "Hindi" %}प्रश्न विकल्प{% else %}Question Options{% endif %}
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% url 'generate_math' %}">
+                        {% csrf_token %}
+                        
+                        <!-- Hidden fields -->
+                        <input type="hidden" name="questions" value="{{ questions_json }}">
+                        <input type="hidden" name="chapter_name" value="{{ chapter_name }}">
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Question Type -->
+                                <div class="mb-3">
+                                    <label for="question_type" class="form-label">
+                                        📋 {% if language == "Hindi" %}प्रश्न का प्रकार{% else %}Question Type{% endif %}
+                                    </label>
+                                    <select class="form-select" id="question_type" name="question_type" required>
+                                        <option value="Same as Original">{% if language == "Hindi" %}मूल प्रश्न के समान{% else %}Same as Original{% endif %}</option>
+                                        <option value="Multiple Choice Questions">{% if language == "Hindi" %}बहुविकल्पीय प्रश्न{% else %}Multiple Choice Questions{% endif %}</option>
+                                        <option value="Fill in the Blanks">{% if language == "Hindi" %}रिक्त स्थान भरें{% else %}Fill in the Blanks{% endif %}</option>
+                                        <option value="Short Answer Type">{% if language == "Hindi" %}लघु उत्तरीय प्रश्न{% else %}Short Answer Type{% endif %}</option>
+                                        <option value="True/False">{% if language == "Hindi" %}सही/गलत{% else %}True/False{% endif %}</option>
+                                    </select>
+                                </div>
+
+                                <!-- Difficulty Selection -->
+                                <div class="mb-3">
+                                    <label for="difficulty" class="form-label">
+                                        📊 {% if language == "Hindi" %}कठिनाई स्तर{% else %}Difficulty Level{% endif %}
+                                    </label>
+                                    <select class="form-select" id="difficulty" name="difficulty" required>
+                                        <option value="Same Level" selected>
+                                            {% if language == "Hindi" %}समान स्तर (मूल प्रश्न के समान){% else %}Same Level (Similar to original){% endif %}
+                                        </option>
+                                        <option value="Harder">
+                                            {% if language == "Hindi" %}कठिन (अधिक चुनौतीपूर्ण){% else %}Harder (More challenging){% endif %}
+                                        </option>
+                                        <option value="Most Hard">
+                                            {% if language == "Hindi" %}सबसे कठिन (बहुत अधिक चुनौतीपूर्ण){% else %}Most Hard (Much more challenging){% endif %}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Number of Questions -->
+                                <div class="mb-3">
+                                    <label for="num_questions" class="form-label">
+                                        🔢 {% if language == "Hindi" %}प्रश्नों की संख्या{% else %}Number of Questions{% endif %}
+                                    </label>
+                                    <input type="number" class="form-control" id="num_questions"
+                                           name="num_questions" value="1" min="1" max="5" required
+                                           oninput="if(this.value.length > 2) this.value = this.value.slice(0, 2);">
+                                </div>
+
+                                <!-- Language Selection -->
+                                <div class="mb-3">
+                                    <label for="language" class="form-label">
+                                        🌐 {% if language == "Hindi" %}भाषा{% else %}Language{% endif %}
+                                    </label>
+                                    <select class="form-select" id="language" name="language" required>
+                                        <option value="Hindi" {% if language == "Hindi" %}selected{% endif %}>हिंदी (Hindi)</option>
+                                        <option value="English" {% if language == "English" %}selected{% endif %}>English</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-3 mt-4">
+                            <a href="{% url 'math_tools' %}" class="btn-cancel">
+                                ❌ {% if language == "Hindi" %}रद्द करें{% else %}Cancel{% endif %}
+                            </a>
+                            <button type="submit" class="btn-generate">
+                                ✨ {% if language == "Hindi" %}प्रश्न उत्पन्न करें{% else %}Generate Questions{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="instructions-box">
+                        <strong>📖 How to use (English):</strong><br>
+                        • Choose <b>Question Type</b> (Same, Multiple Choice, Fill in blanks, Short Answer Type).<br>
+                        • Enter number of similar questions to generate (1-5).<br>
+                        • Select <b>Difficulty Level</b> → Same Level, Harder, or Most Hard.<br>
+                        • Choose <b>Language</b> (Hindi / English).<br>
+                        • Click <b>Generate Questions</b> to create new AI-based practice questions.
+                        <br><br>
+                        
+                        <strong>📖 कैसे उपयोग करें (हिन्दी):</strong><br>
+                        • <b>Question Type</b> चुनें (मूल प्रश्न के समान / बहुविकल्पीय / रिक्त स्थान / लघु उत्तरीय)।<br>
+                        • जितने प्रश्न बनाने हैं, वह संख्या दर्ज करें (1-5)।<br>
+                        • <b>Difficulty Level</b> चुनें → समान स्तर / कठिन / सबसे कठिन।<br>
+                        • <b>Language</b> चुनें (हिंदी / English)।<br>
+                        • <b>Generate Questions</b> पर क्लिक करें।
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if generated_questions %}
+<div class="container-fluid px-0 mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="generated-card">
+                <div class="card-header">
+                    ✅ {% if language == "Hindi" %}उत्पन्न प्रश्न और समाधान{% else %}Generated Questions and Solutions{% endif %}
+                </div>
+                <div class="card-body">
+                    {{ generated_questions|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div style="height: 30px;"></div>
+{% endblock %}

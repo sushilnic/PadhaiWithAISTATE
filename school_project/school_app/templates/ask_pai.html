@@ -1,0 +1,142 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PadhaiWithAI- AI math tool</title>
+    <!-- <script>
+        // window.MathJax = {
+        //     tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+        //     svg: { fontCache: 'global' }
+        // };
+
+        // Initialize MathJax
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+
+        
+</script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.0/es5/tex-mml-chtml.js"></script> 
+
+<!-- MathJax v3: renders LaTeX with $...$ and $$...$$ -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+       packages: { '[+]': ['ams'] },
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      },
+      chtml: { scale: 1 },
+      svg:   { scale: 1 ,fontCache: 'global'}
+    };
+  </script>
+  <script async id="MathJax-script"
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <!-- MathJax script must be loaded once in base.html (not every time) -->
+        <script>
+        // Wait until the DOM is ready, then re-render MathJax content
+        document.addEventListener("DOMContentLoaded", function() {
+            if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise([document.getElementById("math-output")]);
+            }
+        });
+        </script>      
+    <style>
+        body {
+            font-family: Arial;
+            margin: 40px;
+            background-color: #f4f4f4;
+            justify-content: center; /* horizontal center */
+            align-items: center; /* vertical center */
+            
+        }
+        .container {
+         
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        textarea {
+            width: 95%;
+            height: 100px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+        button {
+            margin-top: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            align-items: center;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            margin-top: 20px;
+            background: #eef;
+            padding: 15px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>💬 Ask PadhaiWithAI</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <textarea name="question" placeholder="Type your question here...">{{ question }}</textarea>
+            <br>
+           <div style="display: flex; justify-content: center; align-items: center; ">
+                <button type="submit">Ask</button>
+           </div>
+        </form>
+
+    {% if answer %}
+        <div class="response">
+            <strong>🧠 Answer:</strong>
+
+            <!-- Rendered Math output -->
+            <p id="math-output">{{ answer|linebreaks|safe }}</p>
+        </div>
+
+        
+    {% endif %}
+
+    </div>
+    <style>
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #343a40;
+            color: white;
+            text-align: center;
+            padding: 1px 0;
+        }
+    </style>
+    <div style="height: 30px;"></div>
+    <div class="footer">
+             PadhaiWithAI-Tonk, Rajasthan
+    </div>
+</body>
+</html>

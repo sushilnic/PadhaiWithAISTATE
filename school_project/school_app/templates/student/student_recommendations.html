@@ -1,0 +1,556 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recommendations - PadhaiWithAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <style>
+        :root {
+            --primary: #1e3c72;
+            --primary-light: #2a5298;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --surface: #ffffff;
+            --bg: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+        }
+        .footer img { height: 32px; }
+        .footer img.pai-logo { border-radius: 6px; }
+        .footer img.nic-logo { mix-blend-mode: multiply; }
+        .footer span { opacity: 0.9; }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .navbar-brand img { height: 40px; }
+        .navbar-brand span { font-size: 1.3rem; font-weight: 700; }
+
+        .navbar-nav { display: flex; align-items: center; gap: 20px; }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+        }
+
+        /* Summary Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .stat-card .icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            font-size: 1.3rem;
+        }
+
+        .stat-card .icon.blue { background: #dbeafe; color: #2563eb; }
+        .stat-card .icon.green { background: #d1fae5; color: #059669; }
+        .stat-card .icon.red { background: #fee2e2; color: #dc2626; }
+        .stat-card .icon.purple { background: #ede9fe; color: #7c3aed; }
+
+        .stat-card .value { font-size: 1.8rem; font-weight: 700; color: var(--text); }
+        .stat-card .label { font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px; }
+
+        /* Section title */
+        .section-title {
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Topic Cards */
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .topic-card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+            border-left: 4px solid var(--danger);
+            transition: transform 0.2s;
+        }
+
+        .topic-card:hover { transform: translateY(-3px); }
+
+        .topic-card.strong { border-left-color: var(--success); }
+
+        .topic-card .topic-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .topic-card .topic-source {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: var(--bg);
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+
+        .topic-card .score-bar {
+            background: var(--bg);
+            border-radius: 10px;
+            height: 10px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .topic-card .score-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .score-fill.danger { background: var(--danger); }
+        .score-fill.warning { background: var(--warning); }
+        .score-fill.success { background: var(--success); }
+
+        .topic-card .topic-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .topic-card .score-text {
+            font-weight: 600;
+        }
+
+        .score-text.danger { color: var(--danger); }
+        .score-text.warning { color: var(--warning); }
+        .score-text.success { color: var(--success); }
+
+        .topic-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .topic-actions a {
+            flex: 1;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-practice {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-practice:hover { background: var(--primary-light); }
+
+        .btn-video {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .btn-video:hover { background: #fecaca; }
+
+        /* Strong topics collapsible */
+        .strong-toggle {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 16px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+
+        .strong-toggle:hover { background: #f8fafc; }
+
+        .strong-toggle i.toggle-icon { transition: transform 0.3s; }
+        .strong-toggle.open i.toggle-icon { transform: rotate(180deg); }
+
+        .strong-topics-list {
+            display: none;
+        }
+
+        .strong-topics-list.show { display: grid; }
+
+        /* AI Tips */
+        .ai-tips-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+            margin-bottom: 30px;
+        }
+
+        .btn-ai-tips {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            color: white;
+            border: none;
+            padding: 12px 28px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ai-tips:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
+        .btn-ai-tips:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .tips-list {
+            margin-top: 20px;
+            list-style: none;
+        }
+
+        .tips-list li {
+            background: #f5f3ff;
+            border-left: 4px solid #8b5cf6;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 0 10px 10px 0;
+            line-height: 1.5;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .no-data i { font-size: 3rem; margin-bottom: 15px; opacity: 0.4; }
+
+        @media (max-width: 768px) {
+            .navbar { padding: 15px; }
+            .navbar-nav { gap: 10px; }
+            .nav-link span { display: none; }
+            .container { padding: 15px; }
+            .topics-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="{% url 'student_dashboard' %}" class="navbar-brand">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+            <span>PadhaiWithAI</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="{% url 'student_dashboard' %}" class="nav-link"><i class="fas fa-home"></i> <span>Dashboard</span></a>
+            <a href="{% url 'student_practice_test' %}" class="nav-link"><i class="fas fa-brain"></i> <span>Practice</span></a>
+            <a href="{% url 'student_recommendations' %}" class="nav-link active"><i class="fas fa-lightbulb"></i> <span>Recommend</span></a>
+            <a href="{% url 'student_video_learning' %}" class="nav-link"><i class="fas fa-video"></i> <span>Videos</span></a>
+            <form method="POST" action="{% url 'student_logout' %}" style="display:inline;margin:0;padding:0;">{% csrf_token %}<button type="submit" class="nav-link" style="background:none;border:none;font:inherit;cursor:pointer;"><i class="fas fa-sign-out-alt"></i></button></form>
+        </div>
+    </nav>
+
+    {% csrf_token %}
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><i class="fas fa-lightbulb"></i> Study Recommendations</h1>
+            <p>{{ student.name }} | Class {{ student.class_name }} | {{ student.school.name }}</p>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="icon blue"><i class="fas fa-clipboard-check"></i></div>
+                <div class="value">{{ total_tests_taken }}</div>
+                <div class="label">School Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon purple"><i class="fas fa-brain"></i></div>
+                <div class="value">{{ total_practice_taken }}</div>
+                <div class="label">Practice Tests</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon red"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="value">{{ weak_topics|length }}</div>
+                <div class="label">Areas to Improve</div>
+            </div>
+            <div class="stat-card">
+                <div class="icon green"><i class="fas fa-check-circle"></i></div>
+                <div class="value">{{ strong_topics|length }}</div>
+                <div class="label">Strong Areas</div>
+            </div>
+        </div>
+
+        {% if weak_topics %}
+        <!-- Areas to Improve -->
+        <h2 class="section-title"><i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> Areas to Improve</h2>
+        <div class="topics-grid">
+            {% for topic in weak_topics %}
+            <div class="topic-card">
+                <div class="topic-name">{{ topic.name }}</div>
+                <span class="topic-source">{{ topic.source }}</span>
+                <div class="score-bar">
+                    <div class="score-fill {% if topic.avg_score < 33 %}danger{% elif topic.avg_score < 60 %}warning{% else %}success{% endif %}" style="width: {{ topic.avg_score }}%;"></div>
+                </div>
+                <div class="topic-meta">
+                    <span class="score-text {% if topic.avg_score < 33 %}danger{% elif topic.avg_score < 60 %}warning{% else %}success{% endif %}">{{ topic.avg_score }}%</span>
+                    <span>{{ topic.attempts }} attempt{{ topic.attempts|pluralize }}</span>
+                </div>
+                <div class="topic-actions">
+                    <a href="{% url 'student_practice_test' %}" class="btn-practice"><i class="fas fa-pencil-alt"></i> Practice Now</a>
+                    <a href="{% url 'student_video_learning' %}?topic={{ topic.name|urlencode }}" class="btn-video"><i class="fas fa-play-circle"></i> Watch Videos</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- AI Tips Section -->
+        <div class="ai-tips-section">
+            <h2 class="section-title"><i class="fas fa-robot" style="color: #8b5cf6;"></i> AI Study Tips</h2>
+            <p style="color: var(--text-secondary); margin-bottom: 15px;">Get personalized improvement tips based on your weak areas.</p>
+            <button class="btn-ai-tips" id="btnGetTips" onclick="getStudyTips()">
+                <i class="fas fa-magic"></i> Get AI Study Tips
+            </button>
+            <div id="tipsContainer"></div>
+        </div>
+        {% else %}
+        <div class="no-data">
+            <i class="fas fa-trophy" style="color: var(--success);"></i>
+            <h3>Great job!</h3>
+            <p>No weak areas found. Keep up the excellent work or take more tests to get detailed recommendations.</p>
+        </div>
+        {% endif %}
+
+        {% if strong_topics %}
+        <!-- Strong Areas (Collapsible) -->
+        <div class="strong-toggle" onclick="toggleStrong()">
+            <span><i class="fas fa-check-circle" style="color: var(--success);"></i> Strong Areas ({{ strong_topics|length }})</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="topics-grid strong-topics-list" id="strongTopics">
+            {% for topic in strong_topics %}
+            <div class="topic-card strong">
+                <div class="topic-name">{{ topic.name }}</div>
+                <span class="topic-source">{{ topic.source }}</span>
+                <div class="score-bar">
+                    <div class="score-fill success" style="width: {{ topic.avg_score }}%;"></div>
+                </div>
+                <div class="topic-meta">
+                    <span class="score-text success">{{ topic.avg_score }}%</span>
+                    <span>{{ topic.attempts }} attempt{{ topic.attempts|pluralize }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+        <span>&copy; 2024 PadhaiWithAI - Tonk, Rajasthan | Empowering Education Through Technology</span>
+        <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo" class="nic-logo">
+    </div>
+
+    <script>
+        function toggleStrong() {
+            const list = document.getElementById('strongTopics');
+            const toggle = document.querySelector('.strong-toggle');
+            list.classList.toggle('show');
+            toggle.classList.toggle('open');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function getCsrfToken() {
+            // Try hidden input first, then cookie
+            const input = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (input) return input.value;
+            const name = 'csrftoken';
+            const cookies = document.cookie.split(';');
+            for (let c of cookies) {
+                c = c.trim();
+                if (c.startsWith(name + '=')) return c.substring(name.length + 1);
+            }
+            return '';
+        }
+
+        function getStudyTips() {
+            const btn = document.getElementById('btnGetTips');
+            const container = document.getElementById('tipsContainer');
+            const weakTopics = [{% for t in weak_topics %}'{{ t.name|escapejs }}'{% if not forloop.last %}, {% endif %}{% endfor %}];
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Generating tips...';
+            container.innerHTML = '';
+
+            fetch('{% url "get_study_tips" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({weak_topics: weakTopics})
+            })
+            .then(r => r.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> Get AI Study Tips';
+                if (data.error) {
+                    const errP = document.createElement('p');
+                    errP.style.cssText = 'color: var(--danger); margin-top: 15px;';
+                    errP.textContent = data.error;
+                    container.appendChild(errP);
+                    return;
+                }
+                const ul = document.createElement('ul');
+                ul.className = 'tips-list';
+                (data.tips || []).forEach(function(tip) {
+                    const li = document.createElement('li');
+                    const icon = document.createElement('i');
+                    icon.className = 'fas fa-star';
+                    icon.style.cssText = 'color: #f59e0b; margin-right: 8px;';
+                    li.appendChild(icon);
+                    li.appendChild(document.createTextNode(tip));
+                    ul.appendChild(li);
+                });
+                container.appendChild(ul);
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-magic"></i> Get AI Study Tips';
+                const errP = document.createElement('p');
+                errP.style.cssText = 'color: var(--danger); margin-top: 15px;';
+                errP.textContent = 'Failed to get tips. Please try again.';
+                container.appendChild(errP);
+            });
+        }
+    </script>
+</body>
+</html>

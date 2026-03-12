@@ -1,0 +1,585 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --secondary: #64748B;
+        --accent: #38bdf8;
+        --background: #F8FAFC;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+    }
+
+    /* Header Section */
+    .report-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-radius: 15px;
+        padding: 40px 30px;
+        margin-bottom: 40px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .report-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .report-header p {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        margin-bottom: 0;
+    }
+
+    /* Controls Section */
+    .controls-section {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 10px 15px;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 10px rgba(30, 60, 114, 0.15);
+        outline: none;
+    }
+
+    .buttons-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .btn-primary-custom:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+    }
+
+    .btn-secondary-custom {
+        background-color: #E5E7EB;
+        color: var(--text-primary);
+    }
+
+    .btn-secondary-custom:hover {
+        background-color: #D1D5DB;
+        transform: translateY(-2px);
+    }
+
+    /* Table Styles */
+    .table-container {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .data-table thead {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+    }
+
+    .data-table th {
+        padding: 10px 12px;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+    }
+
+    .data-table th:hover {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, #1e3c72 100%);
+    }
+
+    .sort-indicator {
+        display: inline-block;
+        margin-left: 5px;
+        font-size: 0.8rem;
+    }
+
+    .data-table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f0f7ff;
+    }
+
+    .data-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .data-table td {
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .sno {
+        font-weight: 700;
+        color: var(--primary);
+        text-align: center;
+        width: 60px;
+    }
+
+    .school-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .student-count {
+        display: inline-block;
+        background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+        color: #1E40AF;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        text-align: center;
+        min-width: 60px;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 20px;
+        border-left: 5px solid var(--primary);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--surface);
+        border-radius: 12px;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        color: var(--border);
+        margin-bottom: 20px;
+    }
+
+    /* Pagination */
+    .pagination-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .pagination-info {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    /* Back Button */
+    .back-button-container {
+        text-align: center;
+        margin-top: 30px;
+    }
+
+    .back-btn {
+        display: inline-block;
+        padding: 12px 30px;
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border: none;
+        cursor: pointer;
+    }
+
+    .back-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        color: white;
+        text-decoration: none;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .report-header h1 {
+            font-size: 1.8rem;
+        }
+
+        .controls-section {
+            flex-direction: column;
+        }
+
+        .search-box {
+            min-width: 100%;
+        }
+
+        .buttons-group {
+            width: 100%;
+        }
+
+        .btn-action {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            font-size: 0.85rem;
+        }
+
+        .stats-section {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .table-container {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+</style>
+
+<!-- Header Section -->
+<div class="report-header">
+    <h1>📊 Schools with Student Count Report</h1>
+    <p>View detailed statistics of schools organized by student enrollment</p>
+</div>
+
+<!-- Stats Cards -->
+<div class="stats-section">
+    <div class="stat-card">
+        <div class="stat-label">Total Schools</div>
+        <div class="stat-value" id="totalSchools">{{ schools.count }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value" id="totalStudents">{{ total_students|default:0 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Average per School</div>
+        <div class="stat-value" id="averageStudents">
+            {% if schools.count > 0 %}
+                {% widthratio total_students schools.count 1 %}
+            {% else %}
+                0
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Controls Section -->
+<div class="controls-section">
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 Search by school name...">
+    </div>
+    <div class="buttons-group">
+        <button class="btn-action btn-primary-custom" onclick="exportToCSV()">
+            <i class="fas fa-download"></i> Export CSV
+        </button>
+        <button class="btn-action btn-primary-custom" onclick="exportToJSON()">
+            <i class="fas fa-file-code"></i> Export JSON
+        </button>
+        <button class="btn-action btn-secondary-custom" onclick="window.print()">
+            <i class="fas fa-print"></i> Print
+        </button>
+        <button class="btn-action btn-secondary-custom" onclick="resetTable()">
+            <i class="fas fa-redo"></i> Reset
+        </button>
+    </div>
+</div>
+
+<!-- Table Section -->
+{% if schools %}
+    <div class="table-container">
+        <table class="data-table" id="dataTable">
+            <thead>
+                <tr>
+                    <th class="sortable" onclick="sortTable(0)" style="width: 10%;">
+                        S.No <span class="sort-indicator">⇅</span>
+                    </th>
+                    <th class="sortable" onclick="sortTable(1)">
+                        School Name <span class="sort-indicator">⇅</span>
+                    </th>
+                    <th class="sortable" onclick="sortTable(2)" style="width: 20%;">
+                        Number of Students <span class="sort-indicator">⇅</span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                {% for school in schools %}
+                    <tr class="data-row">
+                        <td class="sno">{{ forloop.counter }}</td>
+                        <td class="school-name">{{ school.name }}</td>
+                        <td>
+                            <span class="student-count">{{ school.student_count }}</span>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Info -->
+    <div class="pagination-section">
+        <div class="pagination-info">
+            Showing <strong id="recordCount">{{ schools.count }}</strong> records
+        </div>
+    </div>
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h2>No Schools Found</h2>
+        <p>No schools with students found in your view.</p>
+    </div>
+{% endif %}
+
+<!-- Back Button -->
+<div class="back-button-container">
+    <button onclick="window.history.back();" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to Report Dashboard
+    </button>
+</div>
+
+<!-- JavaScript for DataGrid Features -->
+<script>
+    // Current sort state
+    let currentSort = { column: null, ascending: true };
+    const originalData = [];
+
+    // Store original data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('.data-row');
+        rows.forEach(row => {
+            originalData.push(row.innerHTML);
+        });
+    });
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const searchValue = this.value.toLowerCase();
+        const rows = document.querySelectorAll('.data-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const schoolName = row.querySelector('.school-name').textContent.toLowerCase();
+            if (schoolName.includes(searchValue)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('recordCount').textContent = visibleCount;
+    });
+
+    // Sort functionality
+    function sortTable(columnIndex) {
+        const table = document.getElementById('dataTable');
+        const tbody = document.getElementById('tableBody');
+        const rows = Array.from(tbody.querySelectorAll('.data-row'));
+
+        // Toggle sort direction
+        if (currentSort.column === columnIndex) {
+            currentSort.ascending = !currentSort.ascending;
+        } else {
+            currentSort.column = columnIndex;
+            currentSort.ascending = true;
+        }
+
+        // Sort rows
+        rows.sort((a, b) => {
+            let aValue = a.children[columnIndex].textContent.trim();
+            let bValue = b.children[columnIndex].textContent.trim();
+
+            // Handle numeric columns
+            if (columnIndex === 0 || columnIndex === 2) {
+                aValue = parseInt(aValue) || 0;
+                bValue = parseInt(bValue) || 0;
+            }
+
+            if (aValue < bValue) return currentSort.ascending ? -1 : 1;
+            if (aValue > bValue) return currentSort.ascending ? 1 : -1;
+            return 0;
+        });
+
+        // Re-insert sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+
+        // Update sort indicators
+        document.querySelectorAll('.sortable .sort-indicator').forEach(indicator => {
+            indicator.textContent = '⇅';
+        });
+
+        const activeHeader = document.querySelectorAll('.sortable')[columnIndex];
+        if (activeHeader) {
+            activeHeader.querySelector('.sort-indicator').textContent = currentSort.ascending ? '⬆️' : '⬇️';
+        }
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+        const rows = document.querySelectorAll('.data-row');
+        let csv = 'S.No,School Name,Number of Students\n';
+
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const cells = row.children;
+                const sno = cells[0].textContent.trim();
+                const schoolName = cells[1].textContent.trim();
+                const studentCount = cells[2].textContent.trim().match(/\d+/)[0];
+                csv += `"${index + 1}","${schoolName}","${studentCount}"\n`;
+            }
+        });
+
+        downloadFile(csv, 'schools-student-counts.csv', 'text/csv');
+    }
+
+    // Export to JSON
+    function exportToJSON() {
+        const rows = document.querySelectorAll('.data-row');
+        const data = [];
+
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const cells = row.children;
+                data.push({
+                    'S.No': index + 1,
+                    'School Name': cells[1].textContent.trim(),
+                    'Number of Students': parseInt(cells[2].textContent.match(/\d+/)[0])
+                });
+            }
+        });
+
+        downloadFile(JSON.stringify(data, null, 2), 'schools-student-counts.json', 'application/json');
+    }
+
+    // Helper function to download file
+    function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    }
+
+    // Reset table
+    function resetTable() {
+        document.getElementById('searchInput').value = '';
+        const rows = document.querySelectorAll('.data-row');
+        rows.forEach(row => row.style.display = '');
+        document.getElementById('recordCount').textContent = rows.length;
+        currentSort = { column: null, ascending: true };
+
+        // Reset sort indicators
+        document.querySelectorAll('.sortable .sort-indicator').forEach(indicator => {
+            indicator.textContent = '⇅';
+        });
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,438 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    /* Navbar Styles */
+    .navbar-custom {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        padding: 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        position: sticky;
+        top: 0;
+        z-index: 999;
+    }
+
+    .navbar-custom .container-fluid {
+        align-items: flex-start;
+        padding: 12px 15px;
+    }
+
+    .navbar-custom .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 700;
+        font-size: 1.3rem;
+        color: white !important;
+        padding-top: 0;
+        margin-bottom: 0;
+    }
+
+    .navbar-custom .navbar-brand img {
+        height: 40px;
+        width: auto;
+    }
+
+    .navbar-custom .navbar-brand span {
+        background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .navbar-custom .nav-link {
+        color: rgba(255, 255, 255, 0.85) !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin: 0 8px;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    .navbar-custom .nav-link:hover {
+        color: white !important;
+        transform: translateY(-2px);
+    }
+
+    .navbar-toggler {
+        border: none;
+        color: white;
+        padding: 0 !important;
+        margin-top: 0 !important;
+    }
+
+    .navbar-toggler:focus {
+        box-shadow: none;
+        outline: none;
+    }
+
+    /* Page Styles */
+    body {
+        background: #f8f9fa;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        padding: 40px 20px;
+        margin-bottom: 30px;
+        border-radius: 0 0 15px 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .page-header h1 {
+        font-size: 2.5em;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .page-header p {
+        font-size: 1.1em;
+        opacity: 0.95;
+    }
+
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-left: 4px solid #38bdf8;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card h3 {
+        color: #666;
+        font-size: 0.95em;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-card .stat-value {
+        font-size: 2em;
+        font-weight: 700;
+        color: #1e3c72;
+    }
+
+    .filters-section {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .filters-section h3 {
+        color: #1e3c72;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+
+    .filter-row input,
+    .filter-row select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+
+    .filter-row input:focus,
+    .filter-row select:focus {
+        outline: none;
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+    }
+
+    .btn-filter {
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-reset {
+        background: #6c757d;
+        color: white;
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: 10px;
+    }
+
+    .btn-reset:hover {
+        background: #5a6268;
+        transform: translateY(-2px);
+    }
+
+    .table-section {
+        background: white;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+    }
+
+    .table-section h3 {
+        color: #1e3c72;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead {
+        background-color: #1e3c72 !important;
+        color: white !important;
+    }
+
+    .table thead tr {
+        background-color: #1e3c72 !important;
+    }
+
+    .table thead th {
+        border: none !important;
+        padding: 15px !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        font-size: 0.9em !important;
+        letter-spacing: 0.5px !important;
+        background-color: #1e3c72 !important;
+        color: white !important;
+    }
+
+    .table tbody td {
+        padding: 12px 15px;
+        vertical-align: middle;
+        border-color: #e0e0e0;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f5f9ff;
+        transition: all 0.3s ease;
+    }
+
+    .badge-percentage {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85em;
+    }
+
+    .badge-high {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .badge-medium {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-low {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .btn-back {
+        display: inline-block;
+        background: linear-gradient(135deg, #6c757d, #5a6268);
+        color: white;
+        padding: 12px 25px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-bottom: 20px;
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #ddd !important;
+        border-radius: 8px;
+        padding: 8px 12px !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 4px;
+        margin: 0 2px;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9) !important;
+        border: none !important;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header">
+    <div class="container">
+        <h1>📊 School Average Analysis</h1>
+        <p>Comprehensive school-wise performance metrics and statistics</p>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <!-- Back Button -->
+    <a href="{% url 'student_report' %}" class="btn-back">← Back to Dashboard</a>
+
+    <!-- Statistics Cards -->
+    <div class="stats-cards">
+        <div class="stat-card">
+            <h3>Total Schools</h3>
+            <div class="stat-value">{{ results|length }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Avg Performance</h3>
+            <div class="stat-value">{{ avg_performance|default:"--" }}</div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <h3>🔍 Filters</h3>
+        <div class="filter-row">
+            <input type="text" id="schoolFilter" placeholder="Search by School Name..." />
+            <input type="text" id="blockFilter" placeholder="Search by Block Name..." />
+            <button class="btn-filter" onclick="applyFilters()">Apply Filters</button>
+            <button class="btn-reset" onclick="resetFilters()">Reset</button>
+        </div>
+    </div>
+
+    <!-- Table Section -->
+    <div class="table-section">
+        <h3>📈 Detailed School Performance</h3>
+        <div class="table-responsive">
+            <table border="1" class="table table-striped table-bordered" id="rankingTable">
+                <thead>
+                    <tr>
+                        <th>S.No.</th>
+                        <th>School Name</th>
+                        <th>Block Name</th>
+                        {% for test in tests %}
+                            <th>{{ test.subject_name }} - Avg Marks</th>
+                            <th>{{ test.subject_name }} - %</th>
+                        {% endfor %}
+                        <th>Overall Average</th>
+                        <th>Overall %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for school in results %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ school.school_name }}</td>
+                        <td>{{ school.block_name }}</td>
+                        {% for test in school.test_averages %}
+                            <td>{{ test.average_marks|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge-percentage {% if test.percentage >= 70 %}badge-high{% elif test.percentage >= 50 %}badge-medium{% else %}badge-low{% endif %}">
+                                    {{ test.percentage|floatformat:1 }}%
+                                </span>
+                            </td>
+                        {% endfor %}
+                        <td><strong>{{ school.school_average|floatformat:2 }}</strong></td>
+                        <td>
+                            <span class="badge-percentage {% if school.school_percentage >= 70 %}badge-high{% elif school.school_percentage >= 50 %}badge-medium{% else %}badge-low{% endif %}">
+                                {{ school.school_percentage|floatformat:1 }}%
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Filter functionality
+    function applyFilters() {
+        const schoolFilter = document.getElementById('schoolFilter').value.toLowerCase();
+        const blockFilter = document.getElementById('blockFilter').value.toLowerCase();
+        
+        const rows = document.querySelectorAll('#rankingTable tbody tr');
+        
+        rows.forEach(row => {
+            const school = row.cells[1].textContent.toLowerCase();
+            const block = row.cells[2].textContent.toLowerCase();
+            
+            const matchSchool = school.includes(schoolFilter);
+            const matchBlock = block.includes(blockFilter);
+            
+            if (matchSchool && matchBlock) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function resetFilters() {
+        document.getElementById('schoolFilter').value = '';
+        document.getElementById('blockFilter').value = '';
+        
+        const rows = document.querySelectorAll('#rankingTable tbody tr');
+        rows.forEach(row => row.style.display = '');
+    }
+
+    // Initialize DataTables
+    $(document).ready(function() {
+        $('#rankingTable').DataTable({
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "pageLength": 10,
+            "lengthMenu": [5, 10, 25, 50, 100, 400],
+            "responsive": true
+        });
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>Top Students</h1>
+    <p>View highest performing students across all schools</p>
+</div>
+
+<!-- Filter Form -->
+<div class="form-container mb-30">
+    <form method="get">
+        <div class="form-group mb-20">
+            <label for="test" class="form-label"><strong>Select Tests:</strong></label>
+            <select name="test" id="test" class="form-control" multiple style="height: 120px;">
+                <option value="" {% if not selected_test_numbers %}selected{% endif %}>All Tests</option>
+                {% for test in tests %}
+                    <option value="{{ test.test_number }}" {% if test.test_number in selected_test_numbers %}selected{% endif %}>
+                        {{ test.subject_name }} - {{ test.name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn-primary-custom">
+            <i class="fas fa-filter me-2"></i> Show Rankings
+        </button>
+    </form>
+</div>
+
+<!-- Max Marks Info -->
+<div class="alert-box info mb-30">
+    <strong>Maximum Marks Used for Percentage Calculation:</strong>
+    {% if selected_test_numbers %}
+        {{ selected_tests_max_marks }} (for selected tests)
+    {% else %}
+        {{ selected_tests_max_marks }} (cumulative across all tests)
+    {% endif %}
+</div>
+
+<!-- Rankings Table -->
+<h3 class="section-title">Top Student Rankings</h3>
+<div class="table-responsive">
+    <table class="data-table" id="topStudentsTable">
+        <thead>
+            <tr>
+                <th>Rank</th>
+                <th>Student Name</th>
+                <th>School Name</th>
+                <th>Total Marks</th>
+                <th>Percentage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in data %}
+                <tr>
+                    <td><strong>{{ forloop.counter }}</strong></td>
+                    <td>{{ student.student__name }}</td>
+                    <td>{{ student.student__school__name }}</td>
+                    <td>{{ student.total_marks }}</td>
+                    <td>
+                        <span class="status-badge {% if student.percentage >= 80 %}success{% elif student.percentage >= 50 %}warning{% else %}danger{% endif %}">
+                            {{ student.percentage|floatformat:2 }}%
+                        </span>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">No data available</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <a href="{% url 'student_report' %}" class="back-link">
+        <i class="fas fa-arrow-left me-2"></i> Back to Student Analysis
+    </a>
+</div>
+
+<!-- DataTables -->
+<script>
+    $(document).ready(function() {
+        $('#topStudentsTable').DataTable({
+            "paging": true,
+            "pageLength": 25,
+            "searching": true,
+            "ordering": true,
+            "info": true
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1414 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PAI – AI Sathi, Tonk, Rajasthan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <!-- MathJax (async, non-blocking) -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$','$'],['\\(','\\)']],
+          displayMath: [['$$','$$'],['\\[','\\]']],
+          processEscapes: true,
+          packages: {'[+]':['ams']}
+        },
+        options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] },
+        chtml: { scale: 1 },
+        svg:   { scale: 1, fontCache: 'global' }
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+
+    <!-- Marked.js + DOMPurify for Markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
+
+    <!-- html2pdf for PDF download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Light theme default: set before paint to avoid flash -->
+    <script>
+      (function(){
+        var t = localStorage.getItem('pai-theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+
+    <style>
+        /* ===== Light theme as default ===== */
+        :root {
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --bg-input: #f1f5f9;
+            --header-bg: linear-gradient(to right, #e0f2fe, #eff6ff);
+            --footer-bg: #f1f5f9;
+
+            --accent: #0ea5e9;
+            --accent-soft: rgba(14,165,233,0.1);
+            --accent-strong: #0284c7;
+
+            --text-main: #0f172a;
+            --text-muted: #6b7280;
+
+            --user-bubble: linear-gradient(135deg, #0ea5e9, #0284c7);
+            --user-bubble-text: #ffffff;
+            --assistant-bubble: #f1f5f9;
+            --assistant-bubble-border: #e2e8f0;
+
+            --border-subtle: rgba(148,163,184,0.4);
+            --border-strong: #e2e8f0;
+
+            --chip-bg: #e0f2fe;
+            --surface: #ffffff;
+            --shadow-card: 0 4px 24px rgba(0,0,0,0.08);
+        }
+
+        /* ===== Dark theme ===== */
+        :root[data-theme="dark"] {
+            --bg-body: #0f172a;
+            --bg-card: linear-gradient(135deg, rgba(15,23,42,0.98), rgba(15,23,42,0.96));
+            --bg-input: #020617;
+            --header-bg: radial-gradient(circle at top left, rgba(56,189,248,0.25), transparent 55%);
+            --footer-bg: rgba(15,23,42,0.98);
+
+            --accent: #38bdf8;
+            --accent-soft: rgba(56,189,248,0.1);
+            --accent-strong: #0ea5e9;
+
+            --text-main: #e5e7eb;
+            --text-muted: #9ca3af;
+
+            --user-bubble: linear-gradient(135deg, #0ea5e9, #0284c7);
+            --user-bubble-text: #ffffff;
+            --assistant-bubble: rgba(15,23,42,0.95);
+            --assistant-bubble-border: rgba(55,65,81,0.9);
+
+            --border-subtle: rgba(148,163,184,0.35);
+            --border-strong: rgba(55,65,81,0.9);
+
+            --chip-bg: rgba(56,189,248,0.1);
+            --surface: rgba(15,23,42,0.95);
+            --shadow-card: 0 18px 45px rgba(0,0,0,0.4);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== LAYOUT: full viewport flex ===== */
+        .page-wrap {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            padding: 16px 12px 0;
+            min-height: 0;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            margin-bottom: 8px;
+        }
+
+        /* ===== HEADER ===== */
+        .chat-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-strong);
+            background: var(--header-bg);
+            flex-shrink: 0;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chat-logo {
+            width: 48px; height: 48px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #020617;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .chat-logo img { max-height: 44px; width: auto; display: block; }
+
+        .chat-title { font-size: 17px; font-weight: 700; }
+        .chat-subtitle { font-size: 12px; color: var(--text-muted); }
+
+        .chat-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            border-radius: 999px;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-main);
+            padding: 6px 14px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-strong);
+            color: var(--accent-strong);
+        }
+
+        /* ===== GUARDRAIL PANEL ===== */
+        .guardrails {
+            padding: 20px 16px;
+            border-bottom: 1px solid var(--border-strong);
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+
+        .guardrails h4 {
+            margin: 0 0 4px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .guardrails .hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        .guardrail-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .guardrail-row select {
+            flex: 1;
+            min-width: 130px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            font-size: 13px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .guardrail-row select:hover:not(:disabled) { border-color: var(--accent); }
+        .guardrail-row select:focus {
+            outline: none;
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+        }
+
+        .guardrail-row select option {
+            background: #ffffff;
+            color: #0f172a;
+        }
+
+        .start-chat-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 14px;
+        }
+
+        .btn-primary {
+            border: none;
+            border-radius: 999px;
+            padding: 10px 28px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+            transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(14,165,233,0.45);
+        }
+
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* ===== CONTEXT BAR ===== */
+        .context-bar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border-strong);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .context-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: var(--chip-bg);
+            border: 1px solid var(--accent);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .chip strong {
+            font-weight: 700;
+            color: var(--accent-strong);
+        }
+
+        /* ===== CHAT BODY (flex:1, fills remaining space) ===== */
+        .chat-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 12px 16px 8px;
+            gap: 8px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+            min-height: 0;
+        }
+
+        .chat-body::-webkit-scrollbar { width: 5px; }
+        .chat-body::-webkit-scrollbar-track { background: transparent; }
+        .chat-body::-webkit-scrollbar-thumb {
+            background: rgba(148,163,184,0.5);
+            border-radius: 999px;
+        }
+
+        .empty-state {
+            margin: auto;
+            text-align: center;
+            color: var(--text-muted);
+            max-width: 340px;
+        }
+        .empty-state h3 { font-size: 18px; margin-bottom: 6px; color: var(--text-main); }
+        .empty-state p { font-size: 13px; line-height: 1.5; }
+
+        /* ===== MESSAGE ROWS ===== */
+        .msg-row {
+            display: flex;
+            margin-bottom: 2px;
+        }
+        .msg-row.user { justify-content: flex-end; }
+        .msg-row.assistant { justify-content: flex-start; }
+
+        .avatar {
+            width: 28px; height: 28px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .avatar-user {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            color: #ffffff;
+            margin-left: 8px;
+        }
+        .avatar-assistant {
+            background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+            color: #0b1120;
+            margin-right: 8px;
+        }
+
+        .bubble-wrap {
+            max-width: 82%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bubble-meta {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin: 0 4px 2px;
+        }
+
+        .bubble {
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.55;
+            word-wrap: break-word;
+        }
+
+        /* Rendered markdown inside bubbles */
+        .bubble h1, .bubble h2, .bubble h3, .bubble h4, .bubble h5, .bubble h6 {
+            margin: 8px 0 4px;
+            line-height: 1.3;
+        }
+        .bubble h1 { font-size: 1.3em; }
+        .bubble h2 { font-size: 1.15em; }
+        .bubble h3 { font-size: 1.05em; }
+        .bubble p { margin: 4px 0; }
+        .bubble ul, .bubble ol { margin: 4px 0 4px 18px; }
+        .bubble li { margin-bottom: 2px; }
+        .bubble pre {
+            background: rgba(0,0,0,0.06);
+            border-radius: 8px;
+            padding: 8px 10px;
+            overflow-x: auto;
+            font-size: 13px;
+            margin: 6px 0;
+        }
+        :root[data-theme="dark"] .bubble pre { background: rgba(255,255,255,0.06); }
+        .bubble code {
+            font-family: "Fira Code", "Consolas", monospace;
+            font-size: 0.92em;
+        }
+        .bubble p > code {
+            background: rgba(0,0,0,0.06);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+        :root[data-theme="dark"] .bubble p > code { background: rgba(255,255,255,0.08); }
+        .bubble table {
+            border-collapse: collapse;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .bubble th, .bubble td {
+            border: 1px solid var(--border-subtle);
+            padding: 4px 8px;
+            text-align: left;
+        }
+
+        .bubble-user {
+            background: var(--user-bubble);
+            color: var(--user-bubble-text);
+            border-bottom-right-radius: 4px;
+        }
+
+        .bubble-assistant {
+            background: var(--assistant-bubble);
+            border: 1px solid var(--assistant-bubble-border);
+            border-bottom-left-radius: 4px;
+        }
+
+        /* ===== ACTION BUTTONS (below bubble) ===== */
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            margin: 4px 4px 0;
+        }
+
+        .action-buttons button {
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: color 0.15s, border-color 0.15s;
+        }
+        .action-buttons button:hover {
+            color: var(--accent-strong);
+            border-color: var(--accent-strong);
+        }
+
+        /* ===== TYPING INDICATOR ===== */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            padding: 10px 14px;
+        }
+
+        .typing-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            animation: typing 1.4s infinite;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.4; }
+            30% { opacity: 1; }
+        }
+
+        /* ===== INPUT AREA ===== */
+        .chat-input-area {
+            border-top: 1px solid var(--border-strong);
+            padding: 10px 16px 12px;
+            background: var(--surface);
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            background: var(--bg-input);
+            border-radius: 22px;
+            border: 1px solid var(--border-strong);
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-strong);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+
+        textarea#chatPrompt {
+            background: transparent;
+            border: none;
+            resize: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 14px;
+            flex: 1;
+            padding: 6px 0;
+            max-height: 120px;
+            line-height: 1.4;
+        }
+        textarea#chatPrompt::placeholder { color: var(--text-muted); opacity: 0.7; }
+
+        .send-btn {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(14,165,233,0.35);
+            transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+            flex-shrink: 0;
+        }
+        .send-btn:hover:not(:disabled) {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+        .send-btn:active:not(:disabled) { transform: scale(0.95); }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .send-icon { width: 18px; height: 18px; fill: #ffffff; }
+
+        .spinner-icon {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .helper-text {
+            margin-top: 5px;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* ===== PDF WATERMARK ===== */
+        .pdf-watermark {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%) rotate(-30deg);
+            font-size: 64px;
+            font-weight: 800;
+            color: rgba(120,120,120,0.15);
+            z-index: 1000;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .pdf-watermark img { opacity: 0.25; margin-bottom: 10px; }
+        .solution-content { position: relative; }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--footer-bg);
+            color: var(--text-muted);
+            text-align: center;
+            padding: 6px 8px;
+            font-size: 11px;
+            border-top: 1px solid var(--border-strong);
+            flex-shrink: 0;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .page-wrap { padding: 8px 6px 0; }
+            .chat-container { border-radius: 14px; }
+            .chat-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            .chat-header-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+            .bubble-wrap { max-width: 90%; }
+            .guardrail-row select { min-width: 100px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page-wrap">
+    <div class="chat-container">
+
+        <!-- ===== HEADER ===== -->
+        <header class="chat-header">
+            <div class="chat-header-left">
+                <div class="chat-logo">
+                    <img src="{% static 'school_app/images/pailogo.png' %}" alt="PAI Logo">
+                </div>
+                <div>
+                    <div class="chat-title">AI Sathi</div>
+                    <div class="chat-subtitle">Your AI Study Companion</div>
+                </div>
+            </div>
+            <div class="chat-header-actions">
+                <button type="button" class="btn-secondary" id="themeToggle"></button>
+                <a href="?clear=1" class="btn-secondary">New Chat</a>
+            </div>
+        </header>
+
+        <!-- ===== GUARDRAIL PANEL ===== -->
+        <div class="guardrails" id="guardrailPanel" {% if guardrail %}style="display:none"{% endif %}>
+            <h4>Choose your learning context</h4>
+            <p class="hint">This helps AI answer strictly from your syllabus.</p>
+            <div class="guardrail-row">
+                <select id="classSelect">
+                    <option value="">Class</option>
+                    <option>6</option><option>7</option><option>8</option>
+                    <option>9</option><option>10</option><option>11</option><option>12</option>
+                </select>
+                <select id="subjectSelect" disabled>
+                    <option value="">Subject</option>
+                </select>
+                <select id="chapterSelect" disabled>
+                    <option value="">Chapter</option>
+                </select>
+            </div>
+            <div class="start-chat-wrapper">
+                <button id="startChatBtn" class="btn-primary" disabled>Start Learning</button>
+            </div>
+        </div>
+
+        <!-- ===== CONTEXT BAR ===== -->
+        <div class="context-bar" id="contextBar" style="display:none">
+            <div class="context-left">
+                <span class="chip">Class: <strong id="ctxClass"></strong></span>
+                <span class="chip">Subject: <strong id="ctxSubject"></strong></span>
+                <span class="chip">Chapter: <strong id="ctxChapter"></strong></span>
+            </div>
+            <a href="?clear=1" class="btn-secondary">Reset</a>
+        </div>
+
+        <!-- ===== CHAT BODY ===== -->
+        <main class="chat-body" id="chatBody">
+            {% if history %}
+                {% for msg in history %}
+                    {% if msg.role == "user" %}
+                        <div class="msg-row user">
+                            <div class="bubble-wrap">
+                                <div class="bubble-meta">You{% if msg.timestamp %} &middot; {{ msg.timestamp }}{% endif %}</div>
+                                <div class="bubble bubble-user">{{ msg.content }}</div>
+                            </div>
+                            <div class="avatar avatar-user">U</div>
+                        </div>
+                    {% else %}
+                        <div class="msg-row assistant" data-user-msg="{{ history|length }}">
+                            <div class="avatar avatar-assistant">
+                                <img src="{% static 'school_app/images/pailogo.png' %}" width="24" alt="AI">
+                            </div>
+                            <div class="bubble-wrap">
+                                <div class="bubble-meta">AI Sathi{% if msg.timestamp %} &middot; {{ msg.timestamp }}{% endif %}</div>
+                                <div class="bubble bubble-assistant solution-content">
+                                    <div class="pdf-watermark">
+                                        <img src="{% static 'school_app/images/pailogo.png' %}" width="250"><br>PadhaiWithAI
+                                    </div>
+                                    <span class="md-content">{{ msg.content }}</span>
+                                </div>
+                                <div class="action-buttons">
+                                    <button type="button" onclick="speakText(this)">Listen</button>
+                                    <button type="button" onclick="downloadPDF(this)">PDF</button>
+                                    <button type="button" onclick="regenerateSolution(this)">Regenerate</button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" id="emptyState">
+                    <h3>Welcome to AI Sathi</h3>
+                    <p>Select your Class, Subject &amp; Chapter above, then ask any question from your syllabus.</p>
+                </div>
+            {% endif %}
+
+            <!-- Typing indicator (actual DOM element) -->
+            <div class="msg-row assistant" id="typingIndicator" style="display:none">
+                <div class="avatar avatar-assistant">
+                    <img src="{% static 'school_app/images/pailogo.png' %}" width="24" alt="AI">
+                </div>
+                <div class="typing-indicator" style="display:flex">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ===== INPUT ===== -->
+        <form method="post" class="chat-input-area" id="chatForm">
+            {% csrf_token %}
+            <div class="input-row">
+                <div class="input-wrapper">
+                    <textarea name="prompt" id="chatPrompt" rows="1"
+                        placeholder="{% if guardrail %}Ask your question…{% else %}Select Class, Subject & Chapter first…{% endif %}"
+                        {% if not guardrail %}disabled{% endif %}
+                        required></textarea>
+                </div>
+                <button type="submit" class="send-btn" id="sendBtn"
+                    {% if not guardrail %}disabled{% endif %}
+                    aria-label="Send message">
+                    <svg viewBox="0 0 24 24" class="send-icon" id="sendIcon" aria-hidden="true">
+                        <path d="M12 4l6 6h-4v6h-4v-6H6z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="helper-text">Enter to send &middot; Alt+Enter for new line</div>
+            <input type="hidden" name="class_level" id="class_level" value="{{ request.session.class_level|default:'' }}">
+            <input type="hidden" name="subject" id="subject" value="{{ request.session.subject|default:'' }}">
+            <input type="hidden" name="chapter" id="chapter" value="{{ request.session.chapter|default:'' }}">
+        </form>
+
+    </div>
+</div>
+
+<div class="footer">PadhaiWithAI &ndash; Tonk, Rajasthan</div>
+
+<!-- ============================================================
+     SCRIPT BLOCK 1: Core Chat (scroll, submit, textarea, enter)
+     ============================================================ -->
+<script>
+(function(){
+    var textarea = document.getElementById('chatPrompt');
+    var form     = document.getElementById('chatForm');
+    var sendBtn  = document.getElementById('sendBtn');
+    var sendIcon = document.getElementById('sendIcon');
+    var chatBody = document.getElementById('chatBody');
+    var typingEl = document.getElementById('typingIndicator');
+
+    function scrollToBottom(){
+        setTimeout(function(){ chatBody.scrollTop = chatBody.scrollHeight; }, 50);
+    }
+
+    function setLoading(on){
+        sendBtn.disabled = on;
+        textarea.disabled = on;
+        if(on){
+            sendIcon.style.display = 'none';
+            var sp = document.createElement('div');
+            sp.className = 'spinner-icon';
+            sp.id = 'sendSpinner';
+            sendBtn.appendChild(sp);
+            typingEl.style.display = 'flex';
+            scrollToBottom();
+        } else {
+            var sp = document.getElementById('sendSpinner');
+            if(sp) sp.remove();
+            sendIcon.style.display = '';
+            typingEl.style.display = 'none';
+        }
+    }
+
+    form.addEventListener('submit', function(e){
+        var val = textarea.value.trim();
+        if(!val){ e.preventDefault(); return; }
+        setLoading(true);
+    });
+
+    // Single Enter handler
+    textarea.addEventListener('keydown', function(e){
+        if(e.key === 'Enter' && !e.altKey && !e.shiftKey){
+            e.preventDefault();
+            if(!sendBtn.disabled && textarea.value.trim()){
+                form.requestSubmit ? form.requestSubmit() : form.submit();
+            }
+        }
+        if(e.key === 'Enter' && e.altKey){
+            e.preventDefault();
+            var s = this.selectionStart, en = this.selectionEnd;
+            this.value = this.value.substring(0,s) + "\n" + this.value.substring(en);
+            this.selectionStart = this.selectionEnd = s + 1;
+            this.dispatchEvent(new Event('input'));
+        }
+    });
+
+    // Auto-grow textarea
+    textarea.addEventListener('input', function(){
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+
+    // Scroll on load
+    scrollToBottom();
+
+    // Render markdown in assistant bubbles
+    function renderMarkdown(){
+        if(typeof marked === 'undefined' || typeof DOMPurify === 'undefined') return;
+        document.querySelectorAll('.bubble-assistant .md-content').forEach(function(el){
+            if(el.dataset.rendered) return;
+            var raw = el.textContent;
+            var html = DOMPurify.sanitize(marked.parse(raw));
+            el.innerHTML = html;
+            el.dataset.rendered = '1';
+        });
+        // Re-run MathJax
+        if(window.MathJax && window.MathJax.typesetPromise){
+            window.MathJax.typesetPromise().catch(function(){});
+        }
+    }
+
+    // Run after DOM + libs loaded
+    if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', renderMarkdown);
+    } else {
+        renderMarkdown();
+    }
+    window.addEventListener('load', renderMarkdown);
+})();
+</script>
+
+<!-- ============================================================
+     SCRIPT BLOCK 2: Features (theme, TTS, PDF, regenerate)
+     ============================================================ -->
+<script>
+(function(){
+    // --- Theme toggle ---
+    var root = document.documentElement;
+    var toggle = document.getElementById('themeToggle');
+    function setLabel(t){
+        if(!toggle) return;
+        toggle.textContent = t === 'light' ? 'Dark mode' : 'Light mode';
+    }
+    var saved = localStorage.getItem('pai-theme') || 'light';
+    root.setAttribute('data-theme', saved);
+    setLabel(saved);
+
+    if(toggle){
+        toggle.addEventListener('click', function(){
+            var cur = root.getAttribute('data-theme');
+            var next = cur === 'light' ? 'dark' : 'light';
+            root.setAttribute('data-theme', next);
+            localStorage.setItem('pai-theme', next);
+            setLabel(next);
+        });
+    }
+
+    // --- Context bar from Django session ---
+    {% if guardrail %}
+    (function(){
+        var bar = document.getElementById('contextBar');
+        if(bar){
+            bar.style.display = 'flex';
+            document.getElementById('ctxClass').textContent   = "{{ guardrail }}";
+            document.getElementById('ctxSubject').textContent  = "{{ request.session.subject|default:'' }}";
+            document.getElementById('ctxChapter').textContent  = "{{ request.session.chapter|default:'' }}";
+        }
+    })();
+    {% endif %}
+})();
+
+// --- TTS: speakText reads only the bubble content, not buttons ---
+var _ttsUtterance = null;
+var _ttsSpeaking = false;
+
+function speakText(btn){
+    var wrap = btn.closest('.bubble-wrap');
+    var bubble = wrap ? wrap.querySelector('.bubble') : null;
+    if(!bubble) return;
+
+    // Get only the .md-content text (or full bubble text minus watermark)
+    var mdEl = bubble.querySelector('.md-content');
+    var text = mdEl ? mdEl.innerText.trim() : bubble.innerText.trim();
+
+    if(_ttsSpeaking){
+        speechSynthesis.cancel();
+        _ttsSpeaking = false;
+        _ttsUtterance = null;
+        btn.textContent = 'Listen';
+        return;
+    }
+
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = detectLanguage(text);
+    u.rate = 0.9;
+    u.onstart = function(){ _ttsSpeaking = true; btn.textContent = 'Stop'; };
+    u.onend   = function(){ _ttsSpeaking = false; _ttsUtterance = null; btn.textContent = 'Listen'; };
+    u.onerror = function(){ _ttsSpeaking = false; _ttsUtterance = null; btn.textContent = 'Listen'; };
+    _ttsUtterance = u;
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+}
+
+function detectLanguage(text){
+    var patterns = {
+        'hi-IN': /[\u0900-\u097F]/,
+        'bn-IN': /[\u0980-\u09FF]/,
+        'ta-IN': /[\u0B80-\u0BFF]/,
+        'te-IN': /[\u0C00-\u0C7F]/,
+        'gu-IN': /[\u0A80-\u0AFF]/,
+        'kn-IN': /[\u0C80-\u0CFF]/,
+        'ml-IN': /[\u0D00-\u0D7F]/,
+        'pa-IN': /[\u0A00-\u0A7F]/,
+        'or-IN': /[\u0B00-\u0B7F]/,
+        'ur-PK': /[\u0600-\u06FF]/,
+        'zh-CN': /[\u4E00-\u9FFF]/,
+        'ja-JP': /[\u3040-\u309F\u30A0-\u30FF]/,
+        'ko-KR': /[\uAC00-\uD7AF]/,
+        'ar-SA': /[\u0600-\u06FF]/,
+        'ru-RU': /[\u0400-\u04FF]/
+    };
+    for(var loc in patterns){
+        if(patterns[loc].test(text)) return loc;
+    }
+    return 'en-IN';
+}
+
+// --- PDF download ---
+function downloadPDF(btn){
+    var wrap = btn.closest('.bubble-wrap');
+    var solution = wrap ? wrap.querySelector('.solution-content') : null;
+    if(!solution) return;
+
+    var wm = solution.querySelector('.pdf-watermark');
+    if(wm) wm.style.display = 'block';
+
+    html2pdf().from(solution).set({
+        margin: 10,
+        filename: 'PadhaiWithAI_Solution.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).save().then(function(){
+        if(wm) wm.style.display = 'none';
+    });
+}
+
+// --- Regenerate ---
+function regenerateSolution(btn){
+    // Walk backward from this assistant message to find the preceding user message
+    var row = btn.closest('.msg-row');
+    if(!row) return;
+
+    var prev = row.previousElementSibling;
+    while(prev && !prev.classList.contains('user')){
+        prev = prev.previousElementSibling;
+    }
+    if(!prev) return;
+
+    var userBubble = prev.querySelector('.bubble-user');
+    if(!userBubble) return;
+    var userText = userBubble.innerText.trim();
+
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var f = document.createElement('form');
+    f.method = 'POST';
+    f.action = '';
+    f.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrf + '">'
+        + '<input type="hidden" name="prompt" value="Explain again with different steps: ' + userText.replace(/"/g, '&quot;') + '">';
+    document.body.appendChild(f);
+    f.submit();
+}
+</script>
+
+<!-- ============================================================
+     SCRIPT BLOCK 3: Chapter data + Guardrail select logic
+     ============================================================ -->
+<script>
+var chapters = {
+  "6": {
+    "Math": [
+      "Knowing Our Numbers","Whole Numbers","Playing with Numbers","Basic Geometrical Ideas",
+      "Understanding Elementary Shapes","Integers","Fractions","Decimals","Data Handling",
+      "Mensuration","Algebra","Ratio and Proportion","Symmetry","Practical Geometry"
+    ],
+    "Science": [
+      "Food: Where Does It Come From?","Components of Food","Fibre to Fabric",
+      "Sorting Materials into Groups","Separation of Substances","Changes Around Us",
+      "Getting to Know Plants","Body Movements","The Living Organisms and Their Surroundings",
+      "Motion and Measurement of Distances","Light, Shadows and Reflections",
+      "Electricity and Circuits","Fun with Magnets"
+    ],
+    "English": [
+      "Who Did Patrick's Homework","How the Dog Found Himself","Taro's Reward",
+      "An Indian-American Woman in Space","A Different Kind of School","Who I Am",
+      "Fair Play","A Game of Chance","Desert Animals","The Banyan Tree"
+    ],
+    "Hindi": [
+      "\u0935\u0939 \u091a\u093f\u0921\u093c\u093f\u092f\u093e \u091c\u094b","\u092c\u091a\u092a\u0928","\u0928\u093e\u0926\u093e\u0928 \u0926\u094b\u0938\u094d\u0924","\u091a\u093e\u0901\u0926 \u0938\u0947 \u0925\u094b\u0921\u093c\u0940-\u0938\u0940 \u0917\u092a\u094d\u092a\u0947\u0902",
+      "\u0905\u0915\u094d\u0937\u0930\u094b\u0902 \u0915\u093e \u092e\u0939\u0924\u094d\u0935","\u092a\u093e\u0930 \u0928\u091c\u093c\u0930 \u0915\u0947","\u0938\u093e\u0925\u0940 \u0939\u093e\u0925 \u092c\u0922\u093c\u093e\u0928\u093e","\u092e\u0948\u0902 \u0939\u0942\u0901","\u0915\u093f\u0924\u093e\u092c \u0938\u0947 \u0926\u094b\u0938\u094d\u0924\u0940"
+    ],
+    "Social Science": [
+      "History: What, Where, How and When","From Hunting-Gathering to Growing Food",
+      "In the Earliest Cities","What Books and Burials Tell Us",
+      "Kingdoms, Kings and an Early Republic","Understanding Chakravartin",
+      "Geography: The Earth in the Solar System","Globe: Latitudes and Longitudes","Maps",
+      "Civics: Understanding Diversity","Diversity and Discrimination","What is Government","Key Elements of Democratic Institutions"
+    ]
+  },
+  "7": {
+    "Math": [
+      "Integers","Fractions and Decimals","Data Handling","Simple Equations",
+      "Lines and Angles","The Triangle and Its Properties","Congruence of Triangles",
+      "Comparing Quantities","Rational Numbers","Practical Geometry",
+      "Perimeter and Area","Algebraic Expressions","Exponents and Powers",
+      "Symmetry","Visualising Solid Shapes"
+    ],
+    "Science": [
+      "Nutrition in Plants","Nutrition in Animals","Fibre to Fabric","Heat",
+      "Acids, Bases and Salts","Physical and Chemical Changes",
+      "Respiration in Organisms","Transportation in Animals and Plants",
+      "Reproduction in Plants","Motion and Time","Electric Current and Its Effects",
+      "Light","Forests: Our Lifeline","Wastewater Story"
+    ],
+    "English": [
+      "Three Questions","A Gift of Chappals","Gopal and the Hilsa Fish",
+      "The Ashes That Made Trees Bloom","Quality","Expert Detectives","The Invention of Vita-Wonk",
+      "Keeping It from Harold","Chivvy","The Rebel"
+    ],
+    "Hindi": [
+      "\u0939\u092e \u092a\u0902\u091b\u0940 \u0909\u0928\u094d\u092e\u0941\u0915\u094d\u0924 \u0917\u0917\u0928 \u0915\u0947","\u0926\u093e\u0926\u0940 \u092e\u093e\u0901","\u0939\u093f\u092e\u093e\u0932\u092f \u0915\u0940 \u092c\u0947\u091f\u093f\u092f\u093e\u0901",
+      "\u0915\u0902\u091a\u093e","\u092e\u0940\u0920\u093e\u0908\u0935\u093e\u0932\u093e","\u0930\u0915\u094d\u0924 \u0914\u0930 \u0939\u092e\u093e\u0930\u093e \u0936\u0930\u0940\u0930","\u092a\u093e\u092a\u093e \u0916\u094b \u0917\u090f","\u0938\u093e\u0916\u0940","\u0935\u093e\u0916","\u090b\u0924\u0941\u0930\u093e\u091c"
+    ],
+    "Social Science": [
+      "Tracing Changes Through a Thousand Years","New Kings and Kingdoms","The Delhi Sultanate",
+      "The Mughal Empire","Rulers and Buildings","Town, Bazaar and Trade",
+      "Environment","Inside Our Earth","Our Changing Earth",
+      "On Equality","Role of the Government in Health","How the State Government Works","Understanding Media"
+    ]
+  },
+  "8": {
+    "Math": [
+      "Rational Numbers","Linear Equations in One Variable","Understanding Quadrilaterals",
+      "Practical Geometry","Data Handling","Squares and Square Roots",
+      "Cubes and Cube Roots","Comparing Quantities",
+      "Algebraic Expressions and Identities","Visualising Solid Shapes",
+      "Mensuration","Exponents and Powers","Direct and Inverse Proportions",
+      "Factorisation","Introduction to Graphs","Playing with Numbers"
+    ],
+    "Science": [
+      "Crop Production and Management","Microorganisms: Friend and Foe",
+      "Synthetic Fibres and Plastics","Materials: Metals and Non-Metals",
+      "Coal and Petroleum","Combustion and Flame",
+      "Cell \u2013 Structure and Functions","Reproduction in Animals",
+      "Reaching the Age of Adolescence","Force and Pressure","Friction",
+      "Sound","Chemical Effects of Electric Current",
+      "Some Natural Phenomena","Conservation of Plants and Animals"
+    ],
+    "English": [
+      "The Best Christmas Present","The Tsunami","Glimpses of the Past",
+      "Bepin Choudhury's Lapse of Memory","The Summit Within","The School Play","Reaching for the Stars","Jalebis","Black Aeroplane"
+    ],
+    "Hindi": [
+      "\u0927\u094d\u0935\u0928\u093f","\u0932\u093e\u0916 \u0915\u0940 \u091a\u0942\u0921\u093c\u093f\u092f\u093e\u0901","\u092c\u0938 \u0915\u0940 \u092f\u093e\u0924\u094d\u0930\u093e","\u0926\u0940\u0935\u093e\u0928\u094b\u0902 \u0915\u0940 \u0939\u0938\u094d\u0924\u0940",
+      "\u091a\u093f\u091f\u094d\u0920\u093f\u092f\u094b\u0902 \u0915\u0940 \u0905\u0928\u0942\u0920\u0940 \u0926\u0941\u0928\u093f\u092f\u093e","\u092d\u0917\u0935\u093e\u0928 \u0915\u0947 \u0921\u093e\u0915\u093f\u092f\u0947","\u0915\u094d\u092f\u093e \u0928\u093f\u0930\u093e\u0936 \u0939\u0941\u0906 \u091c\u093e\u090f","\u092f\u0939 \u0926\u0940\u092a \u0905\u0915\u0947\u0932\u093e",
+      "\u0915\u092c\u0940\u0930\u0935\u093e\u0923\u0940","\u0938\u0902\u0938\u093e\u0930"
+    ],
+    "Social Science": [
+      "How, When and Where","The British Took Control","Ruling the Roost","India After Independence",
+      "Understanding the Secular State","Resources","Agriculture","Minerals and Power Resources",
+      "The Indian Constitution","Understanding Secularism","Vivekananda: His Four Yogas","Bhagat Singh: Courage and Sacrifice"
+    ],
+    "Computer Science": [
+      "Introduction to Computers","Introduction to Python Programming",
+      "Python Programming - Data Types and Variables","Operators and Expressions",
+      "Control Structures - Conditional Statements","Control Structures - Loops",
+      "Functions","Lists and Strings","Dictionaries and Sets","File Handling"
+    ],
+    "Physical Education": [
+      "Physical Fitness and Wellness","Sports and Games Rules",
+      "Yoga and its Benefits","First Aid and Safety","Sports Nutrition",
+      "Movement and Posture","Athletic Skills","Team Sports Fundamentals",
+      "Individual Sports Fundamentals","Healthy Lifestyle"
+    ]
+  },
+  "9": {
+    "Math": [
+      "Number Systems","Polynomials","Coordinate Geometry",
+      "Linear Equations in Two Variables","Introduction to Euclid's Geometry",
+      "Lines and Angles","Triangles","Quadrilaterals",
+      "Areas of Parallelograms and Triangles","Circles","Constructions",
+      "Heron's Formula","Surface Areas and Volumes",
+      "Statistics","Probability"
+    ],
+    "Science": [
+      "Matter in Our Surroundings","Is Matter Around Us Pure",
+      "Atoms and Molecules","Structure of the Atom",
+      "The Fundamental Unit of Life","Tissues",
+      "Diversity in Living Organisms","Why Do We Fall Ill",
+      "Natural Resources","Improvement in Food Resources",
+      "Motion","Force and Laws of Motion","Gravitation",
+      "Work and Energy","Sound"
+    ],
+    "English": [
+      "The Fun They Had","The Sound of Music","The Little Girl",
+      "A Truly Beautiful Mind","My Childhood","Packing","Reach for the Top",
+      "The Bond of Love","Katrina","If I Were You"
+    ],
+    "Hindi": [
+      "\u0926\u094b \u092c\u0948\u0932\u094b\u0902 \u0915\u0940 \u0915\u0925\u093e","\u0932\u094d\u0939\u093e\u0938\u093e \u0915\u0940 \u0913\u0930","\u0909\u092a\u092d\u094b\u0915\u094d\u0924\u093e\u0935\u093e\u0926 \u0915\u0940 \u0938\u0902\u0938\u094d\u0915\u0943\u0924\u093f",
+      "\u0938\u093e\u0901\u0935\u0932\u0947 \u0938\u092a\u0928\u094b\u0902 \u0915\u0940 \u092f\u093e\u0926","\u0928\u093e\u0928\u093e \u0938\u093e\u0939\u092c \u0915\u0940 \u092a\u0941\u0924\u094d\u0930\u0940 \u0926\u0947\u0935\u0940 \u092e\u0948\u0928\u093e","\u092a\u094d\u0930\u0947\u092e\u091a\u0902\u0926 \u0915\u0940 \u0915\u0939\u093e\u0928\u0940 \u0909\u092a\u0939\u093e\u0930",
+      "\u092e\u0947\u0930\u0947 \u092c\u091a\u092a\u0928 \u0915\u0947 \u0926\u093f\u0928","\u0938\u0902\u0938\u094d\u0915\u0943\u0924\u093f","\u0917\u093f\u0930\u0917\u093f\u091f","\u0905\u0917\u094d\u0928\u093f \u092a\u0925"
+    ],
+    "Social Science": [
+      "The French Revolution","Socialism in Europe and the Russian Revolution",
+      "Nazism and the Rise of Hitler","India \u2013 Size and Location","Physical Features of India",
+      "Drainage","Climate","Natural Vegetation and Fauna",
+      "Population","What is Democracy","Constitutional Design","Electoral Politics"
+    ],
+    "Computer Science": [
+      "Python Programming - Basics","Python Programming - Control Structures",
+      "Functions and Modules","Data Structures - Lists and Tuples",
+      "Data Structures - Dictionaries and Sets","File Handling",
+      "Error Handling and Exceptions","Object-Oriented Programming Concepts",
+      "Database Concepts","Networking Basics"
+    ],
+    "Physical Education": [
+      "Physical Fitness - Cardiovascular Endurance","Physical Fitness - Muscular Strength",
+      "Physical Fitness - Flexibility","Yoga - Asanas and Benefits",
+      "Sports - Athletics and Games","Sports - Racket Games",
+      "Sports - Aquatic Activities","First Aid in Sports",
+      "Nutrition and Health","Mental Health and Stress Management"
+    ]
+  },
+  "10": {
+    "Math": [
+      "Real Numbers","Polynomials","Pair of Linear Equations in Two Variables",
+      "Quadratic Equations","Arithmetic Progressions","Triangles",
+      "Coordinate Geometry","Trigonometry","Applications of Trigonometry",
+      "Circles","Constructions","Areas Related to Circles",
+      "Surface Areas and Volumes","Statistics","Probability"
+    ],
+    "Science": [
+      "Chemical Reactions and Equations","Acids, Bases and Salts",
+      "Metals and Non-Metals","Carbon and Its Compounds",
+      "Life Processes","Control and Coordination",
+      "How Do Organisms Reproduce","Heredity and Evolution",
+      "Light \u2013 Reflection and Refraction","The Human Eye and the Colourful World",
+      "Electricity","Magnetic Effects of Electric Current",
+      "Sources of Energy","Our Environment","Management of Natural Resources"
+    ],
+    "English": [
+      "A Letter to God","Nelson Mandela: A Long Walk to Freedom","Two Stories About Flying",
+      "From a Railway Carriage & The Road Not Taken","A Tiger in the House","The Midnight Visitor",
+      "Bholi","The Book That Saved My Life","The Proposal","The Necklace"
+    ],
+    "Hindi": [
+      "\u092a\u0926","\u0930\u093e\u092e-\u0932\u0915\u094d\u0937\u094d\u092e\u0923-\u092a\u0930\u0936\u0941\u0930\u093e\u092e \u0938\u0902\u0935\u093e\u0926","\u0906\u0924\u094d\u092e\u0924\u094d\u0930\u093e\u0923","\u0909\u0924\u094d\u0938\u093e\u0939 \u0914\u0930 \u0939\u093f\u092e\u093e\u0932\u092f",
+      "\u092f\u092e\u0930\u093e\u091c \u0915\u093e \u0926\u0942\u0924","\u091b\u093e\u092f\u093e\u0935\u093e\u0926","\u091b\u093e\u092f\u093e\u0935\u093e\u0926 \u0915\u093e\u0935\u094d\u092f \u0938\u0902\u0917\u094d\u0930\u0939","\u0906\u0926\u092e\u0940 \u0915\u093e \u092e\u0942\u0932\u094d\u092f",
+      "\u0928\u0947\u0924\u093e\u091c\u0940 \u0915\u093e \u091a\u0936\u094d\u092e\u093e","\u092c\u0921\u093c\u0947 \u092d\u093e\u0908 \u0938\u093e\u0939\u092c","\u0921\u093e\u092f\u0930\u0940 \u0915\u093e \u090f\u0915 \u092a\u0928\u094d\u0928\u093e","\u0932\u094d\u0939\u093e\u0938\u093e \u0915\u0940 \u0913\u0930"
+    ],
+    "Social Science": [
+      "The Rise of Nationalism in Europe","The Indus Valley Civilization",
+      "The Vedic Age","Early Kingdoms","The Mauryan Empire","The Post Mauryan Period",
+      "The Sultanate Period","The Mughal Empire","Colonialism","The British Raj",
+      "The Revolt of 1857","Indian National Movement","Resources and Development",
+      "Forest and Wildlife","Water Resources","Mineral and Energy Resources",
+      "Agriculture","Democratic Politics","Power Sharing Arrangements",
+      "Competition Among Political Parties","Challenges to Democracy"
+    ],
+    "Computer Science": [
+      "Introduction to Algorithm and Flowchart","Fundamentals of Python Programming",
+      "Python - Data Types and Variables","Python - Control Structures",
+      "Functions and Parameters","Strings and String Manipulation",
+      "Lists and Tuples","Dictionaries and Sets","File Handling and Exception Handling",
+      "Introduction to Database Management Systems"
+    ],
+    "Physical Education": [
+      "Planning and Organization of Physical Education","Physical Fitness Assessment",
+      "Training Principles and Adaptations","Sports and Games - Rules and Techniques",
+      "Yoga for Health and Wellness","First Aid and Safety Measures",
+      "Health and Nutrition for Athletes","Stress Management and Relaxation",
+      "Performance Appraisal","Life Skills and Character Development"
+    ]
+  },
+  "11": {
+    "Physics": [
+      "Physical World and Measurement","Kinematics","Laws of Motion",
+      "Work, Energy and Power","Motion of System of Particles and Rigid Body",
+      "Gravitation","Properties of Bulk Matter \u2013 Elasticity","Properties of Bulk Matter \u2013 Fluid Pressure",
+      "Thermal Properties of Matter","Thermodynamics",
+      "Kinetic Theory of Gases","Oscillations","Waves"
+    ],
+    "Chemistry": [
+      "Some Basic Concepts of Chemistry","Structure of Atom",
+      "Classification of Elements and Periodicity in Properties",
+      "Chemical Bonding and Molecular Structure","States of Matter",
+      "Thermodynamics","Equilibrium","Redox Reactions","Hydrogen",
+      "The s-Block Element","The p-Block Element \u2013 Group 13 and 14",
+      "Organic Chemistry: Some Basic Principles and Techniques",
+      "Hydrocarbons","Environmental Chemistry"
+    ],
+    "Biology": [
+      "The Living World","Biological Classification","Plant Kingdom",
+      "Animal Kingdom","Morphology of Flowering Plants",
+      "Anatomy of Flowering Plants","Structural Organisation in Animals",
+      "Cell: The Unit of Life","Biomolecules","Cell Cycle and Cell Division",
+      "Transport in Plants","Mineral Nutrition","Photosynthesis in Higher Plants",
+      "Respiration in Plants","Plant Growth and Development"
+    ],
+    "Math": [
+      "Sets","Relations and Functions","Trigonometric Functions",
+      "Principle of Mathematical Induction",
+      "Complex Numbers and Quadratic Equations",
+      "Linear Inequalities","Permutations and Combinations",
+      "Binomial Theorem","Sequences and Series","Straight Lines",
+      "Conic Sections","Introduction to Three Dimensional Geometry",
+      "Limits and Derivatives","Mathematical Reasoning",
+      "Statistics","Probability"
+    ],
+    "Accounting": [
+      "Introduction to Accounting","Theory Base of Accounting",
+      "Recording of Transactions - I","Recording of Transactions - II",
+      "Bank Reconciliation Statement","Trial Balance and Rectification of Errors",
+      "Depreciation, Provisions and Reserves","Bills of Exchange",
+      "Final Accounts - I","Final Accounts - II","Final Accounts - III",
+      "Accounts of Not-for-Profit Organizations","Partnership Accounts - Fundamentals",
+      "Partnership Accounts - Admission of a Partner"
+    ],
+    "Business Studies": [
+      "Nature and Significance of Management","Principles of Management",
+      "Business Environment","Planning","Organising","Staffing",
+      "Directing","Controlling","Financial Management","Financial Planning",
+      "Working Capital Management","Marketing Management","Consumer Protection"
+    ],
+    "Economics": [
+      "Introduction to Economics","Consumer Equilibrium and Demand",
+      "Producer Equilibrium and Supply","The Market Forms and Price Determination",
+      "National Income Accounting","Money Supply and Inflation",
+      "Banking and Finance","Government Budget and Fiscal Policy",
+      "Balance of Payments","Aggregate Demand and Supply"
+    ],
+    "Computer Science": [
+      "Computer Organization and Architecture","Boolean Algebra and Logic Gates",
+      "Programming in Python - Basics","Programming in Python - Data Structures",
+      "Database Management Systems","Computer Networks",
+      "Web Technologies","Software Engineering","Cybersecurity"
+    ],
+    "Informatics Practices": [
+      "Introduction to Informatics Practices","Database Concepts",
+      "Structured Query Language - Basics","Structured Query Language - Advanced",
+      "Web Applications","Software Development","Cloud Computing",
+      "Cybersecurity Fundamentals","Data Analysis and Visualization"
+    ]
+  },
+  "12": {
+    "Math": [
+      "Relations and Functions","Inverse Trigonometric Functions",
+      "Matrices","Determinants","Continuity and Differentiability",
+      "Applications of Derivatives","Integrals","Applications of Integrals",
+      "Differential Equations","Vector Algebra",
+      "Three Dimensional Geometry","Linear Programming","Probability"
+    ],
+    "Physics": [
+      "Electric Charges and Fields","Electrostatic Potential and Capacitance",
+      "Current Electricity","Moving Charges and Magnetism",
+      "Magnetism and Matter","Electromagnetic Induction",
+      "Alternating Current","Electromagnetic Waves",
+      "Ray Optics and Optical Instruments","Wave Optics",
+      "Dual Nature of Radiation and Matter","Atoms",
+      "Nuclei","Semiconductor Electronics"
+    ],
+    "Chemistry": [
+      "Solid State","Solutions","Electrochemistry","Chemical Kinetics",
+      "Surface Chemistry","General Principles and Processes of Isolation of Elements",
+      "The p-Block Elements","The d- and f-Block Elements",
+      "Coordination Compounds","Haloalkanes and Haloarenes",
+      "Alcohols, Phenols and Ethers","Aldehydes, Ketones and Carboxylic Acids",
+      "Amines","Biomolecules","Polymers","Chemistry in Everyday Life"
+    ],
+    "Biology": [
+      "Reproduction in Organisms","Sexual Reproduction in Flowering Plants",
+      "Human Reproduction","Reproductive Health",
+      "Principles of Inheritance and Variation",
+      "Molecular Basis of Inheritance","Evolution",
+      "Human Health and Disease",
+      "Strategies for Enhancement in Food Production",
+      "Microbes in Human Welfare",
+      "Biotechnology: Principles and Processes",
+      "Biotechnology and Its Applications",
+      "Organisms and Populations","Ecosystem",
+      "Biodiversity and Conservation","Environmental Issues"
+    ],
+    "Accounting": [
+      "Accounting for Partnership Firms - Fundamentals","Reconstitution of Partnership - Retirement/Death",
+      "Dissolution of Partnership Firm","Accounting for Share Capital",
+      "Accounting for Debentures","Financial Statements of a Company",
+      "Analysis of Financial Statements \u2013 I","Analysis of Financial Statements \u2013 II",
+      "Cash Flow Statement","Accounting Ratios","Accounts from Incomplete Records"
+    ],
+    "Business Studies": [
+      "Corporate Governance and Business Ethics","Financial Management and Analysis",
+      "Business Administration","Consumer Protection","Entrepreneurship",
+      "Strategic Management","International Business","Supply Chain Management",
+      "Corporate Responsibility and Sustainability","Marketing Strategy"
+    ],
+    "Economics": [
+      "Macroeconomics - Introduction","National Income Accounting",
+      "Money and Inflation","Banking System","Government Budget",
+      "Foreign Exchange and Balance of Payments","Aggregate Demand and Supply",
+      "Consumption and Investment Functions","Aggregate Demand and Output",
+      "Monetary Policy and Fiscal Policy"
+    ],
+    "Computer Science": [
+      "Python Programming - Advanced","Object-Oriented Programming",
+      "Data Structures and Algorithms","Databases and SQL",
+      "Web Development","Cybersecurity and Cryptography",
+      "Artificial Intelligence and Machine Learning","Software Engineering Practices",
+      "Cloud Computing and IoT"
+    ],
+    "Informatics Practices": [
+      "Advanced Database Concepts","Data Analytics with Python",
+      "Web Development with HTML, CSS and JavaScript","Backend Development",
+      "Mobile Application Development","Cloud Technologies",
+      "Security in Applications","Big Data Fundamentals",
+      "IoT and Smart Systems"
+    ]
+  }
+};
+
+/* ===== Guardrail select logic ===== */
+(function(){
+    var cls  = document.getElementById('classSelect');
+    var sub  = document.getElementById('subjectSelect');
+    var ch   = document.getElementById('chapterSelect');
+    var btn  = document.getElementById('startChatBtn');
+    var prompt  = document.getElementById('chatPrompt');
+    var sendBtn = document.getElementById('sendBtn');
+
+    cls.onchange = function(){
+        sub.disabled = !cls.value;
+        ch.disabled = true;
+        btn.disabled = true;
+        sub.innerHTML = '<option value="">Subject</option>';
+        ch.innerHTML  = '<option value="">Chapter</option>';
+        if(cls.value && chapters[cls.value]){
+            Object.keys(chapters[cls.value]).forEach(function(s){
+                var o = document.createElement('option');
+                o.value = s; o.textContent = s;
+                sub.appendChild(o);
+            });
+        }
+    };
+
+    sub.onchange = function(){
+        ch.disabled = false;
+        btn.disabled = true;
+        ch.innerHTML = '<option value="">Chapter</option>';
+        var list = (chapters[cls.value] && chapters[cls.value][sub.value]) || [];
+        list.forEach(function(c){
+            var o = document.createElement('option');
+            o.value = c; o.textContent = c;
+            ch.appendChild(o);
+        });
+    };
+
+    ch.onchange = function(){ btn.disabled = !ch.value; };
+
+    btn.onclick = function(){
+        document.getElementById('guardrailPanel').style.display = 'none';
+
+        // Enable chat
+        prompt.disabled = false;
+        prompt.placeholder = 'Ask your question\u2026';
+        sendBtn.disabled = false;
+
+        // Set hidden fields
+        document.getElementById('class_level').value = cls.value;
+        document.getElementById('subject').value = sub.value;
+        document.getElementById('chapter').value = ch.value;
+
+        // Show context bar
+        document.getElementById('ctxClass').textContent   = cls.value;
+        document.getElementById('ctxSubject').textContent  = sub.value;
+        document.getElementById('ctxChapter').textContent  = ch.value;
+        document.getElementById('contextBar').style.display = 'flex';
+
+        // Hide empty state
+        var es = document.getElementById('emptyState');
+        if(es) es.style.display = 'none';
+
+        // Auto-generate first prompt and submit
+        prompt.value = 'Explain "' + ch.value + '" for Class ' + cls.value + ' ' + sub.value + ' with examples and step-by-step explanation.';
+        document.getElementById('chatForm').submit();
+    };
+})();
+</script>
+
+</body>
+</html>

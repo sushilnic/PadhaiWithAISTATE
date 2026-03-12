@@ -1,0 +1,356 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ test.test_name }} - PadhaiWithAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <style>
+        :root {
+            --primary: #1e3c72;
+            --primary-light: #2a5298;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --surface: #ffffff;
+            --bg: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+        }
+        .footer img { height: 32px; }
+        .footer img.pai-logo { border-radius: 6px; }
+        .footer img.nic-logo { mix-blend-mode: multiply; }
+        .footer span { opacity: 0.9; }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .navbar-brand img { height: 40px; }
+        .navbar-brand span { font-size: 1.3rem; font-weight: 700; }
+
+        .navbar-nav { display: flex; align-items: center; gap: 20px; }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover { background: rgba(255, 255, 255, 0.15); }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .test-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px;
+            padding: 30px;
+            color: white;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .test-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .test-header .subject {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .test-meta {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .test-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: #f8fafc;
+            padding: 18px 25px;
+            font-weight: 600;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-body {
+            padding: 25px;
+        }
+
+        .result-box {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 2px solid var(--success);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .result-box.warning {
+            background: linear-gradient(135deg, #fefce8, #fef3c7);
+            border-color: var(--warning);
+        }
+
+        .result-box.danger {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border-color: var(--danger);
+        }
+
+        .result-box h3 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .result-box.success h3 { color: var(--success); }
+        .result-box.warning h3 { color: var(--warning); }
+        .result-box.danger h3 { color: var(--danger); }
+
+        .result-box p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .download-btn.answers {
+            background: linear-gradient(135deg, var(--success), #059669);
+        }
+
+        .download-btn.answers:hover {
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .download-section {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .pending-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+
+        .pending-message i {
+            font-size: 4rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .test-meta { gap: 15px; }
+            .download-section { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{% url 'student_dashboard' %}" class="navbar-brand">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+            <span>PadhaiWithAI</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="{% url 'student_dashboard' %}" class="nav-link"><i class="fas fa-home"></i></a>
+            <a href="{% url 'student_tests' %}" class="nav-link"><i class="fas fa-file-alt"></i></a>
+            <form method="POST" action="{% url 'student_logout' %}" style="display:inline;margin:0;padding:0;">{% csrf_token %}<button type="submit" class="nav-link" style="background:none;border:none;font:inherit;cursor:pointer;"><i class="fas fa-sign-out-alt"></i></button></form>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="test-header">
+            <h1>{{ test.test_name }}</h1>
+            <div class="subject">{{ test.subject_name }}</div>
+            <div class="test-meta">
+                <div class="test-meta-item">
+                    <i class="fas fa-calendar"></i>
+                    {{ test.test_date|date:"d M Y" }}
+                </div>
+                <div class="test-meta-item">
+                    <i class="fas fa-star"></i>
+                    Max Marks: {{ test.max_marks }}
+                </div>
+            </div>
+        </div>
+
+        {% if mark %}
+        <!-- Result Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-trophy"></i> Your Result
+            </div>
+            <div class="card-body">
+                <div class="result-box {% if percentage >= 60 %}success{% elif percentage >= 33 %}warning{% else %}danger{% endif %}">
+                    <h3>{{ percentage }}%</h3>
+                    <p>You scored <strong>{{ mark.marks }}/{{ test.max_marks }}</strong> marks</p>
+                </div>
+
+                <div style="text-align: center;">
+                    {% if percentage >= 90 %}
+                        <p style="font-size: 1.2rem;">🏆 Excellent! Outstanding performance!</p>
+                    {% elif percentage >= 80 %}
+                        <p style="font-size: 1.2rem;">🌟 Great job! Keep it up!</p>
+                    {% elif percentage >= 60 %}
+                        <p style="font-size: 1.2rem;">👍 Good work! Room for improvement.</p>
+                    {% elif percentage >= 33 %}
+                        <p style="font-size: 1.2rem;">📚 Keep practicing! You can do better.</p>
+                    {% else %}
+                        <p style="font-size: 1.2rem;">💪 Don't give up! Work harder next time.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Pending Test -->
+        <div class="card">
+            <div class="card-body">
+                <div class="pending-message">
+                    <i class="fas fa-hourglass-half"></i>
+                    <h3>Result Pending</h3>
+                    <p>Your marks for this test haven't been entered yet.</p>
+                    <p>Please check back later or contact your teacher.</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Downloads -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-download"></i> Download Materials
+            </div>
+            <div class="card-body">
+                <div class="download-section">
+                    {% if test.pdf_file_questions %}
+                    <a href="{{ test.pdf_file_questions.url }}" class="download-btn" download>
+                        <i class="fas fa-file-pdf"></i> Download Question Paper
+                    </a>
+                    {% else %}
+                    <span style="color: var(--text-secondary);">Question paper not available</span>
+                    {% endif %}
+
+                    {% if test.pdf_file_answers and mark %}
+                    <a href="{{ test.pdf_file_answers.url }}" class="download-btn answers" download>
+                        <i class="fas fa-file-pdf"></i> Download Answer Key
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <a href="{% url 'student_tests' %}" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Tests
+        </a>
+    </div>
+
+    <div class="footer">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | Empowering Education Through Technology</span>
+        <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo" class="nic-logo">
+    </div>
+</body>
+</html>

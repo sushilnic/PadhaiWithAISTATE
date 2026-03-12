@@ -1,0 +1,426 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-light: #2a5298;
+        --accent: #38bdf8;
+        --success: #10B981;
+        --warning: #F59E0B;
+        --danger: #EF4444;
+        --surface: #FFFFFF;
+        --border: #E2E8F0;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+    }
+    .qp-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px; padding: 25px 30px; margin-bottom: 25px;
+        color: white; box-shadow: 0 4px 15px rgba(30,60,114,0.3);
+    }
+    .qp-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .qp-header p  { font-size: 0.95rem; opacity: 0.9; margin: 5px 0 0; }
+
+    .qp-card {
+        background: var(--surface); border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border: 1px solid var(--border); overflow: hidden; margin-bottom: 25px;
+    }
+    .qp-card .card-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white; padding: 14px 20px; font-weight: 600; font-size: 1rem;
+    }
+    .qp-card .card-body { padding: 24px; }
+
+    .form-label { font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
+    .form-control, .form-select {
+        border: 2px solid var(--border); border-radius: 8px;
+        padding: 10px 14px; font-size: 0.95rem; transition: border-color .2s;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,60,114,0.1);
+    }
+
+    .marks-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+    .marks-grid-2 {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+    }
+    .marks-box {
+        background: #f8fafc; border: 1.5px solid var(--border);
+        border-radius: 10px; padding: 14px;
+    }
+    .marks-box label { font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 4px; }
+    .marks-box .section-badge {
+        display: inline-block; padding: 2px 10px; border-radius: 20px;
+        font-size: 0.75rem; font-weight: 700; margin-bottom: 10px;
+    }
+    .badge-a { background: #dbeafe; color: #1d4ed8; }
+    .badge-b { background: #dcfce7; color: #15803d; }
+    .badge-c { background: #fef3c7; color: #b45309; }
+    .badge-d { background: #fce7f3; color: #be185d; }
+    .badge-e { background: #ede9fe; color: #6d28d9; }
+
+    .btn-generate {
+        background: linear-gradient(135deg, var(--warning), #d97706);
+        color: white; border: none; padding: 12px 32px; border-radius: 8px;
+        font-weight: 700; font-size: 1rem; transition: all .3s;
+    }
+    .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(245,158,11,0.4); color: white; }
+    .btn-generate:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+    .btn-print {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white; border: none; padding: 10px 24px; border-radius: 8px;
+        font-weight: 600; font-size: 0.95rem; transition: all .3s;
+    }
+    .btn-print:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(30,60,114,0.3); color: white; }
+
+    .btn-print-ans {
+        background: linear-gradient(135deg, var(--success), #059669);
+        color: white; border: none; padding: 10px 24px; border-radius: 8px;
+        font-weight: 600; font-size: 0.95rem; transition: all .3s;
+    }
+    .btn-print-ans:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16,185,129,0.3); color: white; }
+
+    #paperPreview { display: none; }
+    .paper-container {
+        background: white; border: 1px solid var(--border);
+        border-radius: 10px; padding: 40px; font-family: 'Times New Roman', serif;
+    }
+    .paper-school-header { text-align: center; border-bottom: 3px double #333; padding-bottom: 16px; margin-bottom: 20px; }
+    .paper-school-header h2 { font-size: 1.4rem; font-weight: 700; color: #1e3c72; margin: 0; }
+    .paper-school-header h3 { font-size: 1.1rem; font-weight: 600; margin: 4px 0; }
+    .pai-branding {
+        display: flex; align-items: center; justify-content: center;
+        gap: 8px; margin-bottom: 10px;
+    }
+    .pai-branding img { height: 32px; width: 32px; object-fit: contain; }
+    .pai-branding span { font-size: 0.8rem; font-weight: 700; color: #1e3c72; letter-spacing: 0.04em; }
+    .pai-watermark {
+        position: fixed; bottom: 12px; right: 16px;
+        display: flex; align-items: center; gap: 6px; opacity: 0.35;
+    }
+    .pai-watermark img { height: 20px; }
+    .pai-watermark span { font-size: 0.72rem; font-weight: 700; color: #1e3c72; }
+    .paper-meta { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 20px; color: #333; }
+    .paper-instructions {
+        background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px;
+        padding: 10px 16px; font-size: 0.85rem; margin-bottom: 20px; color: #78350f;
+    }
+    .section-header {
+        background: #1e3c72; color: white; padding: 8px 16px; border-radius: 6px;
+        font-weight: 700; margin: 24px 0 14px; font-size: 0.95rem;
+    }
+    .question-item { margin-bottom: 14px; font-size: 0.92rem; line-height: 1.6; }
+    .question-item .q-num { font-weight: 700; color: #1e3c72; }
+    .options-list { margin: 6px 0 0 20px; list-style: none; padding: 0; }
+    .options-list li { margin-bottom: 3px; }
+    .marks-tag { float: right; font-size: 0.8rem; color: #64748b; font-style: italic; }
+
+    .answer-item { margin-bottom: 10px; font-size: 0.9rem; }
+    .answer-item .a-label { font-weight: 700; color: #059669; }
+
+    .spinner-wrap { text-align: center; padding: 40px; display: none; }
+    .spinner-wrap .spinner-border { width: 3rem; height: 3rem; color: var(--primary); }
+
+    @media print {
+        .qp-header, .qp-card:first-of-type, #paperPreview .d-flex, .btn-print, .btn-print-ans { display: none !important; }
+        .paper-container { border: none; padding: 10px; box-shadow: none; }
+    }
+</style>
+
+<div class="qp-header">
+    <h1>📄 AI Question Paper Generator</h1>
+    <p>Generate a complete printable question paper with answer key using AI</p>
+</div>
+
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <!-- Form Card -->
+            <div class="qp-card">
+                <div class="card-header">📝 Paper Configuration</div>
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">📚 Subject</label>
+                            <input type="text" id="subject" class="form-control" placeholder="e.g. Mathematics" maxlength="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">📖 Chapter / Topic</label>
+                            <input type="text" id="chapter" class="form-control" placeholder="e.g. Quadratic Equations" maxlength="200">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">🏫 Class</label>
+                            <select id="class_name" class="form-select">
+                                {% for i in "123456789" %}
+                                <option value="{{ i }}">Class {{ i }}</option>
+                                {% endfor %}
+                                <option value="10" selected>Class 10</option>
+                                <option value="11">Class 11</option>
+                                <option value="12">Class 12</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">🌐 Language</label>
+                            <select id="language" class="form-select">
+                                <option value="English">English</option>
+                                <option value="Hindi">Hindi</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">🎯 Total Marks</label>
+                            <input type="number" id="total_marks" class="form-control" value="50" min="10" max="200">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">⏰ Time Allowed (min)</label>
+                            <input type="number" id="time_allowed" class="form-control" value="90" min="30" max="180">
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+                    <p class="form-label mb-3">⚙️ Section Configuration</p>
+
+                    <!-- Row 1: MCQ, True/False, Fill in the Blank -->
+                    <div class="marks-grid">
+                        <div class="marks-box">
+                            <span class="section-badge badge-a">Section A — MCQ</span>
+                            <label>No. of Questions</label>
+                            <input type="number" id="mcq_count" class="form-control mb-2" value="10" min="0" max="30" oninput="updateBreakdown()">
+                            <label>Marks Each</label>
+                            <input type="number" id="mcq_marks" class="form-control" value="1" min="1" max="5" oninput="updateBreakdown()">
+                        </div>
+                        <div class="marks-box">
+                            <span class="section-badge badge-b">Section B — True / False</span>
+                            <label>No. of Questions</label>
+                            <input type="number" id="tf_count" class="form-control mb-2" value="5" min="0" max="20" oninput="updateBreakdown()">
+                            <label>Marks Each</label>
+                            <input type="number" id="tf_marks" class="form-control" value="1" min="1" max="5" oninput="updateBreakdown()">
+                        </div>
+                        <div class="marks-box">
+                            <span class="section-badge badge-c">Section C — Fill in the Blank</span>
+                            <label>No. of Questions</label>
+                            <input type="number" id="fib_count" class="form-control mb-2" value="5" min="0" max="20" oninput="updateBreakdown()">
+                            <label>Marks Each</label>
+                            <input type="number" id="fib_marks" class="form-control" value="1" min="1" max="5" oninput="updateBreakdown()">
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Short Answer, Long Answer -->
+                    <div class="marks-grid-2">
+                        <div class="marks-box">
+                            <span class="section-badge badge-d">Section D — Short Answer</span>
+                            <label>No. of Questions</label>
+                            <input type="number" id="short_count" class="form-control mb-2" value="5" min="0" max="20" oninput="updateBreakdown()">
+                            <label>Marks Each</label>
+                            <input type="number" id="short_marks" class="form-control" value="3" min="1" max="10" oninput="updateBreakdown()">
+                        </div>
+                        <div class="marks-box">
+                            <span class="section-badge badge-e">Section E — Long Answer</span>
+                            <label>No. of Questions</label>
+                            <input type="number" id="long_count" class="form-control mb-2" value="3" min="0" max="10" oninput="updateBreakdown()">
+                            <label>Marks Each</label>
+                            <input type="number" id="long_marks" class="form-control" value="5" min="1" max="20" oninput="updateBreakdown()">
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-3 rounded" style="background:#f0fdf4; border:1px solid #bbf7d0; font-size:0.85rem; color:#166534;">
+                        <strong>Total marks breakdown:</strong>
+                        <span id="marksBreakdown"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-4">
+                        <button class="btn-generate" id="generateBtn" onclick="generatePaper()">
+                            ✨ Generate Question Paper
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Spinner -->
+            <div class="spinner-wrap" id="spinnerWrap">
+                <div class="spinner-border" role="status"></div>
+                <p class="mt-3 text-secondary fw-semibold">AI is generating your question paper…</p>
+            </div>
+
+            <!-- Paper Preview -->
+            <div id="paperPreview">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-700 mb-0" style="color:var(--primary);">📄 Generated Question Paper</h5>
+                    <div class="d-flex gap-2">
+                        <button class="btn-print" onclick="printSection('questionPaper')">🖨️ Print Question Paper</button>
+                        <button class="btn-print-ans" onclick="printSection('answerKey')">🗝️ Print Answer Key</button>
+                    </div>
+                </div>
+
+                <div class="qp-card" id="questionPaper">
+                    <div class="card-body p-0">
+                        <div class="paper-container" id="paperContent"></div>
+                    </div>
+                </div>
+
+                <div class="qp-card mt-4" id="answerKey">
+                    <div class="card-header" style="background:linear-gradient(135deg,#059669,#10b981);">
+                        🗝️ Answer Key
+                    </div>
+                    <div class="card-body">
+                        <div id="answerKeyContent"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    const logoUrl   = '{% static "school_app/images/pailogo.png" %}';
+
+    function updateBreakdown() {
+        const a = (parseInt(document.getElementById('mcq_count').value)||0)   * (parseInt(document.getElementById('mcq_marks').value)||0);
+        const b = (parseInt(document.getElementById('tf_count').value)||0)     * (parseInt(document.getElementById('tf_marks').value)||0);
+        const c = (parseInt(document.getElementById('fib_count').value)||0)    * (parseInt(document.getElementById('fib_marks').value)||0);
+        const d = (parseInt(document.getElementById('short_count').value)||0)  * (parseInt(document.getElementById('short_marks').value)||0);
+        const e = (parseInt(document.getElementById('long_count').value)||0)   * (parseInt(document.getElementById('long_marks').value)||0);
+        document.getElementById('marksBreakdown').textContent =
+            ` A:${a}  +  B:${b}  +  C:${c}  +  D:${d}  +  E:${e}  =  Total: ${a+b+c+d+e} marks`;
+    }
+    updateBreakdown();
+
+    function generatePaper() {
+        const subject = document.getElementById('subject').value.trim();
+        const chapter = document.getElementById('chapter').value.trim();
+        if (!subject || !chapter) { alert('Please enter Subject and Chapter.'); return; }
+
+        const payload = {
+            subject,
+            chapter,
+            class_name  : document.getElementById('class_name').value,
+            language    : document.getElementById('language').value,
+            total_marks : parseInt(document.getElementById('total_marks').value),
+            mcq_count   : parseInt(document.getElementById('mcq_count').value),
+            mcq_marks   : parseInt(document.getElementById('mcq_marks').value),
+            tf_count    : parseInt(document.getElementById('tf_count').value),
+            tf_marks    : parseInt(document.getElementById('tf_marks').value),
+            fib_count   : parseInt(document.getElementById('fib_count').value),
+            fib_marks   : parseInt(document.getElementById('fib_marks').value),
+            short_count : parseInt(document.getElementById('short_count').value),
+            short_marks : parseInt(document.getElementById('short_marks').value),
+            long_count  : parseInt(document.getElementById('long_count').value),
+            long_marks  : parseInt(document.getElementById('long_marks').value),
+        };
+
+        document.getElementById('generateBtn').disabled = true;
+        document.getElementById('spinnerWrap').style.display = 'block';
+        document.getElementById('paperPreview').style.display = 'none';
+
+        fetch('{% url "generate_question_paper_ai" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('spinnerWrap').style.display = 'none';
+            document.getElementById('generateBtn').disabled = false;
+            if (data.error) { alert('Error: ' + data.error); return; }
+            renderPaper(data.paper, payload.language);
+            document.getElementById('paperPreview').style.display = 'block';
+            document.getElementById('paperPreview').scrollIntoView({ behavior: 'smooth' });
+        })
+        .catch(() => {
+            document.getElementById('spinnerWrap').style.display = 'none';
+            document.getElementById('generateBtn').disabled = false;
+            alert('Something went wrong. Please try again.');
+        });
+    }
+
+    function renderPaper(p, language) {
+        const time = document.getElementById('time_allowed').value;
+        let html = `
+            <div class="paper-school-header">
+                <div class="pai-branding">
+                    <img src="${logoUrl}" alt="PadhaiWithAI">
+                    <span>PadhaiWithAI</span>
+                </div>
+                <h2>Question Paper</h2>
+                <h3>${p.subject} — Class ${p.class}</h3>
+                <div style="font-size:.9rem;color:#555;">${p.chapter}</div>
+            </div>
+            <div class="pai-watermark">
+                <img src="${logoUrl}" alt="PadhaiWithAI">
+                <span>PadhaiWithAI</span>
+            </div>
+            <div class="paper-meta">
+                <span><strong>${language==='Hindi'?'कुल अंक':'Total Marks'}:</strong> ${p.total_marks}</span>
+                <span><strong>${language==='Hindi'?'समय':'Time Allowed'}:</strong> ${time} ${language==='Hindi'?'मिनट':'minutes'}</span>
+            </div>
+            <div class="paper-instructions">
+                ${language==='Hindi'
+                    ? '• सभी प्रश्न अनिवार्य हैं। &nbsp;• स्पष्ट एवं सुपाठ्य लिखें। &nbsp;• प्रत्येक प्रश्न के अंक कोष्ठक में दिए गए हैं।'
+                    : '• All questions are compulsory. &nbsp;• Write clearly and legibly. &nbsp;• Marks are indicated in brackets.'}
+            </div>`;
+        let ansHtml = '';
+
+        p.sections.forEach(sec => {
+            html += `<div class="section-header">Section ${sec.section}: ${sec.section_title} &nbsp;[${sec.marks_each} mark${sec.marks_each>1?'s':''} each]</div>`;
+            ansHtml += `<h6 class="fw-700 mt-3" style="color:var(--primary);">Section ${sec.section} — ${sec.section_title}</h6>`;
+
+            sec.questions.forEach(q => {
+                html += `<div class="question-item">
+                    <span class="q-num">Q${q.q_no}.</span> ${q.question}
+                    <span class="marks-tag">[${sec.marks_each}]</span>`;
+                if (q.options && q.options.length) {
+                    html += `<ul class="options-list">` + q.options.map(o=>`<li>${o}</li>`).join('') + `</ul>`;
+                }
+                html += `</div>`;
+                ansHtml += `<div class="answer-item"><span class="a-label">Q${q.q_no}.</span> ${q.answer}</div>`;
+            });
+        });
+
+        document.getElementById('paperContent').innerHTML = html;
+        document.getElementById('answerKeyContent').innerHTML = ansHtml;
+    }
+
+    function printSection(sectionId) {
+        const content = document.getElementById(sectionId).innerHTML;
+        const win = window.open('', '_blank');
+        win.document.write(`<html><head><title>Print</title><style>
+            body{font-family:'Times New Roman',serif;padding:30px;}
+            .card-header{background:#1e3c72;color:white;padding:10px 16px;font-weight:700;margin-bottom:16px;border-radius:6px;}
+            .paper-school-header{text-align:center;border-bottom:3px double #333;padding-bottom:12px;margin-bottom:16px;}
+            .pai-branding{display:flex;align-items:center;justify-content:center;gap:7px;margin-bottom:8px;}
+            .pai-branding img{height:28px;width:28px;object-fit:contain;}
+            .pai-branding span{font-size:0.78rem;font-weight:700;color:#1e3c72;letter-spacing:.04em;}
+            .pai-watermark{position:fixed;bottom:10px;right:14px;display:flex;align-items:center;gap:5px;opacity:.3;}
+            .pai-watermark img{height:18px;}
+            .pai-watermark span{font-size:.7rem;font-weight:700;color:#1e3c72;}
+            .paper-meta{display:flex;justify-content:space-between;margin-bottom:14px;font-size:.9rem;}
+            .paper-instructions{background:#fffbeb;border:1px solid #fde68a;padding:8px 14px;border-radius:4px;font-size:.82rem;margin-bottom:16px;}
+            .section-header{background:#1e3c72;color:white;padding:6px 14px;border-radius:4px;font-weight:700;margin:18px 0 10px;font-size:.9rem;}
+            .question-item{margin-bottom:12px;font-size:.9rem;line-height:1.6;}
+            .q-num,.a-label{font-weight:700;color:#1e3c72;}
+            .marks-tag{float:right;font-size:.78rem;color:#555;font-style:italic;}
+            .options-list{margin:4px 0 0 18px;list-style:none;padding:0;}
+            .options-list li{margin-bottom:2px;}
+            .answer-item{margin-bottom:8px;font-size:.88rem;}
+            h6{color:#1e3c72;font-weight:700;margin-top:16px;}
+        </style></head><body>${content}</body></html>`);
+        win.document.close();
+        win.print();
+    }
+</script>
+{% endblock %}

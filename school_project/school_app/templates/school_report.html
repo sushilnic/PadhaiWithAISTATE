@@ -1,0 +1,541 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --danger: #EF4444;
+        --danger-light: #FEE2E2;
+        --text-primary: #1F2937;
+        --text-secondary: #6B7280;
+        --border: #E5E7EB;
+        --bg-light: #F9FAFB;
+    }
+
+    .report-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .report-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+    }
+
+    .report-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.95;
+        font-size: 0.95rem;
+    }
+
+    .section-container {
+        background: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .section-icon {
+        font-size: 1.8rem;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-light);
+        border-radius: 6px;
+    }
+
+    .section-title {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    .section-count {
+        margin-left: auto;
+        background: var(--primary);
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: var(--bg-light);
+        border-bottom: 2px solid var(--border);
+    }
+
+    .data-table th {
+        padding: 12px 16px;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .data-table th:hover {
+        background: #F3F4F6;
+    }
+
+    .data-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .data-table tbody tr:hover {
+        background: var(--bg-light);
+        transition: background 0.2s ease;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .sort-indicator {
+        margin-left: 0.3rem;
+        font-size: 0.8rem;
+    }
+
+    .tools-bar {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .tool-btn {
+        padding: 0.6rem 1rem;
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text-primary);
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    .tool-btn:hover {
+        background: var(--bg-light);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .search-input {
+        padding: 0.6rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.15);
+    }
+
+    .back-button {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        background: var(--primary);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        margin-top: 1.5rem;
+    }
+
+    .back-button:hover {
+        background: var(--primary-dark);
+        transform: translateX(-3px);
+        text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+        .report-header {
+            padding: 1.5rem;
+        }
+
+        .report-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .section-container {
+            padding: 1.5rem;
+        }
+
+        .section-header {
+            flex-wrap: wrap;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 10px 8px;
+            font-size: 0.85rem;
+        }
+
+        .tools-bar {
+            flex-direction: column;
+        }
+
+        .search-input {
+            min-width: 100%;
+        }
+    }
+</style>
+
+<!-- Header -->
+<div class="report-header">
+    <h1>📊 School Report</h1>
+    <p>Comprehensive overview of all schools with multiple metrics</p>
+</div>
+
+<!-- Section 1: Schools Not Logged In -->
+<div class="section-container">
+    <div class="section-header">
+        <div class="section-icon">🔒</div>
+        <h2 class="section-title">Schools Not Logged In</h2>
+        <span class="section-count">{{ inactive_schools|length }}</span>
+    </div>
+
+    {% if inactive_schools %}
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="search1" placeholder="Search by school name or email..." onkeyup="searchTable(1)">
+            <button class="tool-btn" onclick="exportToCSV(1, 'inactive-schools')">📥 CSV</button>
+            <button class="tool-btn" onclick="exportToPDF(1, 'inactive-schools')">📄 PDF</button>
+        </div>
+        <table class="data-table" id="table1">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(1, 0)">S.No. <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(1, 1)">School Name <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(1, 2)">Admin Email <span class="sort-indicator"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in inactive_schools %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ school.name }}</td>
+                        <td>{{ school.admin__email }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <p>All schools have logged in today</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Section 2: Schools without Student Entries -->
+<div class="section-container">
+    <div class="section-header">
+        <div class="section-icon">👥</div>
+        <h2 class="section-title">Schools without Student Entries</h2>
+        <span class="section-count">{{ schools_without_students|length }}</span>
+    </div>
+
+    {% if schools_without_students %}
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="search2" placeholder="Search by school name..." onkeyup="searchTable(2)">
+            <button class="tool-btn" onclick="exportToCSV(2, 'schools-without-students')">📥 CSV</button>
+            <button class="tool-btn" onclick="exportToPDF(2, 'schools-without-students')">📄 PDF</button>
+        </div>
+        <table class="data-table" id="table2">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(2, 0)">S.No. <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(2, 1)">School Name <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(2, 2)">Address <span class="sort-indicator"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools_without_students %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ school.name }}</td>
+                        <td>{{ school.address|default:"N/A" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <p>All schools have student entries</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Section 3: School Test Entry Count -->
+<div class="section-container">
+    <div class="section-header">
+        <div class="section-icon">📝</div>
+        <h2 class="section-title">School Test Entry Count</h2>
+        <span class="section-count">{{ schools_with_test_counts|length }}</span>
+    </div>
+
+    {% if schools_with_test_counts %}
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="search3" placeholder="Search by school name..." onkeyup="searchTable(3)">
+            <button class="tool-btn" onclick="exportToCSV(3, 'test-entry-count')">📥 CSV</button>
+            <button class="tool-btn" onclick="exportToPDF(3, 'test-entry-count')">📄 PDF</button>
+        </div>
+        <table class="data-table" id="table3">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(3, 0)">S.No. <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(3, 1)">School Name <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(3, 2)">Test Entry Count <span class="sort-indicator"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools_with_test_counts %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ school.name }}</td>
+                        <td><strong style="color: #1E40AF;">{{ school.test_count }}</strong></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <p>No test entries available</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Section 4: Schools without Test Entries -->
+<div class="section-container">
+    <div class="section-header">
+        <div class="section-icon">⚠️</div>
+        <h2 class="section-title">Schools without Test Entries</h2>
+        <span class="section-count">{{ schools_without_tests|length }}</span>
+    </div>
+
+    {% if schools_without_tests %}
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="search4" placeholder="Search by school name..." onkeyup="searchTable(4)">
+            <button class="tool-btn" onclick="exportToCSV(4, 'schools-without-tests')">📥 CSV</button>
+            <button class="tool-btn" onclick="exportToPDF(4, 'schools-without-tests')">📄 PDF</button>
+        </div>
+        <table class="data-table" id="table4">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(4, 0)">S.No. <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(4, 1)">School Name <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(4, 2)">Address <span class="sort-indicator"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools_without_tests %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ school.name }}</td>
+                        <td>{{ school.address|default:"N/A" }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <p>All schools have test entries</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Section 5: Schools with Student Count -->
+<div class="section-container">
+    <div class="section-header">
+        <div class="section-icon">🎓</div>
+        <h2 class="section-title">Schools with Student Count</h2>
+        <span class="section-count">{{ schools_with_student_counts|length }}</span>
+    </div>
+
+    {% if schools_with_student_counts %}
+        <div class="tools-bar">
+            <input type="text" class="search-input" id="search5" placeholder="Search by school name..." onkeyup="searchTable(5)">
+            <button class="tool-btn" onclick="exportToCSV(5, 'student-counts')">📥 CSV</button>
+            <button class="tool-btn" onclick="exportToPDF(5, 'student-counts')">📄 PDF</button>
+        </div>
+        <table class="data-table" id="table5">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(5, 0)">S.No. <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(5, 1)">School Name <span class="sort-indicator"></span></th>
+                    <th onclick="sortTable(5, 2)">Number of Students <span class="sort-indicator"></span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for school in schools_with_student_counts %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ school.name }}</td>
+                        <td><strong style="color: #10B981;">{{ school.student_count }}</strong></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">📊</div>
+            <p>No schools with students found</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Back Button -->
+<div style="text-align: center; margin-top: 2rem;">
+    <a href="{% url 'report_dashboard' %}" class="back-button">← Back to Dashboard</a>
+</div>
+
+<script>
+    function searchTable(tableNum) {
+        const input = document.getElementById('search' + tableNum).value.toLowerCase();
+        const table = document.getElementById('table' + tableNum);
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+
+        for (let row of rows) {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(input) ? '' : 'none';
+        }
+    }
+
+    function sortTable(tableNum, columnIndex) {
+        const table = document.getElementById('table' + tableNum);
+        const tbody = table.getElementsByTagName('tbody')[0];
+        let rows = Array.from(tbody.getElementsByTagName('tr'));
+        
+        const isAscending = !table.dataset['sort' + columnIndex] || !table.dataset['sort' + columnIndex].includes('asc');
+        table.dataset['sort' + columnIndex] = isAscending ? 'asc' : 'desc';
+
+        rows.sort((a, b) => {
+            const aValue = a.cells[columnIndex].textContent.trim();
+            const bValue = b.cells[columnIndex].textContent.trim();
+            
+            const aNum = parseFloat(aValue);
+            const bNum = parseFloat(bValue);
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return isAscending ? aNum - bNum : bNum - aNum;
+            }
+            
+            return isAscending ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+
+        // Update sort indicators
+        const headers = table.getElementsByTagName('thead')[0].getElementsByTagName('th');
+        for (let i = 0; i < headers.length; i++) {
+            const indicator = headers[i].querySelector('.sort-indicator');
+            if (indicator) {
+                indicator.textContent = i === columnIndex ? (isAscending ? '⬆️' : '⬇️') : '';
+            }
+        }
+    }
+
+    function exportToCSV(tableNum, filename) {
+        const table = document.getElementById('table' + tableNum);
+        let csv = [];
+        
+        // Get headers
+        const headers = Array.from(table.getElementsByTagName('thead')[0].getElementsByTagName('th'))
+            .map(th => th.textContent.replace(/⬆️|⬇️/g, '').trim());
+        csv.push(headers.join(','));
+
+        // Get visible rows
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        for (let row of rows) {
+            if (row.style.display !== 'none') {
+                const cells = Array.from(row.getElementsByTagName('td'))
+                    .map(td => '"' + td.textContent.trim().replace(/"/g, '""') + '"');
+                csv.push(cells.join(','));
+            }
+        }
+
+        const blob = new Blob([csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename + '_' + new Date().getTime() + '.csv';
+        link.click();
+    }
+
+    function exportToPDF(tableNum, filename) {
+        const table = document.getElementById('table' + tableNum);
+        let htmlContent = '<table border="1" style="border-collapse: collapse; width: 100%; font-family: Arial;"><thead>';
+        
+        // Get headers
+        const headers = table.getElementsByTagName('thead')[0].getElementsByTagName('th');
+        htmlContent += '<tr style="background-color: #f0f0f0;"><th style="padding: 10px; border: 1px solid #ddd;">';
+        htmlContent += Array.from(headers).map(th => th.textContent.replace(/⬆️|⬇️/g, '').trim()).join('</th><th style="padding: 10px; border: 1px solid #ddd;">');
+        htmlContent += '</th></tr></thead><tbody>';
+
+        // Get visible rows
+        const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        for (let row of rows) {
+            if (row.style.display !== 'none') {
+                htmlContent += '<tr><td style="padding: 10px; border: 1px solid #ddd;">';
+                htmlContent += Array.from(row.getElementsByTagName('td')).map(td => td.textContent.trim()).join('</td><td style="padding: 10px; border: 1px solid #ddd;">');
+                htmlContent += '</td></tr>';
+            }
+        }
+        htmlContent += '</tbody></table>';
+
+        const printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>' + filename + '</title></head><body>');
+        printWindow.document.write(htmlContent);
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+</script>
+{% endblock %}

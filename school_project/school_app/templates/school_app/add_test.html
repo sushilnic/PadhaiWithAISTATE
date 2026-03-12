@@ -1,0 +1,36 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>Create New Test</h1>
+    <p>Please provide test name, subject, and upload relevant files</p>
+</div>
+
+<!-- Form -->
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-4">
+            {{ form.as_p }}
+        </div>
+
+        <!-- Buttons -->
+        <div class="d-flex gap-15 flex-wrap">
+            <button type="submit" class="btn-success-custom">
+                <i class="fas fa-save me-2"></i> Submit
+            </button>
+            <a href="{% url 'collector_dashboard' %}" class="back-link">
+                <i class="fas fa-times me-2"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <a onclick="window.history.back();" class="back-link" style="cursor: pointer;">
+        <i class="fas fa-arrow-left me-2"></i> Back
+    </a>
+</div>
+{% endblock %}

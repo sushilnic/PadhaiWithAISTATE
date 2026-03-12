@@ -1,0 +1,106 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>Student Management</h1>
+    <p>Manage and organize your school's student information efficiently</p>
+</div>
+
+<!-- Statistics -->
+<div class="stats-grid">
+    <div class="stat-card purple">
+        <div class="stat-value">{{ students.count }}</div>
+        <div class="stat-label">Total Students</div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<h3 class="section-title">Actions</h3>
+<div class="action-buttons">
+    <a href="{% url 'student_add' %}" class="action-btn primary">
+        <i class="fas fa-plus-circle me-2"></i> Add New Student
+    </a>
+    <a href="{% url 'upload_student_data' %}" class="action-btn success">
+        <i class="fas fa-file-excel me-2"></i> Upload Excel Data
+    </a>
+</div>
+
+<!-- Search Box -->
+<div class="form-container mb-30">
+    <input type="text" id="studentSearch" class="form-control" placeholder="Search by name or roll number..." style="max-width: 400px;">
+</div>
+
+<!-- Student Table -->
+<h3 class="section-title">Student List</h3>
+<div class="table-responsive">
+    {% if students %}
+    <table class="data-table" id="studentTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Student Name</th>
+                <th>Roll Number</th>
+                <th>Class</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr class="student-row">
+                <td>{{ forloop.counter }}</td>
+                <td><span class="student-name">{{ student.name }}</span></td>
+                <td><strong style="color: var(--primary-color);">{{ student.roll_number }}</strong></td>
+                <td>
+                    <span class="status-badge success">Class {{ student.class_name }}</span>
+                </td>
+                <td>
+                    <a href="{% url 'edit_student' student.id %}" class="btn btn-info btn-sm">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'delete_student' student.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete {{ student.name }}?');">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert-box info text-center">
+        <i class="fas fa-inbox" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+        <p><strong>No students found</strong></p>
+        <p>Add your first student to get started</p>
+        <a href="{% url 'student_add' %}" class="action-btn primary" style="display: inline-block; margin-top: 15px;">
+            <i class="fas fa-plus-circle me-2"></i> Add Student
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <a href="{% url 'dashboard' %}" class="back-link">
+        <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+    </a>
+</div>
+
+<!-- Search Functionality -->
+<script>
+    document.getElementById('studentSearch').addEventListener('keyup', function() {
+        const searchValue = this.value.toLowerCase();
+        const tableRows = document.querySelectorAll('.student-row');
+
+        tableRows.forEach(row => {
+            const studentName = row.querySelector('.student-name').textContent.toLowerCase();
+            const text = row.textContent.toLowerCase();
+
+            if (text.includes(searchValue)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

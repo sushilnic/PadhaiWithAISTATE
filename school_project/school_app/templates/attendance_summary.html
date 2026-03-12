@@ -1,0 +1,200 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+{% load static %}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>Attendance Summary</h1>
+    <p>View attendance statistics for your schools</p>
+</div>
+
+<!-- Date Filter -->
+<div class="form-container mb-30">
+    <form method="GET" class="d-flex flex-center flex-wrap gap-15">
+        <label for="date" class="fw-bold">Select Date:</label>
+        <input type="date" id="date" name="date" class="form-control" style="max-width: 200px;" value="{{ attendance_date|date:'Y-m-d' }}" max="{{ attendance_date|date:'Y-m-d' }}">
+        <button type="submit" class="btn-primary-custom">View Report</button>
+    </form>
+</div>
+
+{% if attendance_summary %}
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-value">{{ total_schools }}</div>
+        <div class="stat-label">Total Schools</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-value">{{ total_present }}</div>
+        <div class="stat-label">Students Present</div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-value">{{ total_students }}</div>
+        <div class="stat-label">Total Students</div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-value">{{ avg_attendance }}%</div>
+        <div class="stat-label">Average Attendance</div>
+    </div>
+</div>
+
+<!-- Charts -->
+<h3 class="section-title">Attendance Overview</h3>
+<div class="chart-container">
+    <div class="chart-card" {% if user_role == 'school' %}style="max-width: 400px; margin: 0 auto;"{% endif %}>
+        <h4>Attendance Distribution</h4>
+        <canvas id="attendancePieChart" style="max-height: 300px;"></canvas>
+    </div>
+    {% if user_role != 'school' %}
+    <div class="chart-card">
+        <h4>School-wise Attendance</h4>
+        <canvas id="attendanceBarChart"></canvas>
+    </div>
+    {% endif %}
+</div>
+
+{% if user_role != 'school' %}
+<!-- Attendance Table - Only for non-school users -->
+<h3 class="section-title">Detailed School-wise Attendance for {{ attendance_date|date:"d M Y" }}</h3>
+<div class="table-responsive">
+    <table id="attendanceTable" class="data-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>School Name</th>
+                <th>Present</th>
+                <th>Total</th>
+                <th>Attendance %</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for summary in attendance_summary %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ summary.student__school__name }}</td>
+                <td>{{ summary.present_count }}</td>
+                <td>{{ summary.total_count }}</td>
+                <td>
+                    {% if summary.total_count > 0 %}
+                        {% with pct=summary.Percentage %}
+                            <span class="status-badge {% if pct >= 80 %}success{% elif pct >= 50 %}warning{% else %}danger{% endif %}">
+                                {{ pct|floatformat:1 }}%
+                            </span>
+                        {% endwith %}
+                    {% else %}
+                        <span class="status-badge danger">N/A</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% else %}
+<div class="alert-box info text-center">
+    <p>No attendance data available for {{ attendance_date|date:"d M Y" }}.</p>
+    <p>Please select a different date or ensure attendance has been submitted.</p>
+</div>
+{% endif %}
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <a href="{% url 'dashboard' %}" class="back-link"><i class="fas fa-arrow-left me-2"></i> Back to Dashboard</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if attendance_summary %}
+<script>
+    // Prepare data for charts
+    var schoolNames = [{% for s in attendance_summary %}"{{ s.student__school__name|truncatechars:20 }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+    var presentCounts = [{% for s in attendance_summary %}{{ s.present_count }}{% if not forloop.last %},{% endif %}{% endfor %}];
+    var percentages = [{% for s in attendance_summary %}{{ s.Percentage|floatformat:1 }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+    // Pie Chart - Overall Present vs Absent
+    var pieCtx = document.getElementById('attendancePieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Absent'],
+            datasets: [{
+                data: [{{ total_present }}, {{ total_absent }}],
+                backgroundColor: ['#28a745', '#dc3545'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            var total = {{ total_students }};
+                            var value = context.raw;
+                            var pct = ((value / total) * 100).toFixed(1);
+                            return context.label + ': ' + value + ' (' + pct + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    {% if user_role != 'school' %}
+    // Bar Chart - Top 10 Schools by Attendance (Only for non-school users)
+    var topSchools = schoolNames.slice(0, 10);
+    var topPercentages = percentages.slice(0, 10);
+    var barColors = topPercentages.map(function(pct) {
+        if (pct >= 80) return '#28a745';
+        if (pct >= 50) return '#ffc107';
+        return '#dc3545';
+    });
+
+    var barCtx = document.getElementById('attendanceBarChart').getContext('2d');
+    new Chart(barCtx, {
+        type: 'bar',
+        data: {
+            labels: topSchools,
+            datasets: [{
+                label: 'Attendance %',
+                data: topPercentages,
+                backgroundColor: barColors,
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: 'Attendance %' }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // DataTables - Only for non-school users
+    $(document).ready(function() {
+        $('#attendanceTable').DataTable({
+            "paging": true,
+            "pageLength": 25,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "order": [[4, 'desc']]
+        });
+    });
+    {% endif %}
+</script>
+{% endif %}
+{% endblock %}

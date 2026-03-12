@@ -1,0 +1,258 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --secondary: #64748B;
+        --accent: #38bdf8;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+    }
+
+    .test-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+    }
+    .page-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .page-header p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin: 5px 0 0 0;
+    }
+
+    .card {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .card-body {
+        padding: 20px;
+    }
+
+    .test-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .test-table th {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .test-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.9rem;
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+
+    .test-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .test-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .serial-num {
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+
+    .test-name {
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    .subject-badge {
+        background: #e0e7ff;
+        color: var(--primary);
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .date-text {
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .btn-enter-marks {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .btn-enter-marks:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+        color: white;
+    }
+
+    .btn-view-results {
+        background: linear-gradient(135deg, var(--warning), #d97706);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .btn-view-results:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        color: white;
+    }
+
+    .btn-back {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+        color: white;
+    }
+
+    .no-tests {
+        text-align: center;
+        padding: 40px 20px;
+        color: var(--text-secondary);
+    }
+    .no-tests i {
+        font-size: 3rem;
+        color: var(--border);
+        margin-bottom: 15px;
+    }
+    .no-tests p {
+        font-size: 1rem;
+        margin: 0;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .back-section {
+        margin-top: 20px;
+    }
+</style>
+
+<div class="test-container">
+    <div class="page-header">
+        <h1>📋 Test Dashboard</h1>
+        <p>View and manage test marks for your school</p>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if tests %}
+                <div class="table-responsive">
+                    <table class="test-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;">#</th>
+                                <th>Test Name</th>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for test in tests %}
+                            <tr>
+                                <td><span class="serial-num">{{ forloop.counter }}</span></td>
+                                <td><span class="test-name">{{ test.test_name }}</span></td>
+                                <td><span class="subject-badge">{{ test.subject_name }}</span></td>
+                                <td><span class="date-text">{{ test.test_date }}</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <a href="{% url 'test_marks_entry' test.test_number %}" class="btn-enter-marks">
+                                            ✏️ Enter/Edit Marks
+                                        </a>
+                                        <a href="{% url 'view_test_results' test.test_number %}" class="btn-view-results">
+                                            📊 View Results
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="no-tests">
+                    <i class="fas fa-clipboard-list"></i>
+                    <p>No tests available. Please add some tests in the admin panel.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="back-section">
+        <a href="{% url 'dashboard' %}" class="btn-back">
+            ← Back to Dashboard
+        </a>
+    </div>
+</div>
+{% endblock %}
+

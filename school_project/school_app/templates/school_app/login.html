@@ -1,0 +1,766 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PadhaiWithAI - School Login</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: -webkit-linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(30, 60, 114, 0.95);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo img { height: 50px; }
+        .logo span { font-size: 1.5rem; font-weight: 700; }
+
+        .header-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-links a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .header-links a:hover {
+            background: rgba(255,255,255,0.15);
+        }
+
+        .ai-sathi-btn {
+            background: -webkit-linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        /* Toppers Section */
+        .toppers-section {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            width: 100%;
+            max-width: 950px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .toppers-section h2 {
+            color: #1e3c72;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.4rem;
+        }
+
+        .toppers-grid {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 10px 0;
+            scroll-behavior: smooth;
+        }
+
+        .topper-card {
+            flex: 0 0 120px;
+            text-align: center;
+        }
+
+        .topper-card img {
+            width: 100px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 3px solid #38bdf8;
+        }
+
+        /* Login Section - Side by Side */
+        .login-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 50px;
+            width: 100%;
+            max-width: 950px;
+            flex-wrap: wrap;
+        }
+
+        .big-logo {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 350px;
+            max-width: 450px;
+        }
+
+        .big-logo img {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Login Card */
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            flex: 1;
+            min-width: 350px;
+            max-width: 450px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .login-card h1 {
+            color: #1e3c72;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 25px;
+            font-weight: 700;
+        }
+
+        .login-card h3 {
+            color: #1e3c72;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1e3c72;
+            font-size: 1rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .captcha-box {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .captcha-box img {
+            max-width: 100%;
+            border-radius: 5px;
+        }
+
+        .captcha-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: -webkit-linear-gradient(135deg, #1e3c72, #2a5298);
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            -webkit-transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 60, 114, 0.3);
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #fecaca;
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            color: #94a3b8;
+            position: relative;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 40%;
+            height: 1px;
+            background: #e2e8f0;
+        }
+
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        .student-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: -webkit-linear-gradient(135deg, #10b981, #059669);
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+            -webkit-transition: transform 0.2s;
+            transition: transform 0.2s;
+        }
+
+        .student-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Footer */
+       
+       .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            text-align: center;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+        .footer img {
+            height: 32px;
+            mix-blend-mode: multiply;
+            
+        }
+        .footer img.pai-logo {
+            mix-blend-mode: normal;
+            border-radius: 6px;
+            width: 85px;
+        }
+        .footer span {
+            opacity: 0.9;
+        }
+        
+        /* Add padding for fixed footer and header */
+        body {
+            padding-bottom: 60px;
+            padding-top: 80px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content { padding: 20px; }
+            .login-card { padding: 30px; min-width: 300px; }
+            .toppers-section { padding: 20px; }
+            .login-section {
+                -webkit-flex-direction: column;
+                flex-direction: column;
+            }
+            .big-logo {
+                min-width: 250px;
+                max-width: 300px;
+            }
+            .big-logo img {
+                max-width: 250px;
+            }
+            .header {
+                padding: 10px 15px;
+            }
+            .logo span {
+                font-size: 1.2rem;
+            }
+            .footer {
+                padding: 6px 10px;
+                font-size: 0.75rem;
+                gap: 8px;
+            }
+            .footer img {
+                height: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main-content { padding: 15px; }
+            .login-card { padding: 25px; min-width: unset; width: 100%; }
+            .toppers-section { padding: 15px; }
+            .big-logo {
+                min-width: 200px;
+                max-width: 250px;
+            }
+            .big-logo img {
+                max-width: 200px;
+            }
+            .logo img {
+                height: 40px;
+            }
+            .logo span {
+                font-size: 1rem;
+            }
+            .header-links a {
+                padding: 8px 12px;
+                font-size: 0.85rem;
+            }
+            .footer span {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Auto scroll animation for toppers */
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .toppers-scroll {
+            display: flex;
+            animation: scroll 30s linear infinite;
+        }
+
+        .toppers-grid:hover .toppers-scroll {
+            animation-play-state: paused;
+        }
+
+        /* Chatbot Widget */
+        .chat-toggle {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            z-index: 9999;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            border: none;
+            color: white;
+            font-size: 1.6rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(30, 60, 114, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chat-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 24px rgba(30, 60, 114, 0.5);
+        }
+
+        .chat-window {
+            position: fixed;
+            bottom: 136px;
+            right: 20px;
+            z-index: 9999;
+            width: 380px;
+            height: 500px;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .chat-window.open {
+            display: flex;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .chat-header button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #f8fafc;
+        }
+
+        .chat-msg {
+            max-width: 85%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+            word-wrap: break-word;
+        }
+        .chat-msg.bot {
+            align-self: flex-start;
+            background: #e2e8f0;
+            color: #1e293b;
+            border-bottom-left-radius: 4px;
+        }
+        .chat-msg.user {
+            align-self: flex-end;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-typing {
+            align-self: flex-start;
+            padding: 10px 14px;
+            background: #e2e8f0;
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            display: none;
+        }
+        .chat-typing.show { display: flex; gap: 4px; align-items: center; }
+        .chat-typing span {
+            width: 7px; height: 7px;
+            background: #94a3b8;
+            border-radius: 50%;
+            animation: typingDot 1.2s infinite;
+        }
+        .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingDot {
+            0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+            30% { opacity: 1; transform: scale(1); }
+        }
+
+        .chat-input-area {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #e2e8f0;
+            background: #fff;
+            gap: 8px;
+        }
+        .chat-input-area textarea {
+            flex: 1;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            max-height: 80px;
+            line-height: 1.4;
+        }
+        .chat-input-area textarea:focus {
+            border-color: #38bdf8;
+        }
+        .chat-input-area button {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 0 16px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .chat-input-area button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 480px) {
+            .chat-window {
+                width: calc(100% - 20px);
+                right: 10px;
+                bottom: 130px;
+                height: 420px;
+            }
+            .chat-toggle {
+                right: 14px;
+                bottom: 65px;
+                width: 50px;
+                height: 50px;
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/" class="logo">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+            <span>PadhaiWithAI</span>
+        </a>
+        <div class="header-links">
+            <a href="{% url 'ai_sathi' %}" class="ai-sathi-btn" target="_blank">AI Sathi</a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Toppers Section -->
+        <div class="toppers-section">
+            <h2>Toppers of the Week</h2>
+            <div class="toppers-grid">
+                <div class="toppers-scroll">
+                    <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/45.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/46.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/47.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/48.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/49.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/50.jpeg' %}" alt="Topper"></div>
+                    <!-- Duplicate for seamless scroll -->
+                    <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
+                    <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Section with Logo + Form Side by Side -->
+        <div class="login-section">
+            <!-- Large Logo on Left -->
+            <div class="big-logo">
+                <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI">
+            </div>
+
+            <!-- Login Card on Right -->
+            <div class="login-card">
+                <h1>Welcome to the Login Page</h1>
+                <h3>Login</h3>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert-error">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <form method="post" action="{% url 'login' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label>Email</label>
+                        {{ form.email }}
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        {{ form.password }}
+                    </div>
+                    <div class="captcha-box">
+                        <label style="font-weight: 600; color: #1e3c72; margin-bottom: 5px; display: block;">Captcha</label>
+                        {{ form.captcha }}
+                    </div>
+                    <button type="submit" class="btn-login">Login</button>
+                </form>
+
+                <div class="divider">or</div>
+
+                <a href="{% url 'student_login' %}" class="student-btn">
+                    Student Login
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | All Right Reserved | Empowering Education Through Technology </span>
+        <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo">
+    </div>
+
+    <!-- Chat Widget -->
+    <button class="chat-toggle" id="chatToggle" title="Chat with AI Assistant">&#128172;</button>
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <span>PadhaiWithAI Assistant</span>
+            <button id="chatClose" title="Close">&times;</button>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="chat-msg bot">Hello! How can I help you today? / Namaste! Main aapki kaise madad kar sakta hoon?</div>
+        </div>
+        <div class="chat-typing" id="chatTyping">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="chat-input-area">
+            <textarea id="chatInput" rows="1" placeholder="Type your message..." maxlength="500"></textarea>
+            <button id="chatSend" title="Send">&#10148;</button>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        const toggle = document.getElementById('chatToggle');
+        const win = document.getElementById('chatWindow');
+        const closeBtn = document.getElementById('chatClose');
+        const msgArea = document.getElementById('chatMessages');
+        const typing = document.getElementById('chatTyping');
+        const input = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('chatSend');
+        const chatHistory = [];
+        let sending = false;
+
+        function getCSRFToken() {
+            const match = document.cookie.match(/csrftoken=([^;]+)/);
+            return match ? match[1] : '';
+        }
+
+        toggle.addEventListener('click', function() {
+            win.classList.toggle('open');
+            if (win.classList.contains('open')) input.focus();
+        });
+
+        closeBtn.addEventListener('click', function() {
+            win.classList.remove('open');
+        });
+
+        function addMessage(text, role) {
+            const div = document.createElement('div');
+            div.className = 'chat-msg ' + (role === 'user' ? 'user' : 'bot');
+            div.textContent = text;
+            msgArea.appendChild(div);
+            msgArea.scrollTop = msgArea.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text || sending) return;
+
+            addMessage(text, 'user');
+            const prevHistory = chatHistory.slice(-4);
+            chatHistory.push({role: 'user', content: text});
+            input.value = '';
+            input.style.height = 'auto';
+            sending = true;
+            sendBtn.disabled = true;
+            typing.classList.add('show');
+            msgArea.scrollTop = msgArea.scrollHeight;
+
+            try {
+                const resp = await fetch('{% url "login_chat_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({
+                        message: text,
+                        history: prevHistory
+                    })
+                });
+                const data = await resp.json();
+                if (data.reply) {
+                    addMessage(data.reply, 'bot');
+                    chatHistory.push({role: 'assistant', content: data.reply});
+                } else {
+                    addMessage(data.error || 'Sorry, something went wrong.', 'bot');
+                }
+            } catch (err) {
+                addMessage('Network error. Please try again.', 'bot');
+            } finally {
+                sending = false;
+                sendBtn.disabled = false;
+                typing.classList.remove('show');
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        input.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 80) + 'px';
+        });
+    })();
+    </script>
+</body>
+</html>

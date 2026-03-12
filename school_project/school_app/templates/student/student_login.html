@@ -1,0 +1,447 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Login - PadhaiWithAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #38bdf8 100%);
+            padding: 20px;
+        }
+
+        .login-container {
+            display: flex;
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-left {
+            flex: 1;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            padding: 60px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+
+        .login-left img {
+            width: 120px;
+            margin-bottom: 30px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        .login-left h1 {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .login-left p {
+            font-size: 1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .login-left .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .login-left .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .login-left .feature-item i {
+            font-size: 1.2rem;
+            color: #38bdf8;
+        }
+
+        .login-right {
+            flex: 1;
+            padding: 60px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-right h2 {
+            font-size: 1.8rem;
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+
+        .login-right p {
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1e3c72;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 14px 14px 45px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(30, 60, 114, 0.3);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 25px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: #1e3c72;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .captcha-question {
+            display: inline-block;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-left: 4px;
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(30, 60, 114, 0.95);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo img { height: 50px; }
+        .logo span { font-size: 1.5rem; font-weight: 700; }
+
+        .header-links { display: flex; gap: 15px; }
+
+        .header-links a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .header-links a:hover { background: rgba(255,255,255,0.15); }
+
+        .ai-sathi-btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+        }
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            text-align: center;
+            padding: 8px 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer img {
+            height: 32px;
+            mix-blend-mode: multiply;
+        }
+
+        .footer img.pai-logo {
+            mix-blend-mode: normal;
+            border-radius: 6px;
+            width: 85px;
+        }
+
+        .footer span { opacity: 0.9; }
+
+        body {
+            padding-top: 80px;
+            padding-bottom: 60px;
+        }
+
+        @media (max-width: 768px) {
+            .login-container {
+                flex-direction: column;
+            }
+
+            .login-left {
+                padding: 40px 30px;
+            }
+
+            .login-left .features {
+                display: none;
+            }
+
+            .login-right {
+                padding: 40px 30px;
+            }
+
+            .header { padding: 10px 15px; }
+            .logo span { font-size: 1.2rem; }
+            .footer { padding: 6px 10px; font-size: 0.75rem; gap: 8px; }
+            .footer img { height: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <a href="/" class="logo">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+            <span>PadhaiWithAI</span>
+        </a>
+        
+    </header>
+
+    <div class="login-container">
+        <div class="login-left">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo">
+            <h1>Student Portal</h1>
+            <p>Access your academic dashboard, view test results, and track your progress.</p>
+            <div class="features">
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Track your performance</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>View test results</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Download question papers</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-calendar-check"></i>
+                    <span>Check attendance</span>
+                </div>
+            </div>
+        </div>
+        <div class="login-right">
+            <h2>Welcome Back!</h2>
+            <p>Login with your roll number and password</p>
+
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags == 'error' %}error{% else %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="roll_number">Roll Number</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-id-card"></i>
+                        <input type="text" id="roll_number" name="roll_number"
+                               placeholder="Enter your roll number" required autofocus>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password"
+                               placeholder="Enter your password" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="captcha"><i class="fas fa-shield-alt"></i> Solve: <span class="captcha-question">{{ captcha_question }} = ?</span></label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-calculator"></i>
+                        <input type="number" id="captcha" name="captcha"
+                               placeholder="Enter your answer" required autocomplete="off">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+
+            <a href="{% url 'login' %}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to School Login
+            </a>
+
+            <div class="quick-access">
+                <p style="color: #64748b; margin-top: 25px; margin-bottom: 15px; font-size: 0.9rem;">Quick Access (No Login Required)</p>
+                <div class="quick-btns">
+                    <a href="{% url 'ai_sathi' %}" class="quick-btn ai-btn" target="_blank" style="width: 100%;">
+                        <i class="fas fa-robot"></i> AI Sathi - Ask Any Doubt
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | All Right Reserved | Empowering Education Through Technology</span>
+        <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo">
+    </div>
+
+    <style>
+        .quick-access {
+            border-top: 1px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        .quick-btns {
+            display: flex;
+            gap: 12px;
+        }
+        .quick-btn {
+            flex: 1;
+            padding: 12px 15px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        .math-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+        .ai-btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+        .quick-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</body>
+</html>

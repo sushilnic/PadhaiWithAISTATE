@@ -1,0 +1,673 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --secondary: #64748B;
+        --accent: #38bdf8;
+        --background: #F8FAFC;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+    }
+
+    /* Header Section */
+    .report-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-radius: 15px;
+        padding: 40px 30px;
+        margin-bottom: 40px;
+        color: white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .report-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .report-header p {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        margin-bottom: 0;
+    }
+
+    /* Date Tabs */
+    .date-tabs-container {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 30px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+    }
+
+    .date-tab {
+        padding: 12px 20px;
+        background: var(--surface);
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .date-tab:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .date-tab.active {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        border-color: var(--primary);
+    }
+
+    /* Stats Section */
+    .stats-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid var(--primary);
+        animation: fadeInUp 0.5s ease;
+    }
+
+    .stat-card.success {
+        border-left-color: var(--success);
+    }
+
+    .stat-card.danger {
+        border-left-color: var(--danger);
+    }
+
+    .stat-card.warning {
+        border-left-color: var(--warning);
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .stat-card.success .stat-value {
+        color: var(--success);
+    }
+
+    .stat-card.danger .stat-value {
+        color: var(--danger);
+    }
+
+    .stat-card.warning .stat-value {
+        color: var(--warning);
+    }
+
+    /* Controls Section */
+    .controls-section {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--border);
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .search-box input {
+        width: 100%;
+        padding: 10px 15px;
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .search-box input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 10px rgba(30, 60, 114, 0.15);
+        outline: none;
+    }
+
+    .buttons-group {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary-custom {
+        background-color: var(--primary);
+        color: white;
+    }
+
+    .btn-primary-custom:hover {
+        background-color: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+    }
+
+    .btn-secondary-custom {
+        background-color: #E5E7EB;
+        color: var(--text-primary);
+    }
+
+    .btn-secondary-custom:hover {
+        background-color: #D1D5DB;
+        transform: translateY(-2px);
+    }
+
+    /* Table Styles */
+    .table-container {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+    }
+
+    .data-table thead {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+    }
+
+    .data-table th {
+        padding: 10px 12px;
+        text-align: left;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border: none;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .data-table th:hover {
+        background: linear-gradient(135deg, var(--primary-dark) 0%, #1e3c72 100%);
+    }
+
+    .sort-indicator {
+        display: inline-block;
+        margin-left: 5px;
+        font-size: 0.8rem;
+    }
+
+    .data-table tbody tr {
+        transition: all 0.2s ease;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .data-table tbody tr:hover {
+        background-color: #f0f7ff;
+    }
+
+    .data-table tbody tr.total-row {
+        background-color: #E0F2FE;
+        font-weight: 700;
+    }
+
+    .data-table tbody tr.total-row:hover {
+        background-color: #BAE6FD;
+    }
+
+    .data-table tbody tr:last-child {
+        border-bottom: none;
+    }
+
+    .data-table td {
+        padding: 8px 12px;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .school-name {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+
+    /* Record Counter */
+    .record-counter {
+        text-align: right;
+        padding: 15px 20px;
+        background: var(--background);
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Back Button */
+    .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: var(--secondary);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+
+    .back-link:hover {
+        background-color: #475569;
+        transform: translateY(-2px);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .report-header {
+            padding: 30px 20px;
+        }
+
+        .report-header h1 {
+            font-size: 2rem;
+        }
+
+        .controls-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .buttons-group {
+            flex-direction: column;
+        }
+
+        .btn-action {
+            justify-content: center;
+        }
+
+        .stats-section {
+            grid-template-columns: 1fr;
+        }
+
+        .data-table {
+            font-size: 0.9rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 6px 8px;
+        }
+    }
+</style>
+
+<!-- Header Section -->
+<div class="report-header">
+    <h1>📅 Date-Wise Attendance Summary</h1>
+    <p>Track student attendance across different dates and schools</p>
+</div>
+
+<!-- Date Navigation Tabs -->
+<div class="date-tabs-container" id="dateTabs"></div>
+
+<!-- Stats Cards -->
+<div class="stats-section" id="statsSection">
+    <div class="stat-card">
+        <div class="stat-label">Total Students</div>
+        <div class="stat-value" id="totalStudents">0</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-label">Total Present</div>
+        <div class="stat-value" id="totalPresent">0</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-label">Total Absent</div>
+        <div class="stat-value" id="totalAbsent">0</div>
+    </div>
+    <div class="stat-card warning">
+        <div class="stat-label">Attendance %</div>
+        <div class="stat-value" id="attendancePercent">0%</div>
+    </div>
+</div>
+
+<!-- Controls Section -->
+<div class="controls-section">
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search by school name..." />
+    </div>
+    <div class="buttons-group">
+        <button class="btn-action btn-primary-custom" onclick="exportToCSV()">📥 Export CSV</button>
+        <button class="btn-action btn-primary-custom" onclick="exportToPDF()">📄 Export PDF</button>
+        <button class="btn-action btn-primary-custom" onclick="window.print()">🖨️ Print</button>
+        <button class="btn-action btn-secondary-custom" onclick="resetTable()">↺ Reset</button>
+    </div>
+</div>
+
+<!-- Table Container -->
+<div class="table-container" id="tableContainer" style="display: none;">
+    <table class="data-table" id="dataTable">
+        <thead>
+            <tr>
+                <th style="width: 60px;">S.No. <span class="sort-indicator"></span></th>
+                <th onclick="sortTable(1)">School Name <span class="sort-indicator"></span></th>
+                <th onclick="sortTable(2)">Total Students <span class="sort-indicator"></span></th>
+                <th onclick="sortTable(3)">Present <span class="sort-indicator"></span></th>
+                <th onclick="sortTable(4)">Absent <span class="sort-indicator"></span></th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+    <div class="record-counter">
+        Showing <span id="recordCount">0</span> records
+    </div>
+</div>
+
+<!-- Empty State -->
+<div id="emptyState" style="text-align: center; padding: 60px 30px; color: var(--text-secondary);">
+    <div style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;">📊</div>
+    <h3 style="font-size: 1.5rem; color: var(--text-primary); margin-bottom: 10px;">Select a Date</h3>
+    <p>Choose a date from the tabs above to view attendance records.</p>
+</div>
+
+<!-- Back Button -->
+<a href="{% url 'report_dashboard' %}" class="back-link">← Back to Report Dashboard</a>
+
+<script>
+    const summaryData = {{ summary_data|safe }};
+    let currentDate = null;
+    let sortStates = {};
+
+    function initializeDateTabs() {
+        const datesContainer = document.getElementById('dateTabs');
+        const dates = Object.keys(summaryData).sort().reverse();
+
+        dates.forEach(date => {
+            const tab = document.createElement('button');
+            tab.className = 'date-tab';
+            tab.textContent = new Date(date).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+            tab.onclick = () => selectDate(date, tab);
+            datesContainer.appendChild(tab);
+
+            if (currentDate === null) {
+                currentDate = date;
+                tab.classList.add('active');
+            }
+        });
+
+        if (currentDate) {
+            displayDateData(currentDate);
+        }
+    }
+
+    function selectDate(date, tabElement) {
+        currentDate = date;
+        document.querySelectorAll('.date-tab').forEach(tab => tab.classList.remove('active'));
+        tabElement.classList.add('active');
+        displayDateData(date);
+        resetTable();
+    }
+
+    function displayDateData(date) {
+        const records = summaryData[date] || [];
+        const tableBody = document.getElementById('tableBody');
+        const tableContainer = document.getElementById('tableContainer');
+        const emptyState = document.getElementById('emptyState');
+
+        if (records.length === 0) {
+            tableContainer.style.display = 'none';
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        tableBody.innerHTML = '';
+        records.forEach((record, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="text-align: center; font-weight: 700; color: var(--primary);">${index + 1}</td>
+                <td class="school-name">${record.school_name}</td>
+                <td style="color: #1E40AF; font-weight: 700;">${record.total_students}</td>
+                <td style="color: #10B981; font-weight: 700;">${record.present_students}</td>
+                <td style="color: #EF4444; font-weight: 700;">${record.absent_students}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        document.getElementById('recordCount').textContent = records.length;
+        tableContainer.style.display = 'block';
+        emptyState.style.display = 'none';
+        updateStats();
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', searchTable);
+    }
+
+    function searchTable() {
+        const input = document.getElementById('searchInput');
+        const filter = input.value.toLowerCase();
+        const rows = document.querySelectorAll('#tableBody tr');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const schoolName = row.getElementsByTagName('td')[1].textContent.toLowerCase();
+            if (schoolName.includes(filter)) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('recordCount').textContent = visibleCount;
+        updateStats();
+    }
+
+    function sortTable(columnIndex) {
+        const tableBody = document.getElementById('tableBody');
+        const rows = Array.from(tableBody.getElementsByTagName('tr'));
+
+        const isAscending = (sortStates[columnIndex] !== 'asc');
+        sortStates[columnIndex] = isAscending ? 'asc' : 'desc';
+
+        const headers = document.querySelectorAll('#dataTable th .sort-indicator');
+        headers.forEach(h => h.textContent = '');
+
+        const currentIndicator = document.querySelectorAll('#dataTable th')[columnIndex].querySelector('.sort-indicator');
+        if (currentIndicator) {
+            currentIndicator.textContent = isAscending ? '⬆️' : '⬇️';
+        }
+
+        rows.sort((a, b) => {
+            let aValue = a.getElementsByTagName('td')[columnIndex].textContent.trim();
+            let bValue = b.getElementsByTagName('td')[columnIndex].textContent.trim();
+
+            const aNum = parseFloat(aValue);
+            const bNum = parseFloat(bValue);
+
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return isAscending ? aNum - bNum : bNum - aNum;
+            }
+
+            if (isAscending) {
+                return aValue.localeCompare(bValue);
+            } else {
+                return bValue.localeCompare(aValue);
+            }
+        });
+
+        rows.forEach(row => tableBody.appendChild(row));
+    }
+
+    function exportToCSV() {
+        const rows = document.querySelectorAll('#dataTable tbody tr');
+        if (rows.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        let csv = 'S.No.,School Name,Total Students,Present,Absent\n';
+
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const cells = row.getElementsByTagName('td');
+                const sno = index + 1;
+                const schoolName = cells[1].textContent.trim();
+                const totalStudents = cells[2].textContent.trim();
+                const present = cells[3].textContent.trim();
+                const absent = cells[4].textContent.trim();
+                csv += `"${sno}","${schoolName}","${totalStudents}","${present}","${absent}"\n`;
+            }
+        });
+
+        downloadFile(csv, `attendance_${currentDate}.csv`, 'text/csv');
+    }
+
+    function exportToPDF() {
+        const rows = document.querySelectorAll('#dataTable tbody tr');
+        if (rows.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        let pdfContent = '<table border="1" cellpadding="8" style="width:100%; border-collapse: collapse;">';
+        pdfContent += '<thead><tr style="background-color: #1e3c72; color: white;">';
+        pdfContent += '<th>S.No.</th><th>School Name</th><th>Total Students</th><th>Present</th><th>Absent</th>';
+        pdfContent += '</tr></thead><tbody>';
+
+        rows.forEach((row, index) => {
+            if (row.style.display !== 'none') {
+                const cells = row.getElementsByTagName('td');
+                pdfContent += '<tr>';
+                pdfContent += '<td>' + (index + 1) + '</td>';
+                for (let i = 1; i < cells.length; i++) {
+                    pdfContent += '<td>' + cells[i].textContent.trim() + '</td>';
+                }
+                pdfContent += '</tr>';
+            }
+        });
+
+        pdfContent += '</tbody></table>';
+
+        const newWindow = window.open('', '', 'height=600,width=800');
+        newWindow.document.write('<html><head><title>Date-Wise Attendance Summary</title>');
+        newWindow.document.write('<style>body { font-family: Arial; padding: 20px; }');
+        newWindow.document.write('h2 { color: #1e3c72; } table { border-collapse: collapse; width: 100%; margin-top: 20px; }');
+        newWindow.document.write('th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }');
+        newWindow.document.write('th { background-color: #1e3c72; color: white; }');
+        newWindow.document.write('</style></head><body>');
+        newWindow.document.write('<h2>Date-Wise Attendance Summary - ' + new Date(currentDate).toLocaleDateString() + '</h2>');
+        newWindow.document.write('<p>Generated on: ' + new Date().toLocaleString() + '</p>');
+        newWindow.document.write(pdfContent);
+        newWindow.document.write('</body></html>');
+        newWindow.document.close();
+        newWindow.print();
+    }
+
+    function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+
+    function resetTable() {
+        document.getElementById('searchInput').value = '';
+        const rows = document.querySelectorAll('#tableBody tr');
+        rows.forEach(row => row.style.display = '');
+        document.getElementById('recordCount').textContent = rows.length;
+        sortStates = {};
+        document.querySelectorAll('#dataTable th .sort-indicator').forEach(h => h.textContent = '');
+        updateStats();
+    }
+
+    function updateStats() {
+        const rows = document.querySelectorAll('#tableBody tr');
+        let totalStudents = 0;
+        let totalPresent = 0;
+        let totalAbsent = 0;
+
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const cells = row.getElementsByTagName('td');
+                totalStudents += parseInt(cells[2].textContent) || 0;
+                totalPresent += parseInt(cells[3].textContent) || 0;
+                totalAbsent += parseInt(cells[4].textContent) || 0;
+            }
+        });
+
+        const attendancePercent = totalStudents > 0 ? Math.round((totalPresent / totalStudents) * 100) : 0;
+
+        document.getElementById('totalStudents').textContent = totalStudents;
+        document.getElementById('totalPresent').textContent = totalPresent;
+        document.getElementById('totalAbsent').textContent = totalAbsent;
+        document.getElementById('attendancePercent').textContent = attendancePercent + '%';
+    }
+
+    // Initialize on page load
+    window.addEventListener('load', function() {
+        initializeDateTabs();
+    });
+</script>
+{% endblock %}

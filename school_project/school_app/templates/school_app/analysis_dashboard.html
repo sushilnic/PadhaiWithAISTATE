@@ -1,0 +1,210 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    /* Blue Theme Variables */
+    :root {
+        --primary-blue: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --accent-blue: #38bdf8;
+    }
+
+    .analysis-container {
+        padding: 30px;
+        padding-bottom: 80px;
+    }
+
+    .page-title {
+        color: var(--primary-blue);
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+
+    .card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(30, 60, 114, 0.15);
+        margin-bottom: 25px;
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-light));
+        color: white;
+        padding: 15px 20px;
+        border: none;
+    }
+
+    .card-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        font-weight: 600;
+    }
+
+    .card-body {
+        padding: 25px;
+    }
+
+    .form-group label {
+        font-weight: 600;
+        color: var(--primary-blue);
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    .form-select {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .form-select:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-light));
+        color: white;
+        font-weight: 600;
+        padding: 12px 15px;
+        border: none;
+    }
+
+    .table tbody td {
+        padding: 12px 15px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .table tbody tr:hover {
+        background-color: rgba(30, 60, 114, 0.05);
+    }
+
+    .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(30, 60, 114, 0.03);
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-blue);
+    }
+
+    .stat-label {
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    .alert-danger {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 15px 20px;
+    }
+
+    /* Footer Styles */
+    .analysis-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: linear-gradient(135deg, var(--primary-blue), var(--primary-light));
+        color: white;
+        text-align: center;
+        padding: 8px 20px;
+        font-size: 0.9rem;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .analysis-footer img {
+        height: 32px;
+        background: white;
+        padding: 3px;
+        border-radius: 4px;
+    }
+
+    .analysis-footer span {
+        opacity: 0.9;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .analysis-container {
+            padding: 20px;
+            padding-bottom: 70px;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .card-body {
+            padding: 15px;
+        }
+
+        .analysis-footer {
+            padding: 6px 10px;
+            font-size: 0.75rem;
+            gap: 8px;
+        }
+
+        .analysis-footer img {
+            height: 24px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analysis-container">
+    <h1 class="page-title">📊 Student Analysis Dashboard</h1>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Select Student</h3>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label for="studentSelect">Choose a student to view analysis</label>
+                <select class="form-select" id="studentSelect">
+                    <option value="">Choose a student...</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- This div will be populated with student analysis -->
+    <div id="analysisContent"></div>
+</div>
+
+<!-- Footer -->
+<div class="analysis-footer">
+    <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo">
+    <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | All Rights Reserved | Empowering Education Through Technology</span>
+    <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'school_app/js/StudentAnalysisDashboard.js' %}"></script>
+{% endblock %}

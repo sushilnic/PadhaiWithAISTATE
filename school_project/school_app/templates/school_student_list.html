@@ -1,0 +1,118 @@
+{% extends 'school_app/base.html' %}
+
+{% block title %}School-Wise Student Report{% endblock %}
+
+{% block content %}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>School-Wise Student Report</h1>
+    <p>View all students organized by their schools</p>
+</div>
+
+{% if school_students %}
+
+<!-- Search Box -->
+<div class="form-container mb-30">
+    <input type="text" id="schoolSearch" placeholder="Search by school name or student name..." class="form-control" style="max-width: 500px; margin: 0 auto;">
+</div>
+
+<!-- Schools Container -->
+<div class="dashboard-grid">
+    {% for school, students in school_students.items %}
+    <div class="dashboard-card school-card-item" data-school="{{ school.name|lower }}">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-school"></i></span>
+            <h3>{{ school.name }}</h3>
+        </div>
+        <div class="card-body">
+            <div class="d-flex flex-between mb-10" style="border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: #666;">
+                    {% if school.block %}<i class="fas fa-map-marker-alt"></i> {{ school.block.name_english }}{% endif %}
+                </span>
+                <span class="status-badge success">
+                    <i class="fas fa-users"></i> {{ students.count }} Students
+                </span>
+            </div>
+
+            {% if students %}
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="data-table" style="font-size: 0.9rem;">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Roll No.</th>
+                            <th>Student Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr class="student-row" data-student="{{ student.name|lower }}">
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong style="color: var(--primary-color);">{{ student.roll_number }}</strong></td>
+                            <td>{{ student.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center p-20" style="color: #666;">
+                <i class="fas fa-inbox"></i><br>
+                <p>No students in this school</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+
+<!-- Empty State -->
+<div class="alert-box info text-center">
+    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
+    <h3>No Schools Found</h3>
+    <p>No schools with students are available at this time.</p>
+</div>
+
+{% endif %}
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <button onclick="window.history.back();" class="back-link" style="cursor: pointer; border: none;">
+        <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
+    </button>
+</div>
+
+<!-- Search Functionality -->
+<script>
+    document.getElementById('schoolSearch').addEventListener('keyup', function() {
+        const searchValue = this.value.toLowerCase();
+        const schoolCards = document.querySelectorAll('.school-card-item');
+
+        schoolCards.forEach(card => {
+            const schoolName = card.getAttribute('data-school');
+            const studentRows = card.querySelectorAll('.student-row');
+            let hasVisibleStudent = false;
+
+            studentRows.forEach(row => {
+                const studentName = row.getAttribute('data-student');
+                if (studentName.includes(searchValue)) {
+                    row.style.display = '';
+                    hasVisibleStudent = true;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (schoolName.includes(searchValue) || hasVisibleStudent) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+</script>
+
+{% endblock %}

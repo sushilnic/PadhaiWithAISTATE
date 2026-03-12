@@ -1,0 +1,841 @@
+/* ============================================
+   PadhaiWithAI - Centralized Dashboard Styles
+   ============================================
+   This CSS file controls the design across all pages.
+   Changes here will affect the entire project.
+*/
+
+/* ============================================
+   CSS Variables - Edit these to change colors
+   across the entire project
+   ============================================ */
+:root {
+    /* Primary Colors */
+    --primary-gradient-start: #1e3c72;
+    --primary-gradient-end: #2a5298;
+    --primary-color: #1e3c72;
+
+    /* Secondary Colors */
+    --secondary-color: #64748B;
+    --secondary-light: #94A3B8;
+
+    /* Accent Colors */
+    --accent-purple: #667eea;
+    --accent-blue: #4facfe;
+    --accent-green: #11998e;
+    --accent-teal: #38ef7d;
+    --accent-orange: #f093fb;
+    --accent-red: #f5576c;
+    --accent-yellow: #ffc107;
+
+    /* Background Colors */
+    --bg-primary: #F8FAFC;
+    --bg-white: #FFFFFF;
+    --bg-light: #f8f9fa;
+
+    /* Text Colors */
+    --text-primary: #333333;
+    --text-secondary: #666666;
+    --text-muted: #888888;
+    --text-white: #FFFFFF;
+
+    /* Border Colors */
+    --border-light: #E2E8F0;
+    --border-color: #dee2e6;
+
+    /* Status Colors */
+    --status-success: #28a745;
+    --status-success-bg: #d4edda;
+    --status-warning: #ffc107;
+    --status-warning-bg: #fff3cd;
+    --status-danger: #dc3545;
+    --status-danger-bg: #f8d7da;
+
+    /* Shadows */
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 15px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 15px;
+}
+
+/* ============================================
+   Dashboard Header - Page Title Section
+   ============================================ */
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 25px 20px;
+    background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+    color: var(--text-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.dashboard-header h1 {
+    font-size: 2.2rem;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.dashboard-header p {
+    opacity: 0.9;
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* ============================================
+   Stats Grid - Statistics Cards
+   ============================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.3s ease;
+    border-top: 4px solid var(--primary-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Stat Card Color Variants */
+.stat-card.purple { border-top-color: var(--accent-purple); }
+.stat-card.blue { border-top-color: var(--accent-blue); }
+.stat-card.green { border-top-color: var(--accent-green); }
+.stat-card.teal { border-top-color: var(--accent-teal); }
+.stat-card.orange { border-top-color: var(--accent-orange); }
+.stat-card.red { border-top-color: var(--accent-red); }
+
+.stat-card .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.stat-card .stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 5px;
+}
+
+/* ============================================
+   Section Titles
+   ============================================ */
+.section-title {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin: 30px 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-green);
+    font-weight: 600;
+}
+
+/* ============================================
+   Action Buttons Grid
+   ============================================ */
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 20px;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: var(--text-white);
+    text-align: center;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    text-decoration: none;
+    box-shadow: var(--shadow-md);
+    color: var(--text-white);
+}
+
+.action-btn.primary {
+    background: linear-gradient(135deg, var(--accent-purple) 0%, #764ba2 100%);
+}
+
+.action-btn.success {
+    background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-teal) 100%);
+}
+
+.action-btn.info {
+    background: linear-gradient(135deg, var(--accent-blue) 0%, #00f2fe 100%);
+}
+
+.action-btn.warning {
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-red) 100%);
+}
+
+.action-btn.secondary {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, var(--secondary-light) 100%);
+}
+
+/* ============================================
+   Chart Containers
+   ============================================ */
+.chart-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.chart-container-sm {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+    .chart-container,
+    .chart-container-sm {
+        grid-template-columns: 1fr;
+    }
+}
+
+.chart-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+}
+
+.chart-card h4 {
+    text-align: center;
+    margin-bottom: 15px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* ============================================
+   Data Tables - Professional Styling
+   ============================================ */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.data-table thead th {
+    background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+    color: var(--text-white);
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+}
+
+.data-table tbody td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--bg-light);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ============================================
+   Attendance Card
+   ============================================ */
+.attendance-card {
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    color: var(--text-white);
+    text-align: center;
+}
+
+.attendance-card.success {
+    background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-teal) 100%);
+}
+
+.attendance-card.warning {
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-red) 100%);
+}
+
+.attendance-card.danger {
+    background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+}
+
+.attendance-card h4 {
+    margin-bottom: 15px;
+    font-size: 1.2rem;
+}
+
+.attendance-card .attendance-value {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.attendance-card .attendance-details {
+    margin-top: 10px;
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+/* ============================================
+   Status Badges
+   ============================================ */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-badge.success {
+    background: var(--status-success-bg);
+    color: #155724;
+}
+
+.status-badge.warning {
+    background: var(--status-warning-bg);
+    color: #856404;
+}
+
+.status-badge.danger {
+    background: var(--status-danger-bg);
+    color: #721c24;
+}
+
+/* ============================================
+   Dashboard Cards (Report Dashboard Style)
+   ============================================ */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 40px;
+}
+
+.dashboard-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    transition: all 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.dashboard-card .card-header {
+    background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+    color: var(--text-white);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dashboard-card .card-header-icon {
+    font-size: 1.5rem;
+}
+
+.dashboard-card .card-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.dashboard-card .card-body {
+    padding: 20px;
+}
+
+.dashboard-card .card-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.dashboard-card .card-links {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dashboard-card .card-link {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: var(--primary-color);
+    color: var(--text-white);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: all 0.3s ease;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.dashboard-card .card-link:hover {
+    background-color: var(--primary-gradient-end);
+    transform: translateX(3px);
+    color: var(--text-white);
+}
+
+/* ============================================
+   Quick Stat Cards (Simple Info Cards)
+   ============================================ */
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.quick-stat-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    text-align: center;
+    border-left: 4px solid var(--primary-color);
+}
+
+.quick-stat-card .stat-title {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.quick-stat-card .stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 15px;
+}
+
+.quick-stat-card .stat-action {
+    display: inline-block;
+    padding: 8px 16px;
+    background: var(--primary-color);
+    color: var(--text-white);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.quick-stat-card .stat-action:hover {
+    background: var(--primary-gradient-end);
+    color: var(--text-white);
+}
+
+/* ============================================
+   Form Elements
+   ============================================ */
+.form-container {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 30px;
+}
+
+.form-container .form-title {
+    font-size: 1.3rem;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-light);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+}
+
+/* ============================================
+   Buttons
+   ============================================ */
+.btn-primary-custom {
+    background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
+    color: var(--text-white);
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-success-custom {
+    background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-teal) 100%);
+    color: var(--text-white);
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-success-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   Back/Navigation Links
+   ============================================ */
+.dashboard-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 30px;
+}
+
+.back-link {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: var(--secondary-color);
+    color: var(--text-white);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    transition: all 0.3s ease;
+    font-weight: 600;
+    text-align: center;
+}
+
+.back-link:hover {
+    background-color: #475569;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    color: var(--text-white);
+}
+
+/* ============================================
+   District Selector (for state users)
+   ============================================ */
+.district-selector {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.district-selector label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.district-selector select {
+    padding: 10px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    min-width: 250px;
+    font-size: 1rem;
+}
+
+/* ============================================
+   Test Performance Grid
+   ============================================ */
+.test-performance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.test-card {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-md);
+}
+
+.test-card h5 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.test-card .subject {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+/* ============================================
+   Calendar Styles
+   ============================================ */
+.calendar-container {
+    background: var(--bg-white);
+    border-radius: var(--radius-lg);
+    padding: 25px;
+    box-shadow: var(--shadow-md);
+    margin-bottom: 30px;
+}
+
+.calendar-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+.calendar-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-navigation button {
+    background: var(--primary-color);
+    color: var(--text-white);
+    border: none;
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.calendar-navigation button:hover {
+    background: var(--primary-gradient-end);
+}
+
+.calendar {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.calendar th {
+    background: var(--primary-color);
+    color: var(--text-white);
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.calendar td {
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    vertical-align: top;
+    min-height: 80px;
+}
+
+.calendar .day {
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 5px;
+}
+
+.calendar .event {
+    background: var(--bg-light);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    margin-top: 5px;
+    border-left: 3px solid var(--primary-color);
+}
+
+/* ============================================
+   Alert/Message Boxes
+   ============================================ */
+.alert-box {
+    padding: 15px 20px;
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.alert-box.success {
+    background: var(--status-success-bg);
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.alert-box.warning {
+    background: var(--status-warning-bg);
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.alert-box.danger {
+    background: var(--status-danger-bg);
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-box.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* ============================================
+   Responsive Adjustments
+   ============================================ */
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 20px 15px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .district-selector {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .district-selector select {
+        width: 100%;
+    }
+
+    .section-title {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-header h1 {
+        font-size: 1.5rem;
+    }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.mb-0 { margin-bottom: 0; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-30 { margin-bottom: 30px; }
+
+.mt-0 { margin-top: 0; }
+.mt-10 { margin-top: 10px; }
+.mt-20 { margin-top: 20px; }
+.mt-30 { margin-top: 30px; }
+
+.p-10 { padding: 10px; }
+.p-20 { padding: 20px; }
+
+.d-flex { display: flex; }
+.flex-center { justify-content: center; align-items: center; }
+.flex-between { justify-content: space-between; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-10 { gap: 10px; }
+.gap-15 { gap: 15px; }
+.gap-20 { gap: 20px; }
+
+/* ============================================
+   DataTables Override Styles
+   ============================================ */
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+}
+
+.dataTables_wrapper .dataTables_length select {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: var(--radius-sm) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--primary-color) !important;
+    color: var(--text-white) !important;
+    border-color: var(--primary-color) !important;
+}

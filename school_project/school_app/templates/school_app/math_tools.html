@@ -1,0 +1,613 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --secondary: #64748B;
+        --accent: #38bdf8;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+    }
+
+    .page-header-math {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+    }
+    .page-header-math h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header-math p { font-size: 0.9rem; opacity: 0.9; margin: 5px 0 0 0; }
+    .model-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin-top: 8px;
+    }
+
+    .card-math {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+    .card-math .card-body { padding: 20px; }
+    .card-math .card-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border);
+    }
+
+    .form-label { font-weight: 600; color: var(--text-primary); font-size: 0.9rem; }
+    .form-select, .form-control {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+    .form-select:focus, .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+
+    .btn-primary-math {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .btn-primary-math:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+        color: white;
+    }
+    .btn-success-math {
+        background: linear-gradient(135deg, var(--success), #059669);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .btn-success-math:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+    .btn-orange-math {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .btn-orange-math:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        color: white;
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    }
+    .btn-danger-math {
+        background: linear-gradient(135deg, var(--danger), #DC2626);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+    .btn-danger-math:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        color: white;
+    }
+
+    .selected-questions-container {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+    }
+    .selected-question {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-bottom: 6px;
+        border: 1px solid var(--border);
+        font-size: 0.85rem;
+    }
+    .selected-question:hover { background: #f0f7ff; }
+
+    .exercise-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+    }
+    .exercise-header:hover { opacity: 0.95; }
+    .exercise-content { padding: 10px 0; }
+
+    .question-item {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: #fafafa;
+        border: 1px solid var(--border);
+        transition: all 0.2s ease;
+    }
+    .question-item:hover { background: #f0f7ff; border-color: var(--primary-light); }
+
+    .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .result-content {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid var(--border);
+    }
+
+    .instructions-box {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        border: 2px solid #f59e0b;
+        border-radius: 12px;
+        padding: 20px;
+    }
+    .instructions-box h4 { color: #92400e; margin-bottom: 15px; }
+    .instructions-box ul { margin-bottom: 0; }
+    .instructions-box li { margin-bottom: 8px; color: #78350f; }
+</style>
+
+<!-- Page Header -->
+<div class="page-header-math">
+    <h1>🧮 Math Tools - AI Powered Solutions</h1>
+    <p>Select questions and get step-by-step solutions with AI</p>
+    <span class="model-badge">📡 Model: {{ model_type }}</span>
+</div>
+
+<div class="container-fluid px-0">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card-math">
+                <div class="card-body">
+                    <h5 class="card-title">📚 Select Options</h5>
+                    
+                    <form method="post" action="{% url 'load_questions' %}" id="optionsForm">
+                        {% csrf_token %}
+                     
+                        <!-- Book Selection -->
+                        <div class="mb-3">
+                            <label for="bookSelect" class="form-label">Select Book</label>
+                            <select class="form-select" id="bookSelect" name="book">
+                                <option value="">Choose a book...</option>
+                                {% for book in books %}
+                                    <option value="{{ book.id }}" 
+                                            data-language="{{ book.language }}">
+                                        {{ book.name }} ({{ book.language }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="chapterSelect" class="form-label">Select Chapter</label>
+                            <select class="form-select" id="chapterSelect" name="chapter" disabled>
+                                <option value="">Select a chapter...</option>
+                                {% if chapters %}
+                                    {% for chapter in chapters %}
+                                        <option value="{{ chapter.id }}"
+                                                {% if chapter.id == selected_chapter %}selected{% endif %}>
+                                                 {{ chapter.name }}
+                                        </option>
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-primary-math" id="loadQuestionsBtn" onclick="clearSelectedQuestions()">
+                            📖 Load Questions
+                        </button>
+                    </form>
+
+                    <!-- Selected Questions Queue -->
+                    <div class="mt-4">
+                        <h6 style="color: var(--primary); font-weight: 600;">📋 Selected Questions Queue</h6>
+                        <div id="selectedQuestions" class="selected-questions-container">
+                            {% if selected_questions %}
+                                {% for question in selected_questions %}
+                                    <div class="selected-question">
+                                        <div class="question-text">{{ question }}</div>
+                                        <button class="btn btn-sm btn-danger remove-question" 
+                                                data-question="{{ question }}">×</button>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No questions selected.</p>
+                            {% endif %}
+                        </div>
+                        <!-- In the sidebar where the buttons are -->
+                        <div class="mt-2">
+                            <button class="btn-danger-math" onclick="clearSelectedQuestions()">
+                                🗑️ Clear Selected
+                            </button>
+                            
+                            <div class="mt-3">
+                                <button class="btn-success-math mb-2" onclick="solveSelected()" id="solveBtn" disabled>
+                                    ✨ Solve with AI
+                                </button>
+                                <button class="btn-orange-math" onclick="generateMore()" id="generateBtn" disabled>
+                                    🔄 Generate More
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <!-- Questions List -->
+            <div class="card-math">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        {% if chapter_name %}
+                            📝 Questions from {{ chapter_name }}
+                        {% else %}
+                            📝 Questions
+                        {% endif %}
+                    </h5>
+
+                    {% if questions %}
+                    <div id="questionsList">
+                        {% for exercise in questions %}
+                            <div class="exercise-section mb-4">
+                                <h6 class="exercise-header" style="cursor: pointer;">
+                                    📌 Exercise {{ exercise.exercise }}
+                                    <span class="toggle-icon">−</span>
+                                </h6>
+                                <div class="exercise-content">
+                                    {% for question in exercise.questions %}
+                                        <div class="question-item">
+                                            {% if question.sub_questions %}
+                                                <div class="main-question mb-2">
+                                                    {{ question.question }}
+                                                    {% if question.img %}
+                                                        <img src="{% static 'school_app/images/'|add:question.img %}" 
+                                                             alt="Question Image" 
+                                                             class="img-fluid mt-2">
+                                                    {% endif %}
+                                                </div>
+                                                <div class="sub-questions ms-4">
+                                                    {% for sub_q in question.sub_questions %}
+                                                        <div class="form-check">
+                                                            <input type="checkbox" 
+                                                                   class="form-check-input question-checkbox" 
+                                                                   id="question_{{ forloop.parentloop.parentloop.counter }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                                            <label class="form-check-label" 
+                                                                   for="question_{{ forloop.parentloop.parentloop.counter }}_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                                                {{ sub_q }}
+                                                                <span class="text-muted">({{ question.question }})</span>
+                                                            </label>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                                {% else %}
+                                                <div class="form-check">
+                                                    <input type="checkbox" 
+                                                           class="form-check-input question-checkbox" 
+                                                           id="question_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                                    <label class="form-check-label" 
+                                                           for="question_{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                                        {{ question.question }}
+                                                        {% if question.img %}
+                                                            <img src="{% static 'school_app/images/'|add:question.img %}" 
+                                                                 alt="Question Image" 
+                                                                 class="img-fluid mt-2">
+                                                        {% endif %}
+                                                    </label>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                        {% if not solution and not generated_questions %}
+                            <p class="text-muted" style="margin-bottom: 15px;">Select a book and chapter to view questions.</p>
+                            <div class="instructions-box">
+                                <h4>📝 Instructions / निर्देश</h4>
+                                <ul><b>English:</b>
+                                    <li>Select a <b>Book</b> and then choose a <b>Chapter</b> to load questions.</li>
+                                    <li>Click <b>Load Questions</b> to view all questions of that chapter.</li>
+                                    <li>Click on any question to add it to the <b>Selected Questions Queue</b>.</li>
+                                    <li>Use <b>Solve</b> to get AI-based step-by-step solutions.</li>
+                                    <li>Use <b>Generate More</b> to create new practice questions with AI.</li>
+                                    <li>Click <b>Clear Selected</b> to remove questions from the queue.</li>
+                                </ul>
+                                <hr style="border-color: #f59e0b;">
+                                 <ul><b>हिन्दी:</b>
+                                    <li><b>पुस्तक (Book)</b> चुनें और फिर <b>अध्याय (Chapter)</b> चुनकर प्रश्न लोड करें।</li>
+                                    <li><b>Load Questions</b> पर क्लिक करते ही अध्याय के सभी प्रश्न दिखाई देंगे।</li>
+                                    <li>किसी भी प्रश्न पर क्लिक करके उसे <b>Selected Questions Queue</b> में जोड़ें।</li>
+                                    <li><b>Solve</b> बटन दबाकर AI से स्टेप-बाय-स्टेप समाधान देखें।</li>
+                                    <li><b>Generate More</b> पर क्लिक कर नए अभ्यास प्रश्न प्राप्त करें।</li>
+                                    <li><b>Clear Selected</b> क्लिक करके चुने हुए प्रश्न हटाएँ।</li>
+                                </ul>
+                            </div>
+                        {% endif %}
+                {% endif %}
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            {% if solution or generated_questions %}
+                <div class="card-math mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            {% if solution %}
+                                ✨ AI Solutions
+                            {% else %}
+                                🔄 Generated Questions
+                                {% if chapter_name %}<small style="font-weight: 400; color: var(--text-secondary);"> - {{ chapter_name }}</small>{% endif %}
+                            {% endif %}
+                        </h5>
+                        <div class="result-content">
+                            {{ solution|safe }}
+                            {{ generated_questions|safe }}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% if solutions %}
+    <div class="card-math mt-4">
+        <div class="card-body">
+            <h5 class="card-title">✨ AI Solutions</h5>
+            {% for solution in solutions %}
+                <div class="solution-item mb-4" style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
+                    <div class="question mb-2">
+                        <strong style="color: var(--primary);">📝 Question:</strong>
+                        <div style="margin-top: 5px;">{{ solution.question }}</div>
+                    </div>
+                    <div class="solution" style="margin-top: 12px;">
+                        <strong style="color: var(--success);">✅ Solution:</strong>
+                        <div style="margin-top: 5px; background: white; padding: 12px; border-radius: 6px; border: 1px solid var(--border);">{{ solution.solution|safe }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+{% endif %}
+
+<div style="height: 30px;"></div>
+
+<script>
+    // Clear selected questions from localStorage and UI
+    function clearSelectedQuestions() {
+        // Clear localStorage
+        localStorage.removeItem('selectedQuestions');
+        
+        // Clear the UI container
+        const container = document.getElementById('selectedQuestions');
+        if (container) {
+            container.innerHTML = '<p class="text-muted">No questions selected.</p>';
+        }
+        
+        // Uncheck all checkboxes
+        document.querySelectorAll('.question-checkbox').forEach(cb => {
+            cb.checked = false;
+        });
+        
+        // Disable solve and generate buttons
+        const solveBtn = document.getElementById('solveBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        if (solveBtn) solveBtn.disabled = true;
+        if (generateBtn) generateBtn.disabled = true;
+    }
+
+    // Solve selected questions
+    function solveSelected() {
+        const selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions') || '[]');
+        if (selectedQuestions.length === 0) {
+            alert('Please select at least one question.');
+            return;
+        }
+        
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "solve_math" %}';
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        form.appendChild(csrfInput);
+        
+        const questionsInput = document.createElement('input');
+        questionsInput.type = 'hidden';
+        questionsInput.name = 'questions';
+        questionsInput.value = JSON.stringify(selectedQuestions);
+        form.appendChild(questionsInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Generate more questions
+    function generateMore() {
+        const selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions') || '[]');
+        if (selectedQuestions.length === 0) {
+            alert('Please select at least one question.');
+            return;
+        }
+
+        // Create form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{% url "generate_form" %}';
+
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        form.appendChild(csrfInput);
+
+        const questionsInput = document.createElement('input');
+        questionsInput.type = 'hidden';
+        questionsInput.name = 'questions';
+        questionsInput.value = JSON.stringify(selectedQuestions);
+        form.appendChild(questionsInput);
+
+        const chapterInput = document.createElement('input');
+        chapterInput.type = 'hidden';
+        chapterInput.name = 'chapter_name';
+        chapterInput.value = '{{ chapter_name|default:"" }}';
+        form.appendChild(chapterInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    // Toggle exercise sections
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.exercise-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const content = this.nextElementSibling;
+                const icon = this.querySelector('.toggle-icon');
+                if (content.style.display === 'none') {
+                    content.style.display = 'block';
+                    icon.textContent = '−';
+                } else {
+                    content.style.display = 'none';
+                    icon.textContent = '+';
+                }
+            });
+        });
+
+        // Handle checkbox changes
+        document.querySelectorAll('.question-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateSelectedQuestions();
+            });
+        });
+
+        // Load saved questions on page load
+        loadSavedQuestions();
+    });
+
+    function updateSelectedQuestions() {
+        const selectedQuestions = [];
+        document.querySelectorAll('.question-checkbox:checked').forEach(cb => {
+            const label = cb.nextElementSibling;
+            if (label) {
+                selectedQuestions.push(label.textContent.trim());
+            }
+        });
+        
+        localStorage.setItem('selectedQuestions', JSON.stringify(selectedQuestions));
+        updateSelectedQuestionsUI(selectedQuestions);
+    }
+
+    function updateSelectedQuestionsUI(questions) {
+        const container = document.getElementById('selectedQuestions');
+        const solveBtn = document.getElementById('solveBtn');
+        const generateBtn = document.getElementById('generateBtn');
+        
+        if (questions.length === 0) {
+            container.innerHTML = '<p class="text-muted">No questions selected.</p>';
+            solveBtn.disabled = true;
+            generateBtn.disabled = true;
+        } else {
+            container.innerHTML = questions.map(q => `
+                <div class="selected-question">
+                    <div class="question-text">${q.substring(0, 100)}${q.length > 100 ? '...' : ''}</div>
+                    <button class="btn btn-sm btn-danger remove-question" onclick="removeQuestion('${q.replace(/'/g, "\\'")}')">×</button>
+                </div>
+            `).join('');
+            solveBtn.disabled = false;
+            generateBtn.disabled = false;
+        }
+    }
+
+    function removeQuestion(question) {
+        const selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions') || '[]');
+        const index = selectedQuestions.indexOf(question);
+        if (index > -1) {
+            selectedQuestions.splice(index, 1);
+            localStorage.setItem('selectedQuestions', JSON.stringify(selectedQuestions));
+            updateSelectedQuestionsUI(selectedQuestions);
+            
+            // Uncheck the corresponding checkbox
+            document.querySelectorAll('.question-checkbox').forEach(cb => {
+                const label = cb.nextElementSibling;
+                if (label && label.textContent.trim() === question) {
+                    cb.checked = false;
+                }
+            });
+        }
+    }
+
+    function loadSavedQuestions() {
+        const selectedQuestions = JSON.parse(localStorage.getItem('selectedQuestions') || '[]');
+        if (selectedQuestions.length > 0) {
+            updateSelectedQuestionsUI(selectedQuestions);
+            
+            // Check the corresponding checkboxes
+            document.querySelectorAll('.question-checkbox').forEach(cb => {
+                const label = cb.nextElementSibling;
+                if (label && selectedQuestions.includes(label.textContent.trim())) {
+                    cb.checked = true;
+                }
+            });
+        }
+    }
+</script>
+{% endblock %}

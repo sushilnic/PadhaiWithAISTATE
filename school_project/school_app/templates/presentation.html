@@ -1,0 +1,747 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PadhaiWithAI – Project Presentation</title>
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #1e3c72;
+            --primary-light: #2a5298;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --purple: #8b5cf6;
+            --bg-dark: #0f172a;
+            --bg-mid: #1e293b;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-light);
+            overflow-x: hidden;
+        }
+
+        /* ── Navigation ── */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(15,23,42,0.96);
+            backdrop-filter: blur(10px);
+            padding: 12px 30px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid rgba(56,189,248,0.2);
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            color: white; text-decoration: none; font-weight: 700; font-size: 1.2rem;
+        }
+        .nav-logo img { height: 38px; border-radius: 8px; }
+        .nav-links { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .nav-link {
+            color: rgba(255,255,255,0.7); text-decoration: none;
+            padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; transition: all 0.3s;
+        }
+        .nav-link:hover, .nav-link.active { background: rgba(56,189,248,0.18); color: var(--accent); }
+        .btn-print {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; border: none; padding: 8px 18px; border-radius: 20px;
+            font-size: 0.82rem; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 6px; transition: all 0.3s;
+        }
+        .btn-print:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(30,60,114,0.4); }
+
+        /* ── Slides ── */
+        .slide {
+            min-height: 100vh; padding: 90px 60px 60px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .slide-title  { background: linear-gradient(135deg, var(--primary) 0%, #0f172a 100%); }
+        .slide-dark   { background: var(--bg-dark); }
+        .slide-mid    { background: linear-gradient(135deg, #0f172a 0%, var(--bg-mid) 100%); }
+        .slide-blue   { background: linear-gradient(135deg, var(--primary) 0%, var(--bg-mid) 100%); }
+        .slide-footer { background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
+
+        /* ── Section Header ── */
+        .section-header { text-align: center; margin-bottom: 50px; }
+        .section-number {
+            display: inline-block; background: rgba(56,189,248,0.15);
+            color: var(--accent); padding: 6px 18px; border-radius: 20px;
+            font-size: 0.85rem; font-weight: 700; letter-spacing: 2px;
+            margin-bottom: 12px; text-transform: uppercase;
+        }
+        .section-title { font-size: 2.4rem; font-weight: 800; margin-bottom: 12px; }
+        .section-subtitle { font-size: 1.05rem; color: var(--text-muted); max-width: 650px; margin: 0 auto; line-height: 1.7; }
+
+        /* ── Title Slide ── */
+        .title-content { text-align: center; max-width: 900px; margin: 0 auto; }
+        .main-logo { width: 120px; height: 120px; border-radius: 20px; margin-bottom: 30px; box-shadow: 0 10px 40px rgba(56,189,248,0.3); }
+        .main-title {
+            font-size: 4rem; font-weight: 800; margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .main-subtitle { font-size: 1.3rem; color: var(--text-muted); margin-bottom: 10px; }
+        .main-tagline { font-size: 1rem; color: var(--accent); font-weight: 600; letter-spacing: 1px; margin-bottom: 40px; }
+        .badge-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .badge {
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            color: white; padding: 8px 18px; border-radius: 25px; font-size: 0.9rem; font-weight: 500;
+        }
+        .badge i { margin-right: 6px; }
+
+        /* ── Grids ── */
+        .grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 20px; }
+
+        /* ── Cards ── */
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 28px;
+            transition: all 0.3s;
+        }
+        .card:hover { transform: translateY(-4px); border-color: rgba(56,189,248,0.4); background: rgba(255,255,255,0.08); }
+        .card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; }
+        .card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.7; }
+        .card-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; margin-bottom: 18px;
+        }
+        .card-icon.blue   { background: rgba(56,189,248,0.15); color: var(--accent); }
+        .card-icon.green  { background: rgba(16,185,129,0.15); color: var(--success); }
+        .card-icon.purple { background: rgba(139,92,246,0.15); color: var(--purple); }
+        .card-icon.orange { background: rgba(245,158,11,0.15); color: var(--warning); }
+        .card-icon.red    { background: rgba(239,68,68,0.15);  color: var(--danger); }
+        .card-icon.teal   { background: rgba(20,184,166,0.15); color: #14b8a6; }
+
+        /* ── Feature List ── */
+        .feature-list { list-style: none; padding: 0; margin-top: 12px; }
+        .feature-list li {
+            padding: 5px 0; font-size: 0.88rem; color: var(--text-muted);
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .feature-list li::before { content: "✓"; color: var(--success); font-weight: 700; flex-shrink: 0; }
+
+        /* ── Stats ── */
+        .stats-row { display: flex; justify-content: center; gap: 30px; flex-wrap: wrap; margin-top: 40px; }
+        .stat-box {
+            background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px; padding: 28px 36px; text-align: center; min-width: 140px;
+        }
+        .stat-num { font-size: 2.6rem; font-weight: 800; color: var(--accent); line-height: 1; }
+        .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+
+        /* ── How it Works Steps ── */
+        .steps { display: flex; gap: 0; align-items: stretch; flex-wrap: wrap; }
+        .step {
+            flex: 1; min-width: 200px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px; padding: 32px 24px; text-align: center;
+            position: relative; transition: all 0.3s;
+        }
+        .step:hover { background: rgba(255,255,255,0.09); transform: translateY(-4px); }
+        .step-num {
+            width: 50px; height: 50px; background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; font-weight: 800; margin: 0 auto 18px; color: white;
+        }
+        .step h4 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
+        .step p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
+        .step-arrow {
+            display: flex; align-items: center; padding: 0 12px;
+            color: var(--accent); font-size: 1.6rem; flex-shrink: 0;
+        }
+
+        /* ── User Roles ── */
+        .roles { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .role-card {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 14px; padding: 22px 20px; text-align: center; min-width: 130px;
+            transition: all 0.3s;
+        }
+        .role-card:hover { transform: translateY(-4px); }
+        .role-card i { font-size: 2rem; margin-bottom: 12px; display: block; }
+        .role-card strong { font-size: 0.92rem; display: block; margin-bottom: 4px; }
+        .role-card span { font-size: 0.78rem; color: var(--text-muted); }
+        .role-arrow { color: var(--accent); font-size: 1.4rem; }
+
+        /* ── Tech Chips ── */
+        .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+        .chip {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+            padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 500;
+            display: flex; align-items: center; gap: 6px; transition: all 0.3s;
+        }
+        .chip:hover { border-color: var(--accent); }
+
+        /* ── Impact Numbers ── */
+        .impact-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+        .impact-card {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px; padding: 32px 24px; text-align: center;
+        }
+        .impact-card i { font-size: 2.5rem; margin-bottom: 16px; display: block; }
+        .impact-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 14px; }
+        .impact-card ul { list-style: none; padding: 0; }
+        .impact-card ul li {
+            font-size: 0.88rem; color: var(--text-muted); padding: 5px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .impact-card ul li:last-child { border-bottom: none; }
+
+        /* ── Problem / Solution ── */
+        .problem-solution { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px; }
+        .prob-box, .sol-box {
+            border-radius: 16px; padding: 30px;
+        }
+        .prob-box { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); }
+        .sol-box  { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); }
+        .prob-box h3 { color: var(--danger); margin-bottom: 16px; font-size: 1.1rem; }
+        .sol-box  h3 { color: var(--success); margin-bottom: 16px; font-size: 1.1rem; }
+        .prob-sol-list { list-style: none; padding: 0; }
+        .prob-sol-list li { font-size: 0.88rem; color: var(--text-muted); padding: 6px 0; display: flex; gap: 8px; }
+        .prob-sol-list li::before { font-weight: 700; flex-shrink: 0; }
+        .prob-box .prob-sol-list li::before { content: "✗"; color: var(--danger); }
+        .sol-box  .prob-sol-list li::before { content: "✓"; color: var(--success); }
+
+        /* ── Thank You ── */
+        .thank-title {
+            font-size: 3.5rem; font-weight: 800; margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff, var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        /* ── Scroll Down ── */
+        .scroll-hint { text-align: center; margin-top: 40px; color: var(--accent); animation: bounce 2s infinite; }
+        @keyframes bounce {
+            0%,100% { transform: translateY(0); }
+            50%      { transform: translateY(-10px); }
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            .grid-3, .grid-4 { grid-template-columns: repeat(2,1fr); }
+            .impact-grid { grid-template-columns: repeat(2,1fr); }
+        }
+        @media (max-width: 768px) {
+            .slide { padding: 80px 20px 40px; }
+            .main-title { font-size: 2.5rem; }
+            .section-title { font-size: 1.8rem; }
+            .grid-2, .grid-3, .grid-4, .impact-grid { grid-template-columns: 1fr; }
+            .problem-solution { grid-template-columns: 1fr; }
+            .steps { flex-direction: column; }
+            .step-arrow { transform: rotate(90deg); }
+            .roles { flex-direction: column; align-items: center; }
+            .nav-links { display: none; }
+        }
+
+        @media print {
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .nav, .scroll-hint, .btn-print { display: none !important; }
+            .slide { min-height: auto; page-break-after: always; padding: 40px 50px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+    <a href="#home" class="nav-logo">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+        PadhaiWithAI
+    </a>
+    <div class="nav-links">
+        <a href="#home"         class="nav-link active">Home</a>
+        <a href="#problem"      class="nav-link">Problem</a>
+        <a href="#how"          class="nav-link">How It Works</a>
+        <a href="#features"     class="nav-link">Features</a>
+        <a href="#roles"        class="nav-link">Roles</a>
+        <a href="#ai"           class="nav-link">AI Tools</a>
+        <a href="#tech"         class="nav-link">Technology</a>
+        <a href="#impact"       class="nav-link">Impact</a>
+        <a href="#contact"      class="nav-link">Contact</a>
+        <button class="btn-print" onclick="window.print()">
+            <i class="fas fa-print"></i> Print
+        </button>
+    </div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 1 — Title
+═══════════════════════════════════════════ -->
+<section id="home" class="slide slide-title">
+    <div class="title-content">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="main-logo">
+        <h1 class="main-title">PadhaiWithAI</h1>
+        <p class="main-subtitle">AI-Powered Education Management Platform</p>
+        <p class="main-tagline">Empowering Government Schools in Rajasthan</p>
+        <div class="badge-row">
+            <span class="badge"><i class="fas fa-school"></i> School Management</span>
+            <span class="badge"><i class="fas fa-robot"></i> AI Learning Tools</span>
+            <span class="badge"><i class="fas fa-chart-line"></i> Live Analytics</span>
+            <span class="badge"><i class="fas fa-users"></i> 5 User Roles</span>
+            <span class="badge"><i class="fas fa-language"></i> Hindi + English</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><i class="fas fa-chevron-down fa-lg"></i></div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 2 — Problem & Solution
+═══════════════════════════════════════════ -->
+<section id="problem" class="slide slide-mid">
+    <div class="section-header">
+        <div class="section-number">01 · Why This Project?</div>
+        <h2 class="section-title">Problem → Solution</h2>
+        <p class="section-subtitle">Government schools in Tonk district faced real challenges — PadhaiWithAI solves them directly.</p>
+    </div>
+
+    <div class="problem-solution">
+        <div class="prob-box">
+            <h3><i class="fas fa-times-circle"></i> &nbsp;Before PadhaiWithAI</h3>
+            <ul class="prob-sol-list">
+                <li>No single system to track student marks across schools</li>
+                <li>Manual attendance — time-consuming, error-prone</li>
+                <li>No way to identify weak students early</li>
+                <li>Teachers had no AI help for question creation</li>
+                <li>District officers had no real-time school data</li>
+                <li>Students had no digital learning support in Hindi</li>
+                <li>Paper-based test results — hard to analyse</li>
+            </ul>
+        </div>
+        <div class="sol-box">
+            <h3><i class="fas fa-check-circle"></i> &nbsp;After PadhaiWithAI</h3>
+            <ul class="prob-sol-list">
+                <li>Centralised marks entry &amp; analysis for all schools</li>
+                <li>One-click digital attendance with summaries</li>
+                <li>Automatic weak student detection with alerts</li>
+                <li>AI generates question papers in seconds</li>
+                <li>District dashboard with live school performance</li>
+                <li>AI Tutor (Sathi) answers in Hindi 24/7</li>
+                <li>Visual charts &amp; PDF reports instantly</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-box"><div class="stat-num">8</div><div class="stat-label">Blocks Covered</div></div>
+        <div class="stat-box"><div class="stat-num">600+</div><div class="stat-label">Schools</div></div>
+        <div class="stat-box"><div class="stat-num">60K+</div><div class="stat-label">Students Served</div></div>
+        <div class="stat-box"><div class="stat-num">69K+</div><div class="stat-label">Marks Recorded</div></div>
+        <div class="stat-box"><div class="stat-num">2</div><div class="stat-label">Languages</div></div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 3 — How It Works
+═══════════════════════════════════════════ -->
+<section id="how" class="slide slide-dark">
+    <div class="section-header">
+        <div class="section-number">02 · Simple Workflow</div>
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">From school login to district insights — in 3 simple steps</p>
+    </div>
+
+    <div class="steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <i class="fas fa-sign-in-alt fa-2x" style="color:var(--accent); margin-bottom:14px;"></i>
+            <h4>Login by Role</h4>
+            <p>Each user (School / Block / District / State / Student) logs in with their own account and sees only their relevant data.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <i class="fas fa-tasks fa-2x" style="color:var(--success); margin-bottom:14px;"></i>
+            <h4>Manage &amp; Enter Data</h4>
+            <p>Schools add students, mark attendance, enter test marks, and use AI tools. Everything is saved in real time.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <i class="fas fa-chart-bar fa-2x" style="color:var(--purple); margin-bottom:14px;"></i>
+            <h4>View Reports &amp; Insights</h4>
+            <p>Block and District officers see dashboards, charts, and reports automatically — no manual effort needed.</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <i class="fas fa-robot fa-2x" style="color:var(--warning); margin-bottom:14px;"></i>
+            <h4>AI Helps Everyone</h4>
+            <p>Students get 24/7 AI tutoring. Teachers get AI-generated question papers. All in Hindi and English.</p>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 4 — Key Features
+═══════════════════════════════════════════ -->
+<section id="features" class="slide slide-blue">
+    <div class="section-header">
+        <div class="section-number">03 · What It Does</div>
+        <h2 class="section-title">Key Features</h2>
+        <p class="section-subtitle">Everything a school, teacher, and administrator needs — in one platform</p>
+    </div>
+
+    <div class="grid-3">
+        <div class="card">
+            <div class="card-icon blue"><i class="fas fa-users"></i></div>
+            <h3>Student &amp; School Management</h3>
+            <ul class="feature-list">
+                <li>Add / edit / delete students easily</li>
+                <li>Class-wise roll number management</li>
+                <li>Bulk upload via Excel file</li>
+                <li>School ranking &amp; comparison</li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-icon green"><i class="fas fa-clipboard-list"></i></div>
+            <h3>Tests &amp; Marks</h3>
+            <ul class="feature-list">
+                <li>Create tests &amp; upload question PDFs</li>
+                <li>Enter &amp; edit student marks</li>
+                <li>Auto grade category (0–33, 33–60, 60–80…)</li>
+                <li>Result charts &amp; PDF download</li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-icon purple"><i class="fas fa-calendar-check"></i></div>
+            <h3>Attendance</h3>
+            <ul class="feature-list">
+                <li>Daily attendance in one click</li>
+                <li>Date-wise &amp; month-wise summaries</li>
+                <li>Block and district level reports</li>
+                <li>Attendance percentage per student</li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-icon orange"><i class="fas fa-chart-pie"></i></div>
+            <h3>Analytics &amp; Reports</h3>
+            <ul class="feature-list">
+                <li>Visual dashboards at every level</li>
+                <li>Weak &amp; top student identification</li>
+                <li>School vs school comparison</li>
+                <li>Export reports as PDF</li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-icon teal"><i class="fas fa-calendar-alt"></i></div>
+            <h3>Academic Calendar</h3>
+            <ul class="feature-list">
+                <li>District-wise academic schedule</li>
+                <li>Colour-coded teaching vs exam days</li>
+                <li>Managed by district officer</li>
+                <li>Visible to all schools in district</li>
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-icon red"><i class="fas fa-user-graduate"></i></div>
+            <h3>Student Portal</h3>
+            <ul class="feature-list">
+                <li>Personal marks &amp; progress view</li>
+                <li>AI practice tests with instant scoring</li>
+                <li>AI tutor (Sathi) for doubts</li>
+                <li>Performance graphs over time</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 5 — User Roles
+═══════════════════════════════════════════ -->
+<section id="roles" class="slide slide-mid">
+    <div class="section-header">
+        <div class="section-number">04 · Who Uses It</div>
+        <h2 class="section-title">5 User Roles</h2>
+        <p class="section-subtitle">Each role sees only what it needs — secure, focused, and simple</p>
+    </div>
+
+    <div class="roles">
+        <div class="role-card">
+            <i class="fas fa-landmark" style="color:#ef4444;"></i>
+            <strong>State Admin</strong>
+            <span>Full state overview &amp; all district data</span>
+        </div>
+        <div class="role-arrow">→</div>
+        <div class="role-card">
+            <i class="fas fa-building" style="color:#f59e0b;"></i>
+            <strong>District Officer</strong>
+            <span>Manage blocks, schools &amp; calendar</span>
+        </div>
+        <div class="role-arrow">→</div>
+        <div class="role-card">
+            <i class="fas fa-sitemap" style="color:#10b981;"></i>
+            <strong>Block Officer</strong>
+            <span>Monitor schools in their block</span>
+        </div>
+        <div class="role-arrow">→</div>
+        <div class="role-card">
+            <i class="fas fa-school" style="color:#38bdf8;"></i>
+            <strong>School (Teacher)</strong>
+            <span>Students, marks, attendance &amp; AI tools</span>
+        </div>
+        <div class="role-arrow">→</div>
+        <div class="role-card">
+            <i class="fas fa-user-graduate" style="color:#8b5cf6;"></i>
+            <strong>Student</strong>
+            <span>Personal results, practice &amp; AI tutor</span>
+        </div>
+    </div>
+
+    <div class="grid-3" style="margin-top:40px;">
+        <div class="card">
+            <h3><i class="fas fa-shield-alt" style="color:var(--accent);"></i>&nbsp; Secure Login</h3>
+            <p>Email + password login with CAPTCHA protection. Each user only sees their own data — no cross-district leakage.</p>
+        </div>
+        <div class="card">
+            <h3><i class="fas fa-filter" style="color:var(--success);"></i>&nbsp; Auto Data Filtering</h3>
+            <p>When a block officer logs in, they automatically see only their block's schools and students — no manual filtering needed.</p>
+        </div>
+        <div class="card">
+            <h3><i class="fas fa-history" style="color:var(--warning);"></i>&nbsp; Activity Logs</h3>
+            <p>Every login and action is recorded. District officers can review who accessed what and when — full audit trail.</p>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 6 — AI Tools
+═══════════════════════════════════════════ -->
+<section id="ai" class="slide slide-dark">
+    <div class="section-header">
+        <div class="section-number">05 · Powered by AI</div>
+        <h2 class="section-title">AI Learning Tools</h2>
+        <p class="section-subtitle">Four AI tools built directly into the platform — no separate app needed</p>
+    </div>
+
+    <div class="grid-2">
+        <div class="card" style="border-left:4px solid var(--accent);">
+            <div class="card-icon blue"><i class="fas fa-calculator"></i></div>
+            <h3>🧮 Math Problem Solver</h3>
+            <p>Type or photograph any math problem. Get a full step-by-step solution with explanation — in Hindi or English.</p>
+            <ul class="feature-list">
+                <li>Works for Class 6–12 mathematics</li>
+                <li>Nicely formatted equations (LaTeX)</li>
+                <li>Generates similar practice problems</li>
+                <li>Supports photo / image input</li>
+            </ul>
+        </div>
+        <div class="card" style="border-left:4px solid var(--purple);">
+            <div class="card-icon purple"><i class="fas fa-robot"></i></div>
+            <h3>🤖 AI Sathi (Smart Tutor)</h3>
+            <p>A 24/7 AI tutor that only answers questions from the student's own subject and chapter — no off-topic distractions.</p>
+            <ul class="feature-list">
+                <li>Locked to NCERT curriculum</li>
+                <li>Answers in Hindi for easy understanding</li>
+                <li>Reads answers aloud (text-to-speech)</li>
+                <li>Student can download answers as PDF</li>
+            </ul>
+        </div>
+        <div class="card" style="border-left:4px solid var(--success);">
+            <div class="card-icon green"><i class="fas fa-file-alt"></i></div>
+            <h3>📄 Question Paper Generator</h3>
+            <p>Teachers select subject, class, marks, and difficulty. AI creates a full question paper with answer key — in seconds.</p>
+            <ul class="feature-list">
+                <li>MCQ, True/False, Fill-in-blank, Short &amp; Long</li>
+                <li>Choose easy / medium / hard mix</li>
+                <li>Print-ready format with PadhaiWithAI branding</li>
+                <li>Answer key generated automatically</li>
+            </ul>
+        </div>
+        <div class="card" style="border-left:4px solid var(--warning);">
+            <div class="card-icon orange"><i class="fas fa-brain"></i></div>
+            <h3>📝 AI Practice Tests</h3>
+            <p>Students pick a topic and get a timed AI-generated test. Score is shown instantly with correct answers.</p>
+            <ul class="feature-list">
+                <li>Chapter-wise topic selection</li>
+                <li>Auto-scored with feedback</li>
+                <li>Tracks which topics need more practice</li>
+                <li>Progress history saved per student</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 7 — Technology (simplified)
+═══════════════════════════════════════════ -->
+<section id="tech" class="slide slide-blue">
+    <div class="section-header">
+        <div class="section-number">06 · Built With</div>
+        <h2 class="section-title">Technology Stack</h2>
+        <p class="section-subtitle">Reliable, proven technologies — built to scale</p>
+    </div>
+
+    <div class="grid-2" style="max-width:900px; margin:0 auto;">
+        <div class="card">
+            <h3 style="color:var(--accent); margin-bottom:20px;"><i class="fas fa-server"></i>&nbsp; What runs the platform</h3>
+            <div class="chips">
+                <span class="chip"><i class="fab fa-python" style="color:#3776ab;"></i> Python 3.11</span>
+                <span class="chip"><i class="fas fa-leaf" style="color:#0c4b33;"></i> Django 5.0 (Web Framework)</span>
+                <span class="chip"><i class="fas fa-database" style="color:#336791;"></i> PostgreSQL (Database)</span>
+                <span class="chip"><i class="fas fa-file-excel" style="color:#217346;"></i> Pandas (Excel Processing)</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="color:var(--success); margin-bottom:20px;"><i class="fas fa-desktop"></i>&nbsp; What users see</h3>
+            <div class="chips">
+                <span class="chip"><i class="fab fa-html5" style="color:#e34f26;"></i> HTML5 + CSS3</span>
+                <span class="chip"><i class="fab fa-js" style="color:#f7df1e;"></i> JavaScript</span>
+                <span class="chip"><i class="fas fa-chart-bar" style="color:#ff6384;"></i> Chart.js (Graphs)</span>
+                <span class="chip"><i class="fab fa-bootstrap" style="color:#7952b3;"></i> Bootstrap (Layout)</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="color:var(--purple); margin-bottom:20px;"><i class="fas fa-robot"></i>&nbsp; AI Services used</h3>
+            <div class="chips">
+                <span class="chip"><i class="fas fa-brain" style="color:#00a67e;"></i> OpenAI GPT-4o (Math &amp; Questions)</span>
+                <span class="chip"><i class="fas fa-language" style="color:#ff6b35;"></i> Sarvam AI (Hindi Tutor)</span>
+                <span class="chip"><i class="fas fa-superscript" style="color:#007acc;"></i> MathJax (Equation Display)</span>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="color:var(--warning); margin-bottom:20px;"><i class="fas fa-shield-alt"></i>&nbsp; Security &amp; Reliability</h3>
+            <div class="chips">
+                <span class="chip"><i class="fas fa-lock" style="color:#28a745;"></i> CSRF &amp; XSS Protection</span>
+                <span class="chip"><i class="fas fa-user-lock" style="color:#6c757d;"></i> Role-Based Access Control</span>
+                <span class="chip"><i class="fas fa-cloud" style="color:#0061ff;"></i> Dropbox Cloud Backup</span>
+                <span class="chip"><i class="fab fa-git-alt" style="color:#f05032;"></i> Git Version Control</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 8 — Impact
+═══════════════════════════════════════════ -->
+<section id="impact" class="slide slide-mid">
+    <div class="section-header">
+        <div class="section-number">07 · Real Impact</div>
+        <h2 class="section-title">Who Benefits &amp; How</h2>
+        <p class="section-subtitle">PadhaiWithAI creates measurable value for every person in the education chain</p>
+    </div>
+
+    <div class="impact-grid">
+        <div class="impact-card">
+            <i class="fas fa-user-graduate" style="color:var(--success);"></i>
+            <h3>Students</h3>
+            <ul>
+                <li>Know exactly where they stand</li>
+                <li>Practice anytime with AI tests</li>
+                <li>Get instant answers in Hindi</li>
+                <li>Track their own progress over time</li>
+                <li>No need for extra tuition</li>
+            </ul>
+        </div>
+        <div class="impact-card">
+            <i class="fas fa-chalkboard-teacher" style="color:var(--accent);"></i>
+            <h3>Teachers &amp; Schools</h3>
+            <ul>
+                <li>Generate question papers in seconds</li>
+                <li>See which students need attention</li>
+                <li>Less paperwork, more teaching time</li>
+                <li>Digital mark sheets &amp; reports</li>
+                <li>Easy bulk student upload</li>
+            </ul>
+        </div>
+        <div class="impact-card">
+            <i class="fas fa-building" style="color:var(--warning);"></i>
+            <h3>District &amp; Block Officers</h3>
+            <ul>
+                <li>Live performance dashboard</li>
+                <li>Compare all schools at a glance</li>
+                <li>Identify underperforming schools early</li>
+                <li>Manage academic calendar centrally</li>
+                <li>Data-driven policy decisions</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="stats-row" style="margin-top:40px;">
+        <div class="stat-box"><div class="stat-num">7</div><div class="stat-label">Core Modules</div></div>
+        <div class="stat-box"><div class="stat-num">4</div><div class="stat-label">AI Tools</div></div>
+        <div class="stat-box"><div class="stat-num">55+</div><div class="stat-label">Features</div></div>
+        <div class="stat-box"><div class="stat-num">2</div><div class="stat-label">Languages</div></div>
+        <div class="stat-box"><div class="stat-num">5</div><div class="stat-label">User Roles</div></div>
+    </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════
+     SLIDE 9 — Thank You
+═══════════════════════════════════════════ -->
+<section id="contact" class="slide slide-footer" style="text-align:center;">
+    <div class="title-content">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="main-logo">
+        <h2 class="thank-title">Thank You!</h2>
+        <p class="main-subtitle" style="margin-bottom:8px;">PadhaiWithAI — Empowering Education Through Technology</p>
+        <p style="color:var(--text-muted); font-size:0.95rem; margin-bottom:40px;">Serving Government Schools in Tonk, Rajasthan</p>
+
+        <div style="display:flex; justify-content:center; gap:40px; flex-wrap:wrap; margin-bottom:40px;">
+            <div style="display:flex; align-items:center; gap:10px; font-size:1rem;">
+                <i class="fas fa-map-marker-alt" style="color:var(--accent); font-size:1.4rem;"></i>
+                <span>Tonk, Rajasthan, India</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:1rem;">
+                <i class="fas fa-globe" style="color:var(--accent); font-size:1.4rem;"></i>
+                <span>PadhaiWithAI Platform</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:10px; font-size:1rem;">
+                <i class="fas fa-envelope" style="color:var(--accent); font-size:1.4rem;"></i>
+                <span>Contact District Administration</span>
+            </div>
+        </div>
+
+        <div class="badge-row" style="justify-content:center;">
+            <span class="badge"><i class="fas fa-leaf"></i> Django 5.0</span>
+            <span class="badge"><i class="fas fa-robot"></i> AI-Powered</span>
+            <span class="badge"><i class="fas fa-heart" style="color:#ef4444;"></i> Made in India</span>
+            <span class="badge"><i class="fas fa-shield-alt"></i> Secure &amp; Reliable</span>
+        </div>
+
+        <p style="margin-top:50px; opacity:0.5; font-size:0.85rem;">
+            © 2024–2026 PadhaiWithAI · All Rights Reserved
+        </p>
+    </div>
+</section>
+
+<script>
+    // Highlight active nav link on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(s => {
+            if (window.scrollY >= s.offsetTop - 100) current = s.id;
+        });
+        navLinks.forEach(a => {
+            a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+        });
+    });
+</script>
+
+</body>
+</html>

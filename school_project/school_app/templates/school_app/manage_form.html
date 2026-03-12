@@ -1,0 +1,163 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --accent: #38bdf8;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --danger: #EF4444;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+    }
+    .form-header h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        max-width: 600px;
+    }
+
+    .form-card .form-group {
+        margin-bottom: 20px;
+    }
+    .form-card label {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+        display: block;
+        font-size: 0.92rem;
+    }
+    .form-card .form-control {
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        font-size: 0.95rem;
+        transition: border-color 0.3s;
+    }
+    .form-card .form-control:focus {
+        border-color: var(--primary-light);
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+    .form-card select.form-control {
+        appearance: auto;
+    }
+
+    .form-card .error-text {
+        color: var(--danger);
+        font-size: 0.85rem;
+        margin-top: 4px;
+    }
+    .form-card .errorlist {
+        list-style: none;
+        padding: 0;
+        margin: 4px 0 0 0;
+    }
+    .form-card .errorlist li {
+        color: var(--danger);
+        font-size: 0.85rem;
+    }
+
+    .form-actions {
+        margin-top: 25px;
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .btn-submit {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(30, 60, 114, 0.3);
+    }
+    .btn-submit:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+    }
+    .btn-cancel {
+        background: #f1f5f9;
+        color: var(--text-secondary);
+        border: 2px solid var(--border);
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.3s;
+        display: inline-block;
+    }
+    .btn-cancel:hover {
+        background: #e2e8f0;
+        color: var(--text-primary);
+    }
+</style>
+
+<div class="form-header">
+    <h2><i class="fas fa-{% if 'Edit' in title %}edit{% else %}plus-circle{% endif %}"></i> {{ title }}</h2>
+</div>
+
+<div class="form-card">
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% for field in form %}
+        <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+                <ul class="errorlist">
+                    {% for error in field.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if field.help_text %}
+                <small class="text-muted">{{ field.help_text }}</small>
+            {% endif %}
+        </div>
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" style="border-radius: 8px; margin-bottom: 15px;">
+            {% for error in form.non_field_errors %}
+                <p style="margin: 0;">{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit" class="btn-submit">
+                <i class="fas fa-save"></i> {{ submit_text }}
+            </button>
+            <a href="{% url cancel_url %}" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

@@ -1,0 +1,307 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+<style>
+    :root { --primary:#1e3c72; --primary-light:#2a5298; --surface:#fff; --border:#E2E8F0;
+            --success:#10B981; --danger:#EF4444; --warning:#F59E0B; }
+
+    .cal-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px; padding: 22px 28px; margin-bottom: 22px;
+        color: white; box-shadow: 0 4px 15px rgba(30,60,114,0.3);
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    }
+    .cal-header h1 { font-size:1.5rem; font-weight:700; margin:0; }
+    .cal-header p  { font-size:.9rem; opacity:.9; margin:4px 0 0; }
+    .btn-view {
+        background: white; color: var(--primary);
+        border: none; padding: 9px 20px; border-radius: 8px;
+        font-weight: 700; font-size: .9rem; text-decoration: none; transition: all .2s;
+    }
+    .btn-view:hover { background:#e0f2fe; color:var(--primary); }
+
+    .qp-card {
+        background: var(--surface); border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border: 1px solid var(--border); overflow: hidden; margin-bottom: 25px;
+    }
+    .qp-card .card-header {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white; padding: 14px 20px; font-weight: 600; font-size: 1rem;
+    }
+    .qp-card .card-body { padding: 22px; }
+    .form-label { font-weight: 600; color: #1e293b; margin-bottom: 6px; }
+    .form-control, .form-select {
+        border: 2px solid var(--border); border-radius: 8px;
+        padding: 10px 14px; font-size: .95rem; transition: border-color .2s;
+    }
+    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(30,60,114,.1); }
+
+    .btn-add {
+        background: linear-gradient(135deg, var(--success), #059669);
+        color: white; border: none; padding: 11px 28px; border-radius: 8px;
+        font-weight: 700; font-size: .95rem; transition: all .3s;
+    }
+    .btn-add:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16,185,129,.35); color: white; }
+
+    .event-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    .event-table th { background: var(--primary); color: white; padding: 10px 14px; text-align: left; }
+    .event-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .event-table tr:hover td { background: #f8fafc; }
+    .type-badge {
+        display: inline-block; padding: 2px 10px; border-radius: 20px;
+        font-size: .75rem; font-weight: 700;
+    }
+    .type-teaching { background:#dbeafe; color:#1d4ed8; }
+    .type-exam     { background:#fee2e2; color:#dc2626; }
+    .type-holiday  { background:#dcfce7; color:#059669; }
+    .type-meeting  { background:#fef3c7; color:#b45309; }
+    .type-other    { background:#ede9fe; color:#6d28d9; }
+    .btn-del {
+        background: var(--danger); color: white; border: none;
+        padding: 5px 12px; border-radius: 6px; font-size: .8rem;
+        font-weight: 600; cursor: pointer; transition: opacity .2s;
+    }
+    .btn-del:hover { opacity: .8; }
+
+    /* Calendar */
+    .legend { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:16px; }
+    .legend-item { display:flex; align-items:center; gap:6px; font-size:.82rem; font-weight:600; }
+    .legend-dot { width:12px; height:12px; border-radius:50%; }
+    .calendar-container {
+        background: var(--surface); border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0,0,0,.08); border: 1px solid var(--border); padding: 20px;
+    }
+    .navigation { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding:8px 10px; }
+    .navigation button {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color:#fff; border:none; padding:8px 16px; border-radius:6px;
+        cursor:pointer; font-size:14px; font-weight:600; transition:all .3s;
+    }
+    .navigation button:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(30,60,114,.3); }
+    .current-month { font-size:1.2rem; font-weight:700; color:var(--primary); }
+    .calendar { width:100%; border-collapse:collapse; table-layout:fixed; }
+    .calendar th { background:var(--primary); color:white; padding:10px 4px; font-size:.82rem; }
+    .calendar td { border:1px solid var(--border); vertical-align:top; padding:6px 5px; min-height:80px; font-size:.82rem; }
+    .calendar td.today { background:#eff6ff; }
+    .calendar td.today .day { background:var(--primary); color:white; border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; margin:0 auto 4px; }
+    .day { font-weight:700; color:var(--primary); margin-bottom:3px; }
+    .event { font-size:.72rem; padding:2px 5px; border-radius:4px; margin-top:2px; text-align:left; line-height:1.3; color:white; word-break:break-word; }
+</style>
+
+<div class="cal-header">
+    <div>
+        <h1>📅 Manage Academic Calendar</h1>
+        <p>{{ district.name_english }} — Add / Remove Events</p>
+    </div>
+    <a href="{% url 'academic_calendar' %}" class="btn-view">👁️ View Calendar</a>
+</div>
+
+<div class="container-fluid px-0">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <!-- Add Event Form -->
+            <div class="qp-card">
+                <div class="card-header">➕ Add New Event</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label class="form-label">📌 Event Title</label>
+                            <input type="text" id="evTitle" class="form-control" placeholder="e.g. Chapter 1 Teaching" maxlength="300">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">📋 Type</label>
+                            <select id="evType" class="form-select">
+                                {% for val, label in event_types %}
+                                <option value="{{ val }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">📅 Start Date</label>
+                            <input type="date" id="evStart" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">📅 End Date</label>
+                            <input type="date" id="evEnd" class="form-control">
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button class="btn-add w-100" onclick="addEvent()">Add</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events List -->
+            <div class="qp-card">
+                <div class="card-header">📋 All Events ({{ events|length }})</div>
+                <div class="card-body p-0">
+                    <div style="overflow-x:auto;">
+                        <table class="event-table" id="eventsTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th><th>Title</th><th>Type</th>
+                                    <th>Start</th><th>End</th><th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventsBody">
+                                {% for ev in events %}
+                                <tr id="row-{{ ev.id }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ ev.title }}</td>
+                                    <td><span class="type-badge type-{{ ev.event_type }}">{{ ev.get_event_type_display }}</span></td>
+                                    <td>{{ ev.start_date }}</td>
+                                    <td>{{ ev.end_date }}</td>
+                                    <td>
+                                        <button class="btn-del" onclick="deleteEvent({{ ev.id }}, this)">🗑 Delete</button>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr id="emptyRow"><td colspan="6" style="text-align:center; color:#64748b; padding:24px;">No events yet. Add one above.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar Preview -->
+            <div class="qp-card">
+                <div class="card-header">📅 Calendar Preview</div>
+                <div class="card-body">
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#1e3c72;"></div> Teaching</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#dc2626;"></div> Exam</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#059669;"></div> Holiday</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#d97706;"></div> Meeting</div>
+                        <div class="legend-item"><div class="legend-dot" style="background:#6d28d9;"></div> Other</div>
+                    </div>
+                    <div class="calendar-container">
+                        <div class="navigation">
+                            <button onclick="prevMonth()">← Previous</button>
+                            <span id="currentMonth" class="current-month"></span>
+                            <button onclick="nextMonth()">Next →</button>
+                        </div>
+                        <table class="calendar">
+                            <thead>
+                                <tr>
+                                    <th>Sun</th><th>Mon</th><th>Tue</th>
+                                    <th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendar-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    const csrfToken = '{{ csrf_token }}';
+    let events = {{ calendar_events_json|safe }};
+    let currentDate = new Date();
+
+    const colorMap = {
+        teaching:'#1e3c72', exam:'#dc2626',
+        holiday:'#059669', meeting:'#d97706', other:'#6d28d9'
+    };
+    const badgeMap = {
+        teaching:'type-teaching', exam:'type-exam',
+        holiday:'type-holiday', meeting:'type-meeting', other:'type-other'
+    };
+    const labelMap = {
+        teaching:'Teaching / Syllabus', exam:'Exam / Assessment',
+        holiday:'Holiday', meeting:'Meeting', other:'Other'
+    };
+
+    function renderCalendar(date) {
+        const body = document.getElementById('calendar-body');
+        const label = document.getElementById('currentMonth');
+        body.innerHTML = '';
+        const year = date.getFullYear(), month = date.getMonth();
+        label.innerText = `${date.toLocaleString('default',{month:'long'})} ${year}`;
+        const firstDay = new Date(year,month,1).getDay();
+        const daysInMonth = new Date(year,month+1,0).getDate();
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        let row = '<tr>';
+        for (let i=0; i<firstDay; i++) row += '<td></td>';
+        for (let day=1; day<=daysInMonth; day++) {
+            const fd = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const evHtml = events.filter(e=>fd>=e.start&&fd<=e.end)
+                .map(e=>`<div class="event" style="background:${e.color};">${e.title}</div>`).join('');
+            row += `<td class="${fd===todayStr?'today':''}"><div class="day">${day}</div>${evHtml}</td>`;
+            if ((day+firstDay)%7===0) row += '</tr><tr>';
+        }
+        row += '</tr>';
+        body.innerHTML = row;
+    }
+    function prevMonth(){ currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(currentDate); }
+    function nextMonth(){ currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(currentDate); }
+    renderCalendar(currentDate);
+
+    function addEvent() {
+        const title = document.getElementById('evTitle').value.trim();
+        const type  = document.getElementById('evType').value;
+        const start = document.getElementById('evStart').value;
+        const end   = document.getElementById('evEnd').value || start;
+        if (!title || !start) { alert('Title and Start Date are required.'); return; }
+
+        fetch('{% url "academic_calendar_add" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ title, event_type: type, start_date: start, end_date: end })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { alert(data.error); return; }
+            const ev = data.event;
+            events.push({ ...ev, color: colorMap[ev.type] });
+            renderCalendar(currentDate);
+
+            // Remove empty row if present
+            const emptyRow = document.getElementById('emptyRow');
+            if (emptyRow) emptyRow.remove();
+
+            // Add row to table
+            const tbody = document.getElementById('eventsBody');
+            const rowCount = tbody.querySelectorAll('tr').length + 1;
+            const tr = document.createElement('tr');
+            tr.id = `row-${ev.id}`;
+            tr.innerHTML = `
+                <td>${rowCount}</td>
+                <td>${ev.title}</td>
+                <td><span class="type-badge ${badgeMap[ev.type]}">${labelMap[ev.type]}</span></td>
+                <td>${ev.start}</td>
+                <td>${ev.end}</td>
+                <td><button class="btn-del" onclick="deleteEvent(${ev.id}, this)">🗑 Delete</button></td>`;
+            tbody.appendChild(tr);
+
+            // Reset form
+            document.getElementById('evTitle').value = '';
+            document.getElementById('evStart').value = '';
+            document.getElementById('evEnd').value   = '';
+        })
+        .catch(() => alert('Something went wrong.'));
+    }
+
+    function deleteEvent(id, btn) {
+        if (!confirm('Delete this event?')) return;
+        fetch(`/academic-calendar/delete/${id}/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { alert(data.error); return; }
+            events = events.filter(e => e.id !== id);
+            document.getElementById(`row-${id}`).remove();
+            renderCalendar(currentDate);
+        })
+        .catch(() => alert('Something went wrong.'));
+    }
+</script>
+{% endblock %}

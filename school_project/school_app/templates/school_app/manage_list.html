@@ -1,0 +1,323 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --accent: #38bdf8;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+    }
+
+    .manage-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    .manage-header h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .manage-header .btn-create {
+        background: white;
+        color: var(--primary);
+        border: none;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .manage-header .btn-create:hover {
+        background: var(--accent);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .search-box {
+        margin-bottom: 20px;
+    }
+    .search-box input {
+        border: 2px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 0.95rem;
+        width: 100%;
+        max-width: 400px;
+        transition: border-color 0.3s;
+    }
+    .search-box input:focus {
+        border-color: var(--primary-light);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+
+    .manage-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    }
+    .manage-table thead th {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 14px 16px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .manage-table tbody tr {
+        transition: background 0.2s;
+    }
+    .manage-table tbody tr:hover {
+        background: #f0f7ff;
+    }
+    .manage-table tbody td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border);
+        font-size: 0.92rem;
+        color: var(--text-primary);
+        vertical-align: middle;
+    }
+
+    .badge-active {
+        background: var(--success);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .badge-inactive {
+        background: var(--danger);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .btn-action {
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-block;
+        margin: 2px;
+    }
+    .btn-edit {
+        background: #3B82F6;
+        color: white;
+    }
+    .btn-edit:hover {
+        background: #2563EB;
+        color: white;
+    }
+    .btn-activate {
+        background: var(--success);
+        color: white;
+    }
+    .btn-activate:hover {
+        background: #059669;
+        color: white;
+    }
+    .btn-deactivate {
+        background: var(--danger);
+        color: white;
+    }
+    .btn-deactivate:hover {
+        background: #DC2626;
+        color: white;
+    }
+    .btn-unlock {
+        background: #f59e0b;
+        color: white;
+    }
+    .btn-unlock:hover {
+        background: #d97706;
+        color: white;
+    }
+    .btn-reset-pw {
+        background: #8b5cf6;
+        color: white;
+    }
+    .btn-reset-pw:hover {
+        background: #7c3aed;
+        color: white;
+    }
+    .badge-locked {
+        background: #f59e0b;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 6px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        opacity: 0.4;
+    }
+
+    @media (max-width: 768px) {
+        .manage-header {
+            padding: 20px;
+        }
+        .manage-table thead {
+            display: none;
+        }
+        .manage-table tbody tr {
+            display: block;
+            margin-bottom: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+        }
+        .manage-table tbody td {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 16px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .manage-table tbody td::before {
+            content: attr(data-label);
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-right: 10px;
+        }
+    }
+</style>
+
+<div class="manage-header">
+    <h2><i class="fas fa-users-cog"></i> {{ title }}</h2>
+    <a href="{% url create_url %}" class="btn-create">
+        <i class="fas fa-plus"></i> Create New {{ entity_type }}
+    </a>
+</div>
+
+<div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search by name or email..." onkeyup="filterTable()">
+</div>
+
+{% if items %}
+<div class="table-responsive">
+    <table class="manage-table" id="manageTable">
+        <thead>
+            <tr>
+                <th>S.No</th>
+                <th>Name</th>
+                <th>Admin Email</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td data-label="S.No">{{ forloop.counter }}</td>
+                <td data-label="Name">
+                    <strong>{{ item.name }}</strong>
+                    {% if item.name_hindi %}<br><small style="color: var(--text-secondary);">{{ item.name_hindi }}</small>{% endif %}
+                </td>
+                <td data-label="Email">
+                    {{ item.admin_email }}
+                    {% if item.is_locked %}<span class="badge-locked"><i class="fas fa-lock"></i> Locked</span>{% endif %}
+                </td>
+                <td data-label="Status">
+                    {% if item.is_active %}
+                        <span class="badge-active">Active</span>
+                    {% else %}
+                        <span class="badge-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+                <td data-label="Created">
+                    {% if item.created_at %}
+                        {{ item.created_at|date:"d M Y" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td data-label="Actions">
+                    <a href="{% url edit_url_name item.id %}" class="btn-action btn-edit">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    {% if item.is_active %}
+                        <a href="{% url toggle_url_name item.id %}" class="btn-action btn-deactivate"
+                           onclick="return confirm('Are you sure you want to deactivate this {{ entity_type|lower }}?')">
+                            <i class="fas fa-ban"></i> Deactivate
+                        </a>
+                    {% else %}
+                        <a href="{% url toggle_url_name item.id %}" class="btn-action btn-activate"
+                           onclick="return confirm('Are you sure you want to activate this {{ entity_type|lower }}?')">
+                            <i class="fas fa-check"></i> Activate
+                        </a>
+                    {% endif %}
+                    {% if unlock_url_name %}
+                        {% if item.is_locked %}
+                            <a href="{% url unlock_url_name item.id %}" class="btn-action btn-unlock"
+                               onclick="return confirm('Unlock account for {{ item.name }}?')">
+                                <i class="fas fa-unlock"></i> Unlock
+                            </a>
+                        {% endif %}
+                        <a href="{% url reset_password_url_name item.id %}" class="btn-action btn-reset-pw"
+                           onclick="return confirm('Reset password for {{ item.name }} to default (nic*12345)?')">
+                            <i class="fas fa-key"></i> Reset PW
+                        </a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-folder-open"></i>
+    <h4>No {{ entity_type }}s found</h4>
+    <p>Click "Create New {{ entity_type }}" to get started.</p>
+</div>
+{% endif %}
+
+<script>
+function filterTable() {
+    var input = document.getElementById('searchInput').value.toLowerCase();
+    var rows = document.querySelectorAll('#manageTable tbody tr');
+    rows.forEach(function(row) {
+        var text = row.textContent.toLowerCase();
+        row.style.display = text.indexOf(input) > -1 ? '' : 'none';
+    });
+}
+</script>
+
+{% endblock %}

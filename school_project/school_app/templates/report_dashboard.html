@@ -1,0 +1,120 @@
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+
+<!-- Header Section -->
+<div class="dashboard-header">
+    <h1>Report Dashboard</h1>
+    <p>Access comprehensive school and student analytics reports</p>
+</div>
+
+<!-- Dashboard Grid -->
+<div class="dashboard-grid">
+    <!-- Card 1: Schools with Student Counts -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-users"></i></span>
+            <h3>Schools with Student Counts</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Check the total number of students enrolled per school. View student distribution across all schools.</p>
+            <div class="card-links">
+                <a href="{% url 'schools_with_student_counts' %}" class="card-link">View Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Schools Without Students -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-exclamation-triangle"></i></span>
+            <h3>Schools Without Students</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Identify schools that have not added any student entries yet. Monitor school onboarding status.</p>
+            <div class="card-links">
+                <a href="{% url 'schools_without_students' %}" class="card-link">View Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Schools with Test Entry Counts -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-edit"></i></span>
+            <h3>Marks Entry Progress</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Track student marks entered against total students. Identify pending marks entry by school.</p>
+            <div class="card-links">
+                <a href="{% url 'schools_with_test_counts' %}" class="card-link">View Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Inactive Schools -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-lock"></i></span>
+            <h3>Inactive Schools</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Monitor schools whose admins haven't logged in. Track user engagement and system access.</p>
+            <div class="card-links">
+                <a href="{% url 'inactive_schools' %}" class="card-link">View Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 5: Schools Without Tests -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-book"></i></span>
+            <h3>Schools Without Tests</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">View schools with no test entries. Identify schools that need assessment setup.</p>
+            <div class="card-links">
+                <a href="{% url 'schools_without_tests' %}" class="card-link">View Report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 6: Attendance Summary -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-calendar-check"></i></span>
+            <h3>Attendance Reports</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Access attendance data across different levels and time periods.</p>
+            <div class="card-links">
+                <a href="{% url 'date_wise_attendance_summary' %}" class="card-link">Daily Attendance</a>
+                <a href="{% url 'attendance_summary' %}" class="card-link">Summary Report</a>
+                <a href="{% url 'district_wise_attendance_summary' %}" class="card-link">District Wise</a>
+                <a href="{% url 'block_wise_attendance_summary' %}" class="card-link">Block Wise</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 7: School Report -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-school"></i></span>
+            <h3>School Report</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Comprehensive overview of all schools with multiple metrics including test entries and student data.</p>
+            <div class="card-links">
+                <a href="{% url 'school_report' %}" class="card-link">View Report</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <a href="{% url 'dashboard' %}" class="back-link"><i class="fas fa-arrow-left me-2"></i> Back to Main Dashboard</a>
+</div>
+
+{% endblock %}

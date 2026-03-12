@@ -1,0 +1,483 @@
+<!-- upload_users.html -->
+{% extends 'school_app/base.html' %}
+
+{% block content %}
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --success: #10B981;
+        --warning: #F59E0B;
+        --danger: #EF4444;
+        --text-primary: #1F2937;
+        --text-secondary: #6B7280;
+        --border: #E5E7EB;
+        --bg-light: #F9FAFB;
+    }
+
+    .upload-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        color: white;
+        padding: 2.5rem 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .upload-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .upload-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.95;
+        font-size: 0.95rem;
+    }
+
+    .form-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        margin-bottom: 2rem;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+    }
+
+    .form-section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 0.95rem;
+    }
+
+    .form-group input[type="file"],
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="password"],
+    .form-group textarea,
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.2s ease;
+    }
+
+    .form-group input[type="file"]:focus,
+    .form-group input[type="text"]:focus,
+    .form-group input[type="email"]:focus,
+    .form-group input[type="password"]:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.15);
+    }
+
+    .form-helper {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.3rem;
+    }
+
+    .upload-btn-container {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .upload-btn {
+        padding: 0.75rem 2rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .upload-btn:hover {
+        background: var(--primary-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(30, 60, 114, 0.3);
+    }
+
+    .reset-btn {
+        padding: 0.75rem 2rem;
+        background: var(--text-secondary);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .reset-btn:hover {
+        background: var(--text-primary);
+        transform: translateY(-2px);
+    }
+
+    .download-sample-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.4rem;
+        background: #10B981;
+        color: white;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        margin-bottom: 1.2rem;
+    }
+    .download-sample-btn:hover {
+        background: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(16,185,129,0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .instructions-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        border-left: 4px solid var(--primary);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .instructions-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .instructions-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .instructions-list li {
+        padding: 0.5rem 0;
+        color: var(--text-secondary);
+        line-height: 1.6;
+    }
+
+    .instructions-list li strong {
+        color: var(--text-primary);
+        font-weight: 600;
+    }
+
+    .instructions-list li code {
+        background: var(--bg-light);
+        padding: 0.2rem 0.4rem;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        color: var(--danger);
+        font-weight: 600;
+    }
+
+    .sample-row {
+        background: var(--bg-light);
+        padding: 1rem;
+        border-radius: 6px;
+        margin-top: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        overflow-x: auto;
+        color: var(--text-primary);
+    }
+
+    .messages-container {
+        margin-bottom: 2rem;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .alert-success {
+        background: #D1FAE5;
+        border: 1px solid var(--success);
+        color: #065F46;
+    }
+
+    .alert-error {
+        background: #FEE2E2;
+        border: 1px solid var(--danger);
+        color: #7F1D1D;
+    }
+
+    .alert-warning {
+        background: #FEF3C7;
+        border: 1px solid var(--warning);
+        color: #78350F;
+    }
+
+    .alert-info {
+        background: #DBEAFE;
+        border: 1px solid #0EA5E9;
+        color: #0C2D6B;
+    }
+
+    .alert-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: inherit;
+        opacity: 0.7;
+        padding: 0;
+        margin-left: 1rem;
+    }
+
+    .alert-close:hover {
+        opacity: 1;
+    }
+
+    .back-button {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        background: var(--text-secondary);
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .back-button:hover {
+        background: var(--text-primary);
+        transform: translateX(-3px);
+        text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+        .upload-header {
+            padding: 1.5rem;
+        }
+
+        .upload-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .form-container,
+        .instructions-container {
+            padding: 1.5rem;
+        }
+
+        .upload-btn-container {
+            flex-direction: column;
+        }
+
+        .upload-btn,
+        .reset-btn {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<!-- Header -->
+<div class="upload-header">
+    <h1>📤 Upload School Users</h1>
+    <p>Bulk import school admin accounts from Excel file</p>
+</div>
+
+<!-- Messages -->
+{% if messages %}
+<div class="messages-container">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            <div>{{ message }}</div>
+            <button class="alert-close" onclick="this.parentElement.style.display='none';">&times;</button>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Sample Download -->
+<div style="margin-bottom: 1rem;">
+    <a href="{% url 'download_sample_school_excel' %}" class="download-sample-btn">
+        <span>⬇️</span> Download Sample Excel File
+    </a>
+    <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.3rem 0 0 0;">
+        Download and fill this template, then upload below.
+    </p>
+</div>
+
+<!-- Form Section -->
+<div class="form-container">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- File Upload -->
+        <div class="form-section">
+            <div class="form-section-title">
+                <span>📁</span> Select Excel File
+            </div>
+            <div class="form-group">
+                <label for="id_excel_file">Excel File (.xlsx, .xls)</label>
+                {{ form.excel_file }}
+                <div class="form-helper">
+                    ✓ Supported formats: .xlsx, .xls (Excel 2003+)
+                    <br>
+                    ✓ Maximum file size: 10 MB
+                </div>
+            </div>
+        </div>
+
+        <!-- Required Columns Info -->
+        <div class="form-section">
+            <div class="form-section-title">
+                <span>📋</span> Required Excel Columns
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">
+                Your Excel file must contain exactly these columns (case-sensitive):
+            </p>
+            <div style="background: var(--bg-light); padding: 0.75rem; border-radius: 6px; font-family: 'Courier New', monospace; color: var(--danger); font-weight: 600;">
+                email, username, password, school_name, nic_code, block_id
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="upload-btn-container">
+            <button type="submit" class="upload-btn">
+                <span>📤</span> Upload Users
+            </button>
+            <button type="reset" class="reset-btn">Clear</button>
+        </div>
+    </form>
+</div>
+
+<!-- Instructions Section -->
+<div class="instructions-container">
+    <div class="instructions-title">
+        <span>📖</span> Upload Instructions (English)
+    </div>
+    <ul class="instructions-list">
+        <li><strong>Required Columns:</strong> email, username, password, school_name, nic_code, block_id</li>
+        <li><strong>email</strong> – School login ID (must be unique)</li>
+        <li><strong>username</strong> – School short code or name (internal use)</li>
+        <li><strong>password</strong> – Initial password (school can change later)</li>
+        <li><strong>school_name</strong> – Full school name (can include NIC code)</li>
+        <li><strong>nic_code</strong> – School NIC/UDISE code</li>
+        <li><strong>block_id</strong> – Associated block ID (from Block master table)</li>
+        <li><strong>Important:</strong> Column headers must match exactly, otherwise data won't upload</li>
+    </ul>
+    <div class="sample-row">
+        📝 Sample: sch01@example.com,SCH01_TONK,Abc@123,"GSSS TONK CITY (221942)",221942,5
+    </div>
+</div>
+
+<!-- Hindi Instructions Section -->
+<div class="instructions-container" style="border-left-color: var(--warning);">
+    <div class="instructions-title" style="color: var(--warning);">
+        <span>📖</span> अपलोड निर्देश (हिंदी)
+    </div>
+    <ul class="instructions-list">
+        <li><strong>आवश्यक कॉलम:</strong> email, username, password, school_name, nic_code, block_id</li>
+        <li><strong>email</strong> – स्कूल लॉगिन आईडी (अद्वितीय होना चाहिए)</li>
+        <li><strong>username</strong> – स्कूल का छोटा कोड या नाम (आंतरिक उपयोग के लिए)</li>
+        <li><strong>password</strong> – प्रारंभिक पासवर्ड (स्कूल बाद में बदल सकता है)</li>
+        <li><strong>school_name</strong> – स्कूल का पूरा नाम (NIC कोड साथ में लिख सकते हैं)</li>
+        <li><strong>nic_code</strong> – स्कूल का NIC/UDISE कोड</li>
+        <li><strong>block_id</strong> – संबंधित ब्लॉक का ID (Block master टेबल के अनुसार)</li>
+        <li><strong>महत्वपूर्ण:</strong> कॉलम हेडिंग बिल्कुल मेल खाने चाहिए, अन्यथा डेटा अपलोड नहीं होगा</li>
+    </ul>
+    <div class="sample-row">
+        📝 उदाहरण: sch01@example.com,SCH01_TONK,Abc@123,"GSSS TONK CITY (221942)",221942,5
+    </div>
+</div>
+
+<!-- Back Button -->
+<div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
+    <a href="{% url 'collector_dashboard' %}" class="back-button">← Back to Dashboard</a>
+</div>
+
+<script>
+    // Auto-close alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.style.animation = 'slideOut 0.3s ease forwards';
+            setTimeout(function() {
+                alert.style.display = 'none';
+            }, 300);
+        });
+    }, 5000);
+
+    // Add slideOut animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideOut {
+            to {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(style);
+</script>
+
+{% endblock %}

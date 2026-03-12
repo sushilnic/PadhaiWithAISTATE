@@ -1,0 +1,1552 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Test - PadhaiWithAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e3c72;
+            --primary-light: #2a5298;
+            --accent: #38bdf8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --surface: #ffffff;
+            --bg: #f1f5f9;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        /* Footer */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+        }
+        .footer img { height: 32px; }
+        .footer img.pai-logo { border-radius: 6px; }
+        .footer img.nic-logo { mix-blend-mode: multiply; }
+        .footer span { opacity: 0.9; }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .navbar-brand img { height: 40px; }
+        .navbar-brand span { font-size: 1.3rem; font-weight: 700; }
+
+        .navbar-nav { display: flex; align-items: center; gap: 20px; }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px;
+            padding: 25px 30px;
+            color: white;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-header h1 { font-size: 1.6rem; }
+
+        .quick-tools {
+            display: flex;
+            gap: 15px;
+        }
+
+        .quick-tool-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .math-tool-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .ai-sathi-btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+        }
+
+        .quick-tool-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Setup Panel */
+        .setup-panel {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .setup-panel h3 {
+            color: var(--primary);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .form-group select {
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group select:disabled {
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto;
+            transition: all 0.3s ease;
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .start-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Loading Spinner */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 60px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Test Area */
+        .test-area {
+            display: none;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .test-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .test-info h4 {
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+
+        .test-info span {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .timer {
+            background: var(--primary);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .question-box {
+            background: #f8fafc;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        .question-number {
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            padding: 15px 20px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: white;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .option-btn:hover {
+            border-color: var(--accent);
+            background: #f0f9ff;
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .option-btn.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .option-label {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .option-btn.selected .option-label {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-pdf {
+            background: #7c3aed;
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Explanation Box */
+        .explanation-box {
+            display: none;
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .explanation-box h5 {
+            color: #b45309;
+            margin-bottom: 8px;
+        }
+
+        .explanation-box p {
+            color: #92400e;
+        }
+
+        /* Result Panel */
+        .result-panel {
+            display: none;
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .result-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .result-icon.good { color: var(--success); }
+        .result-icon.medium { color: var(--warning); }
+        .result-icon.poor { color: var(--danger); }
+
+        .result-score {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .result-details {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+        }
+
+        .result-stat {
+            text-align: center;
+        }
+
+        .result-stat .value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .result-stat .label {
+            color: var(--text-secondary);
+        }
+
+        .correct .value { color: var(--success); }
+        .wrong .value { color: var(--danger); }
+
+        /* True/False buttons */
+        .tf-options {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .tf-btn {
+            flex: 1;
+            padding: 20px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: white;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .tf-btn:hover {
+            border-color: var(--accent);
+            background: #f0f9ff;
+        }
+
+        .tf-btn.selected {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+        }
+
+        .tf-btn.correct {
+            border-color: var(--success);
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .tf-btn.wrong {
+            border-color: var(--danger);
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Fill in the Blank */
+        .fill-input-area {
+            margin-bottom: 25px;
+        }
+
+        .fill-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .fill-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .fill-input:disabled {
+            background: #f1f5f9;
+        }
+
+        .fill-submit-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .fill-submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .fill-submit-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Short Answer */
+        .short-answer-area {
+            margin-bottom: 25px;
+        }
+
+        .short-answer-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px 20px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+
+        .short-answer-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .short-answer-textarea:disabled {
+            background: #f1f5f9;
+        }
+
+        .check-answer-btn {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .check-answer-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .check-answer-btn:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Correct answer reveal box */
+        .correct-answer-box {
+            display: none;
+            background: #ecfdf5;
+            border: 2px solid var(--success);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .correct-answer-box h5 {
+            color: #059669;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .correct-answer-box p {
+            color: #065f46;
+            font-size: 1.05rem;
+        }
+
+        /* Self-grade buttons */
+        .self-grade-btns {
+            display: none;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .self-grade-btns.active {
+            display: flex;
+        }
+
+        .grade-btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grade-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .grade-correct {
+            background: var(--success);
+            color: white;
+        }
+
+        .grade-wrong {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Fill blank result feedback */
+        .fill-result {
+            display: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .fill-result.correct {
+            display: block;
+            background: #d1fae5;
+            color: #059669;
+            border: 1px solid #6ee7b7;
+        }
+
+        .fill-result.wrong {
+            display: block;
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .form-row { grid-template-columns: 1fr; }
+            .result-details { flex-direction: column; gap: 20px; }
+            .page-header { flex-direction: column; gap: 15px; text-align: center; }
+            .tf-options { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{% url 'student_dashboard' %}" class="navbar-brand">
+            <img src="{% static 'school_app/images/pailogo.png' %}" alt="Logo">
+            <span>PadhaiWithAI</span>
+        </a>
+        <div class="navbar-nav">
+            <a href="{% url 'student_dashboard' %}" class="nav-link"><i class="fas fa-home"></i> Dashboard</a>
+            <a href="{% url 'student_practice_test' %}" class="nav-link active"><i class="fas fa-brain"></i> Practice</a>
+            <a href="{% url 'student_practice_progress' %}" class="nav-link"><i class="fas fa-chart-bar"></i> Progress</a>
+            <a href="{% url 'student_recommendations' %}" class="nav-link"><i class="fas fa-lightbulb"></i> Recommend</a>
+            <a href="{% url 'student_video_learning' %}" class="nav-link"><i class="fas fa-video"></i> Videos</a>
+            <form method="POST" action="{% url 'student_logout' %}" style="display:inline;margin:0;padding:0;">{% csrf_token %}<button type="submit" class="nav-link" style="background:none;border:none;font:inherit;cursor:pointer;"><i class="fas fa-sign-out-alt"></i></button></form>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <div>
+                <h1><i class="fas fa-brain"></i> AI Practice Test</h1>
+                <p>{{ student.name }} | Class {{ student.class_name }}</p>
+            </div>
+            <div class="quick-tools">
+                <a href="{% url 'math_tools' %}" target="_blank" class="quick-tool-btn math-tool-btn">
+                    <i class="fas fa-calculator"></i> Maths Tool
+                </a>
+                <a href="{% url 'ai_sathi' %}" target="_blank" class="quick-tool-btn ai-sathi-btn">
+                    <i class="fas fa-robot"></i> AI Sathi
+                </a>
+            </div>
+        </div>
+
+        <!-- Setup Panel -->
+        <div class="setup-panel" id="setupPanel">
+            <h3><i class="fas fa-cog"></i> Select Topic & Start Practice</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-book"></i> Select Book</label>
+                    <select id="bookSelect" onchange="loadChapters()">
+                        <option value="">-- Select Book --</option>
+                        {% for book in books %}
+                        <option value="{{ book.id }}">{{ book.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-bookmark"></i> Select Chapter</label>
+                    <select id="chapterSelect" disabled>
+                        <option value="">-- Select Chapter --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-signal"></i> Difficulty</label>
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-list-ol"></i> Number of Questions</label>
+                    <select id="numQuestions">
+                        <option value="5" selected>5 Questions</option>
+                        <option value="10">10 Questions</option>
+                        <option value="15">15 Questions</option>
+                       
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-shapes"></i> Question Type</label>
+                    <select id="questionType">
+                        <option value="mcq" selected>Multiple Choice (MCQ)</option>
+                        <option value="true_false">True / False</option>
+                        <option value="fill_blank">Fill in the Blank</option>
+                        <option value="short_answer">Short Answer</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn" onclick="generateQuestions()" disabled>
+                <i class="fas fa-magic"></i> Generate AI Questions
+            </button>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loadingPanel">
+            <div class="spinner"></div>
+            <h3 style="color: var(--primary);">Generating Questions...</h3>
+            <p style="color: var(--text-secondary);">AI is creating questions for you</p>
+        </div>
+
+        <!-- Test Area -->
+        <div class="test-area" id="testArea">
+            <div class="test-header">
+                <div class="test-info">
+                    <h4 id="chapterName">Chapter Name</h4>
+                    <span id="difficultyBadge">Medium</span>
+                </div>
+                <div class="timer" id="timer">00:00</div>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+
+            <div class="question-box">
+                <div class="question-number" id="questionNumber">Question 1 of 5</div>
+                <div class="question-text" id="questionText">Loading question...</div>
+            </div>
+
+            <div class="options-list" id="optionsList">
+                <!-- MCQ options will be inserted here -->
+            </div>
+
+            <div class="tf-options" id="tfOptions" style="display:none;">
+                <button class="tf-btn" id="tfTrue" onclick="selectTF('True')">
+                    <i class="fas fa-check-circle"></i> True
+                </button>
+                <button class="tf-btn" id="tfFalse" onclick="selectTF('False')">
+                    <i class="fas fa-times-circle"></i> False
+                </button>
+            </div>
+
+            <div class="fill-input-area" id="fillArea" style="display:none;">
+                <input type="text" class="fill-input" id="fillInput" placeholder="Type your answer here...">
+                <button class="fill-submit-btn" id="fillSubmitBtn" onclick="submitFillBlank()">
+                    <i class="fas fa-paper-plane"></i> Submit Answer
+                </button>
+                <div class="fill-result" id="fillResult"></div>
+            </div>
+
+            <div class="short-answer-area" id="shortAnswerArea" style="display:none;">
+                <textarea class="short-answer-textarea" id="shortAnswerInput" placeholder="Write your answer here..."></textarea>
+                <button class="check-answer-btn" id="checkAnswerBtn" onclick="checkShortAnswer()">
+                    <i class="fas fa-eye"></i> Check Answer
+                </button>
+            </div>
+
+            <div class="correct-answer-box" id="correctAnswerBox">
+                <h5><i class="fas fa-check-double"></i> Correct Answer</h5>
+                <p id="correctAnswerText"></p>
+            </div>
+
+            <div class="self-grade-btns" id="selfGradeBtns">
+                <button class="grade-btn grade-correct" onclick="selfGrade(true)">
+                    <i class="fas fa-check"></i> I got it right
+                </button>
+                <button class="grade-btn grade-wrong" onclick="selfGrade(false)">
+                    <i class="fas fa-times"></i> I got it wrong
+                </button>
+            </div>
+
+            <div class="explanation-box" id="explanationBox">
+                <h5><i class="fas fa-lightbulb"></i> Explanation</h5>
+                <p id="explanationText"></p>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-primary" id="nextBtn" onclick="nextQuestion()" disabled>
+                    <i class="fas fa-arrow-right"></i> Next
+                </button>
+            </div>
+        </div>
+
+        <!-- Result Panel -->
+        <div class="result-panel" id="resultPanel">
+            <div class="result-icon" id="resultIcon"><i class="fas fa-trophy"></i></div>
+            <div class="result-score" id="resultScore">80%</div>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Practice Complete!</p>
+
+            <div class="result-details">
+                <div class="result-stat correct">
+                    <div class="value" id="correctCount">4</div>
+                    <div class="label">Correct</div>
+                </div>
+                <div class="result-stat wrong">
+                    <div class="value" id="wrongCount">1</div>
+                    <div class="label">Wrong</div>
+                </div>
+                <div class="result-stat">
+                    <div class="value" id="timeTaken">02:30</div>
+                    <div class="label">Time</div>
+                </div>
+            </div>
+
+            <div class="btn-row" style="margin-top: 30px; flex-wrap: wrap; justify-content: center;">
+                <button class="btn btn-primary" onclick="resetTest()">
+                    <i class="fas fa-redo"></i> Try Again
+                </button>
+                <button class="btn btn-pdf" onclick="downloadPDF()">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </button>
+                <a href="{% url 'student_practice_progress' %}" class="btn btn-success">
+                    <i class="fas fa-chart-bar"></i> View Progress
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CSRF token helper for fetch requests
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        let questions = [];
+        let currentQuestion = 0;
+        let correctAnswers = 0;
+        let wrongAnswers = 0;
+        let selectedAnswer = null;
+        let answered = false;
+        let startTime = null;
+        let timerInterval = null;
+        let chapterName = '';
+        let questionType = 'mcq';
+
+        // Load chapters when book is selected
+        function loadChapters() {
+            const bookSelect = document.getElementById('bookSelect');
+            const chapterSelect = document.getElementById('chapterSelect');
+            const startBtn = document.getElementById('startBtn');
+            const bookId = bookSelect.value;
+
+            if (!bookId) {
+                chapterSelect.disabled = true;
+                chapterSelect.innerHTML = '<option value="">-- Select Chapter --</option>';
+                startBtn.disabled = true;
+                return;
+            }
+
+            chapterSelect.disabled = true;
+            chapterSelect.innerHTML = '<option value="">Loading...</option>';
+
+            fetch(`/get-chapters/${bookId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    chapterSelect.innerHTML = '<option value="">-- Select Chapter --</option>';
+                    data.chapters.forEach(chapter => {
+                        const option = document.createElement('option');
+                        option.value = chapter.id;
+                        option.textContent = chapter.name;
+                        chapterSelect.appendChild(option);
+                    });
+                    chapterSelect.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error loading chapters:', error);
+                    chapterSelect.innerHTML = '<option value="">Error loading chapters</option>';
+                });
+        }
+
+        // Enable start button when chapter is selected
+        document.getElementById('chapterSelect').addEventListener('change', function() {
+            document.getElementById('startBtn').disabled = !this.value;
+        });
+
+        // Generate questions from AI
+        function generateQuestions() {
+            const bookId = document.getElementById('bookSelect').value;
+            const chapterId = document.getElementById('chapterSelect').value;
+            const difficulty = document.getElementById('difficulty').value;
+            const numQuestions = document.getElementById('numQuestions').value;
+            const selectedType = document.getElementById('questionType').value;
+
+            if (!bookId || !chapterId) {
+                alert('Please select book and chapter');
+                return;
+            }
+
+            document.getElementById('setupPanel').style.display = 'none';
+            document.getElementById('loadingPanel').classList.add('active');
+
+            fetch('{% url "generate_practice_questions" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({
+                    book_id: bookId,
+                    chapter_id: chapterId,
+                    difficulty: difficulty,
+                    num_questions: parseInt(numQuestions),
+                    question_type: selectedType
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loadingPanel').classList.remove('active');
+
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    document.getElementById('setupPanel').style.display = 'block';
+                    return;
+                }
+
+                questions = data.questions;
+                chapterName = data.chapter_name;
+                questionType = data.question_type || 'mcq';
+
+                if (!questions || questions.length === 0) {
+                    alert('No questions generated. Please try again.');
+                    document.getElementById('setupPanel').style.display = 'block';
+                    return;
+                }
+
+                startTest();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('loadingPanel').classList.remove('active');
+                document.getElementById('setupPanel').style.display = 'block';
+                alert('Failed to generate questions. Please try again.');
+            });
+        }
+
+        function startTest() {
+            currentQuestion = 0;
+            correctAnswers = 0;
+            wrongAnswers = 0;
+            startTime = Date.now();
+
+            document.getElementById('testArea').style.display = 'block';
+            document.getElementById('chapterName').textContent = chapterName;
+
+            const difficulty = document.getElementById('difficulty').value;
+            const diffBadge = document.getElementById('difficultyBadge');
+            diffBadge.textContent = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+
+            showQuestion();
+            startTimer();
+        }
+
+        // Hide all answer areas
+        function hideAllAreas() {
+            document.getElementById('optionsList').style.display = 'none';
+            document.getElementById('optionsList').innerHTML = '';
+            document.getElementById('tfOptions').style.display = 'none';
+            document.getElementById('fillArea').style.display = 'none';
+            document.getElementById('shortAnswerArea').style.display = 'none';
+            document.getElementById('correctAnswerBox').style.display = 'none';
+            document.getElementById('selfGradeBtns').classList.remove('active');
+            document.getElementById('explanationBox').style.display = 'none';
+            document.getElementById('fillResult').className = 'fill-result';
+            document.getElementById('fillResult').textContent = '';
+        }
+
+        function showQuestion() {
+            if (currentQuestion >= questions.length) {
+                endTest();
+                return;
+            }
+
+            const q = questions[currentQuestion];
+            answered = false;
+            selectedAnswer = null;
+
+            document.getElementById('questionNumber').textContent =
+                `Question ${currentQuestion + 1} of ${questions.length}`;
+            document.getElementById('questionText').textContent = q.question;
+            document.getElementById('progressFill').style.width =
+                `${(currentQuestion / questions.length) * 100}%`;
+            document.getElementById('nextBtn').disabled = true;
+
+            hideAllAreas();
+
+            if (questionType === 'mcq') {
+                showMCQ(q);
+            } else if (questionType === 'true_false') {
+                showTrueFalse(q);
+            } else if (questionType === 'fill_blank') {
+                showFillBlank(q);
+            } else if (questionType === 'short_answer') {
+                showShortAnswer(q);
+            }
+        }
+
+        // MCQ rendering
+        function showMCQ(q) {
+            const optionsList = document.getElementById('optionsList');
+            optionsList.style.display = 'flex';
+            optionsList.innerHTML = '';
+
+            const labels = ['A', 'B', 'C', 'D'];
+            const options = q.options || [];
+            options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerHTML = `<span class="option-label">${labels[index]}</span><span>${option}</span>`;
+                btn.onclick = () => selectOption(index, option);
+                optionsList.appendChild(btn);
+            });
+        }
+
+        // True/False rendering
+        function showTrueFalse(q) {
+            const tfOptions = document.getElementById('tfOptions');
+            tfOptions.style.display = 'flex';
+
+            const trueBtn = document.getElementById('tfTrue');
+            const falseBtn = document.getElementById('tfFalse');
+            trueBtn.className = 'tf-btn';
+            falseBtn.className = 'tf-btn';
+            trueBtn.onclick = () => selectTF('True');
+            falseBtn.onclick = () => selectTF('False');
+        }
+
+        // Fill in the Blank rendering
+        function showFillBlank(q) {
+            const fillArea = document.getElementById('fillArea');
+            fillArea.style.display = 'block';
+
+            const input = document.getElementById('fillInput');
+            input.value = '';
+            input.disabled = false;
+            input.focus();
+
+            const submitBtn = document.getElementById('fillSubmitBtn');
+            submitBtn.disabled = false;
+
+            // Allow Enter key to submit
+            input.onkeydown = function(e) {
+                if (e.key === 'Enter') submitFillBlank();
+            };
+        }
+
+        // Short Answer rendering
+        function showShortAnswer(q) {
+            const area = document.getElementById('shortAnswerArea');
+            area.style.display = 'block';
+
+            const textarea = document.getElementById('shortAnswerInput');
+            textarea.value = '';
+            textarea.disabled = false;
+
+            const checkBtn = document.getElementById('checkAnswerBtn');
+            checkBtn.disabled = false;
+        }
+
+        // MCQ handler
+        function selectOption(index, answer) {
+            if (answered) return;
+
+            answered = true;
+            selectedAnswer = answer;
+            const q = questions[currentQuestion];
+            const buttons = document.querySelectorAll('.option-btn');
+
+            buttons.forEach((btn, i) => {
+                btn.onclick = null;
+                const optionText = q.options[i];
+
+                if (optionText === q.correct_answer) {
+                    btn.classList.add('correct');
+                } else if (i === index && optionText !== q.correct_answer) {
+                    btn.classList.add('wrong');
+                }
+            });
+
+            if (answer === q.correct_answer) {
+                correctAnswers++;
+            } else {
+                wrongAnswers++;
+            }
+
+            showExplanation(q);
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        // True/False handler
+        function selectTF(answer) {
+            if (answered) return;
+
+            answered = true;
+            const q = questions[currentQuestion];
+            const trueBtn = document.getElementById('tfTrue');
+            const falseBtn = document.getElementById('tfFalse');
+
+            trueBtn.onclick = null;
+            falseBtn.onclick = null;
+
+            const correct = q.correct_answer;
+            const isCorrect = answer === correct;
+
+            if (isCorrect) {
+                correctAnswers++;
+                if (answer === 'True') trueBtn.classList.add('correct');
+                else falseBtn.classList.add('correct');
+            } else {
+                wrongAnswers++;
+                if (answer === 'True') {
+                    trueBtn.classList.add('wrong');
+                    falseBtn.classList.add('correct');
+                } else {
+                    falseBtn.classList.add('wrong');
+                    trueBtn.classList.add('correct');
+                }
+            }
+
+            showExplanation(q);
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        // Fill in the Blank handler
+        function submitFillBlank() {
+            if (answered) return;
+
+            const input = document.getElementById('fillInput');
+            const userAnswer = input.value.trim();
+
+            if (!userAnswer) {
+                input.style.borderColor = 'var(--danger)';
+                setTimeout(() => { input.style.borderColor = 'var(--border)'; }, 1000);
+                return;
+            }
+
+            answered = true;
+            input.disabled = true;
+            document.getElementById('fillSubmitBtn').disabled = true;
+
+            const q = questions[currentQuestion];
+            const correct = q.correct_answer.trim();
+            const isCorrect = userAnswer.toLowerCase() === correct.toLowerCase();
+
+            const resultEl = document.getElementById('fillResult');
+            if (isCorrect) {
+                correctAnswers++;
+                resultEl.className = 'fill-result correct';
+                resultEl.innerHTML = '<i class="fas fa-check-circle"></i> Correct!';
+            } else {
+                wrongAnswers++;
+                resultEl.className = 'fill-result wrong';
+                resultEl.innerHTML = `<i class="fas fa-times-circle"></i> Wrong! The correct answer is: <strong>${correct}</strong>`;
+            }
+
+            showExplanation(q);
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        // Short Answer handler - reveal correct answer
+        function checkShortAnswer() {
+            if (answered) return;
+
+            const textarea = document.getElementById('shortAnswerInput');
+            if (!textarea.value.trim()) {
+                textarea.style.borderColor = 'var(--danger)';
+                setTimeout(() => { textarea.style.borderColor = 'var(--border)'; }, 1000);
+                return;
+            }
+
+            textarea.disabled = true;
+            document.getElementById('checkAnswerBtn').disabled = true;
+
+            const q = questions[currentQuestion];
+
+            // Show correct answer box
+            const correctBox = document.getElementById('correctAnswerBox');
+            document.getElementById('correctAnswerText').textContent = q.correct_answer;
+            correctBox.style.display = 'block';
+
+            // Show self-grade buttons
+            document.getElementById('selfGradeBtns').classList.add('active');
+        }
+
+        // Self-grade handler for short answer
+        function selfGrade(isCorrect) {
+            if (answered) return;
+
+            answered = true;
+
+            if (isCorrect) {
+                correctAnswers++;
+            } else {
+                wrongAnswers++;
+            }
+
+            document.getElementById('selfGradeBtns').classList.remove('active');
+
+            const q = questions[currentQuestion];
+            showExplanation(q);
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        // Show explanation helper
+        function showExplanation(q) {
+            if (q.explanation) {
+                document.getElementById('explanationText').textContent = q.explanation;
+                document.getElementById('explanationBox').style.display = 'block';
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            showQuestion();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+                const secs = (elapsed % 60).toString().padStart(2, '0');
+                document.getElementById('timer').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function endTest() {
+            clearInterval(timerInterval);
+            const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+            const score = Math.round((correctAnswers / questions.length) * 100);
+
+            document.getElementById('testArea').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'block';
+
+            document.getElementById('resultScore').textContent = `${score}%`;
+            document.getElementById('correctCount').textContent = correctAnswers;
+            document.getElementById('wrongCount').textContent = wrongAnswers;
+
+            const mins = Math.floor(timeTaken / 60).toString().padStart(2, '0');
+            const secs = (timeTaken % 60).toString().padStart(2, '0');
+            document.getElementById('timeTaken').textContent = `${mins}:${secs}`;
+
+            const icon = document.getElementById('resultIcon');
+            icon.className = 'result-icon ' + (score >= 80 ? 'good' : score >= 50 ? 'medium' : 'poor');
+            icon.innerHTML = score >= 80 ? '<i class="fas fa-trophy"></i>' :
+                            score >= 50 ? '<i class="fas fa-thumbs-up"></i>' : '<i class="fas fa-redo"></i>';
+
+            // Get chapter name from dropdown for topic
+            const chapterSelect = document.getElementById('chapterSelect');
+            const topicName = chapterSelect.options[chapterSelect.selectedIndex].text;
+
+            // Submit to server
+            fetch('{% url "submit_practice_test" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                body: JSON.stringify({
+                    topic: topicName,
+                    difficulty: document.getElementById('difficulty').value,
+                    total_questions: questions.length,
+                    correct_answers: correctAnswers,
+                    wrong_answers: wrongAnswers,
+                    time_taken: timeTaken
+                })
+            });
+        }
+
+        function resetTest() {
+            document.getElementById('setupPanel').style.display = 'block';
+            document.getElementById('testArea').style.display = 'none';
+            document.getElementById('resultPanel').style.display = 'none';
+            questions = [];
+            questionType = 'mcq';
+        }
+
+        function downloadPDF() {
+            if (!questions || questions.length === 0) {
+                alert('No questions to download.');
+                return;
+            }
+
+            // Disable button while generating
+            const pdfBtn = document.querySelector('.btn-pdf');
+            pdfBtn.disabled = true;
+            pdfBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            const difficulty = document.getElementById('difficulty').value;
+            const score = document.getElementById('resultScore').textContent;
+            const correct = document.getElementById('correctCount').textContent;
+            const wrong = document.getElementById('wrongCount').textContent;
+            const timeTaken = document.getElementById('timeTaken').textContent;
+            const today = new Date().toLocaleDateString('en-IN');
+            const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+            const optionLabels = ['A', 'B', 'C', 'D'];
+            const typeLabels = {
+                mcq: 'बहुविकल्पीय / Multiple Choice',
+                true_false: 'सत्य/असत्य / True-False',
+                fill_blank: 'रिक्त स्थान / Fill in the Blank',
+                short_answer: 'लघु उत्तर / Short Answer'
+            };
+
+            // Build a hidden off-screen div rendered by the browser
+            // (browser handles Devanagari natively; html2canvas screenshots it)
+            const wrap = document.createElement('div');
+            wrap.style.cssText = [
+                'position:fixed', 'left:-9999px', 'top:0',
+                'width:794px',    // A4 px at 96dpi
+                'background:#fff',
+                'font-family:"Noto Sans Devanagari",Arial,sans-serif',
+                'font-size:13px', 'line-height:1.6', 'color:#1e293b',
+                'box-sizing:border-box', 'padding:0'
+            ].join(';');
+
+            // Header
+            wrap.innerHTML = `
+              <div style="background:#1e3c72;color:#fff;padding:18px 30px 14px;">
+                <div style="font-size:18px;font-weight:bold;margin-bottom:4px;">PadhaiWithAI — Practice Test</div>
+                <div style="font-size:12px;opacity:.9;">
+                  अध्याय / Chapter: <b>${chapterName}</b>
+                  &nbsp;&nbsp;|&nbsp;&nbsp; दिनांक / Date: ${today}
+                </div>
+              </div>
+              <div style="background:#f0f4ff;padding:10px 30px;font-size:11.5px;border-bottom:2px solid #c7d2fe;">
+                कठिनाई / Difficulty: <b>${diffLabel}</b> &nbsp;|&nbsp;
+                प्रकार / Type: <b>${typeLabels[questionType] || questionType}</b> &nbsp;|&nbsp;
+                Score: <b>${score}</b> &nbsp;|&nbsp;
+                सही / Correct: <b>${correct}/${questions.length}</b> &nbsp;|&nbsp;
+                गलत / Wrong: <b>${wrong}</b> &nbsp;|&nbsp;
+                समय / Time: <b>${timeTaken}</b>
+              </div>
+              <div style="padding:20px 30px;" id="pdfQuestionsBody"></div>
+              <div style="padding:10px 30px;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0;text-align:center;">
+                PadhaiWithAI — Tonk, Rajasthan | Empowering Education Through Technology
+              </div>`;
+
+            const body = wrap.querySelector('#pdfQuestionsBody');
+            questions.forEach(function(q, idx) {
+                const qDiv = document.createElement('div');
+                qDiv.style.cssText = 'margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #e2e8f0;';
+
+                // Question
+                const qNum = document.createElement('p');
+                qNum.style.cssText = 'font-weight:bold;color:#1e3c72;margin:0 0 6px;font-size:13.5px;';
+                qNum.textContent = 'Q' + (idx + 1) + '.  ' + q.question;
+                qDiv.appendChild(qNum);
+
+                // MCQ options
+                if (questionType === 'mcq' && Array.isArray(q.options)) {
+                    const optWrap = document.createElement('div');
+                    optWrap.style.cssText = 'margin:6px 0 6px 16px;';
+                    q.options.forEach(function(opt, oi) {
+                        const op = document.createElement('div');
+                        op.style.cssText = 'margin-bottom:3px;';
+                        op.textContent = optionLabels[oi] + '.  ' + opt;
+                        optWrap.appendChild(op);
+                    });
+                    qDiv.appendChild(optWrap);
+                }
+
+                // Answer
+                const ansLabel = questionType === 'short_answer' ? 'Model Answer / आदर्श उत्तर' : 'Answer / उत्तर';
+                const ans = document.createElement('p');
+                ans.style.cssText = 'margin:6px 0 3px;color:#059669;font-weight:bold;font-size:12.5px;';
+                ans.textContent = '✓ ' + ansLabel + ': ' + (q.correct_answer || '');
+                qDiv.appendChild(ans);
+
+                // Explanation
+                if (q.explanation) {
+                    const exp = document.createElement('p');
+                    exp.style.cssText = 'margin:3px 0 0;color:#64748b;font-style:italic;font-size:12px;';
+                    exp.textContent = 'Explanation / स्पष्टीकरण: ' + q.explanation;
+                    qDiv.appendChild(exp);
+                }
+
+                body.appendChild(qDiv);
+            });
+
+            document.body.appendChild(wrap);
+
+            // Use html2canvas to screenshot the div, then embed in PDF
+            html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff' }).then(function(canvas) {
+                document.body.removeChild(wrap);
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ unit: 'px', format: 'a4', hotfixes: ['px_scaling'] });
+
+                const pageW = doc.internal.pageSize.getWidth();
+                const pageH = doc.internal.pageSize.getHeight();
+                const imgW = pageW;
+                const imgH = (canvas.height * imgW) / canvas.width;
+                const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+                // Slice into A4 pages
+                let yOffset = 0;
+                while (yOffset < imgH) {
+                    if (yOffset > 0) doc.addPage();
+                    doc.addImage(imgData, 'JPEG', 0, -yOffset, imgW, imgH);
+                    yOffset += pageH;
+                }
+
+                const safeChapter = chapterName.replace(/[^\w\u0900-\u097F]/g, '_');
+                doc.save('Practice_Test_' + safeChapter + '_' + today.replace(/\//g, '-') + '.pdf');
+
+                pdfBtn.disabled = false;
+                pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
+            }).catch(function() {
+                document.body.removeChild(wrap);
+                pdfBtn.disabled = false;
+                pdfBtn.innerHTML = '<i class="fas fa-file-pdf"></i> Download PDF';
+                alert('PDF generation failed. Please try again.');
+            });
+        }
+    </script>
+
+    <div class="footer">
+        <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | Empowering Education Through Technology</span>
+        <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo" class="nic-logo">
+    </div>
+</body>
+</html>

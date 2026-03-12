@@ -1,0 +1,671 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<!-- Google Fonts for Hindi/Devanagari support -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+     window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        packages: { '[+]': ['ams'] },
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'],
+        renderActions: {
+          addMenu: [0, '', '']
+        }
+      },
+      chtml: { 
+        scale: 1,
+        mtextInheritFont: true  // Use page font for \text{} - fixes Hindi rendering
+      },
+      svg: { 
+        scale: 1, 
+        fontCache: 'global',
+        mtextInheritFont: true  // Use page font for \text{} - fixes Hindi rendering
+      }
+    };
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+    /* Fix Hindi text in MathJax */
+    mjx-mtext {
+        font-family: 'Noto Sans Devanagari', 'Mangal', 'Aparajita', system-ui, sans-serif !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<style>
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #152a52;
+        --primary-light: #2a5298;
+        --secondary: #64748B;
+        --accent: #38bdf8;
+        --surface: #FFFFFF;
+        --text-primary: #1E293B;
+        --text-secondary: #64748B;
+        --border: #E2E8F0;
+        --success: #10B981;
+        --danger: #EF4444;
+        --warning: #F59E0B;
+    }
+
+    .page-header-solutions {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        border-radius: 12px;
+        padding: 25px 30px;
+        margin-bottom: 25px;
+        color: white;
+        box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3);
+        font-family: 'Noto Sans Devanagari', 'Mangal', system-ui, sans-serif;
+    }
+    .page-header-solutions h1 { font-size: 1.6rem; font-weight: 700; margin: 0; }
+    .page-header-solutions p { font-size: 1rem; opacity: 0.95; margin: 8px 0 0 0; }
+    .model-badge {
+        display: inline-block;
+        background: rgba(255,255,255,0.2);
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        margin-top: 8px;
+    }
+
+    .sidebar-solutions {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        padding: 20px;
+        position: sticky;
+        top: 20px;
+    }
+    .sidebar-solutions h6 {
+        color: var(--primary);
+        font-weight: 700;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--border);
+    }
+    .sidebar-solutions .nav-link {
+        color: var(--primary);
+        font-weight: 600;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin-bottom: 5px;
+        transition: all 0.3s ease;
+    }
+    .sidebar-solutions .nav-link:hover {
+        background: #f0f7ff;
+    }
+    .question-nav-link {
+        display: block;
+        padding: 8px 12px;
+        color: var(--text-primary);
+        text-decoration: none;
+        border-radius: 6px;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+        border-left: 3px solid transparent;
+    }
+    .question-nav-link:hover {
+        background: #f0f7ff;
+        border-left-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .solution-card {
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--border);
+        overflow: hidden;
+        margin-bottom: 25px;
+    }
+    .solution-card-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 15px 20px;
+        font-weight: 700;
+    }
+    .solution-card-body { padding: 20px; }
+
+    .question-box {
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid var(--border);
+        margin-bottom: 20px;
+    }
+    .question-label {
+        color: var(--primary);
+        font-weight: 600;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+    }
+    .solution-box {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid var(--border);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .solution-label {
+        color: var(--success);
+        font-weight: 700;
+        margin-bottom: 15px;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .solution-label::after {
+        content: '';
+        flex: 1;
+        height: 2px;
+        background: linear-gradient(90deg, var(--success), transparent);
+    }
+
+    /* Enhanced Solution Content Styling */
+    .solution-content {
+        font-size: 1rem;
+        line-height: 1.6;
+        color: var(--text-primary);
+    }
+    .solution-content p {
+        margin-bottom: 8px;
+    }
+    .solution-content br + br {
+        display: none;
+    }
+    .solution-content .structured-solution > p:first-child {
+        margin-top: 0;
+    }
+    .solution-content strong, .solution-content b {
+        color: var(--primary);
+        font-weight: 700;
+    }
+    
+    /* Section Headers (like आयत, त्रिभुज, etc.) */
+    .solution-content h3, .solution-content h4, .solution-content h5 {
+        color: var(--primary);
+        font-weight: 700;
+        margin: 20px 0 12px 0;
+        padding: 10px 15px;
+        background: linear-gradient(135deg, rgba(30, 60, 114, 0.08) 0%, rgba(42, 82, 152, 0.05) 100%);
+        border-radius: 8px;
+        border-left: 4px solid var(--primary);
+    }
+    
+    /* Blockquotes - The nested content boxes */
+    .solution-content blockquote {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        border: none;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        padding: 10px 15px;
+        margin: 8px 0;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    }
+    .solution-content blockquote p {
+        margin-bottom: 4px;
+    }
+    .solution-content blockquote p:last-child {
+        margin-bottom: 0;
+    }
+    .solution-content blockquote blockquote {
+        background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+        border-left-color: var(--warning);
+        margin: 6px 0;
+    }
+    .solution-content blockquote blockquote blockquote {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border-left-color: var(--success);
+    }
+    
+    /* Lists */
+    .solution-content ul, .solution-content ol {
+        padding-left: 25px;
+        margin: 10px 0;
+    }
+    .solution-content li {
+        margin-bottom: 8px;
+        padding-left: 5px;
+    }
+    .solution-content ul li::marker {
+        color: var(--primary);
+    }
+    
+    /* Code/Math expressions */
+    .solution-content code {
+        background: #f1f5f9;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        color: var(--primary-dark);
+    }
+    
+    /* Horizontal rules */
+    .solution-content hr {
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, var(--primary), var(--accent), transparent);
+        margin: 20px 0;
+        border-radius: 2px;
+    }
+    
+    /* Final Answer highlight */
+    .solution-content p:last-child,
+    .solution-content > div:last-child {
+        font-weight: 500;
+    }
+    
+    /* Tables in solutions */
+    .solution-content table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .solution-content th {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 12px 15px;
+        font-weight: 600;
+    }
+    .solution-content td {
+        padding: 10px 15px;
+        border-bottom: 1px solid var(--border);
+    }
+    .solution-content tr:hover {
+        background: #f0f7ff;
+    }
+
+    /* Special styling for shape names */
+    .solution-content p:has(strong:first-child) {
+        background: linear-gradient(135deg, rgba(30, 60, 114, 0.05) 0%, rgba(42, 82, 152, 0.02) 100%);
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin: 15px 0 10px 0;
+    }
+    
+    /* MathJax Formulas */
+    .MathJax {
+        font-size: 1.1em !important;
+        color: var(--primary-dark) !important;
+    }
+    mjx-container {
+        padding: 2px 4px;
+    }
+    
+    /* Emphasized text (formulas, answers) */
+    .solution-content em {
+        font-style: italic;
+        color: var(--primary);
+    }
+    
+    /* Answer highlight */
+    .solution-content .answer,
+    .solution-content p:contains("अंतिम"),
+    .solution-content p:contains("उत्तर") {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 2px solid #f59e0b;
+        margin-top: 15px;
+        font-weight: 600;
+    }
+    
+    /* Hindi text optimization */
+    .solution-content {
+        font-family: 'Noto Sans Devanagari', 'Mangal', 'Aparajita', system-ui, sans-serif;
+    }
+
+    .btn-solve-again {
+        background: linear-gradient(135deg, var(--secondary), #475569);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+    }
+    .btn-solve-again:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+        color: white;
+    }
+    .btn-back {
+        background: linear-gradient(135deg, var(--primary), var(--primary-light));
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(30, 60, 114, 0.3);
+        color: white;
+    }
+
+    .question-image {
+        background-color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-top: 10px;
+    }
+    
+    /* Pre-formatted text */
+    .solution-content pre {
+        background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+        color: #e2e8f0;
+        padding: 15px 20px;
+        border-radius: 8px;
+        overflow-x: auto;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 0.9rem;
+        margin: 12px 0;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .solution-content blockquote {
+            padding: 12px 15px;
+            margin: 8px 0;
+        }
+        .solution-content h3, .solution-content h4, .solution-content h5 {
+            padding: 8px 12px;
+            font-size: 0.95rem;
+        }
+        .solution-box {
+            padding: 15px;
+        }
+    }
+
+    /* PDF Download Button */
+    .btn-download-pdf {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-download-pdf:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+    }
+
+    /* PDF Watermark */
+    .pdf-watermark {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-25deg);
+        z-index: 1000;
+        pointer-events: none;
+        white-space: nowrap;
+        text-align: center;
+    }
+    .pdf-watermark img {
+        opacity: 0.15;
+        width: 180px;
+        margin-bottom: 5px;
+    }
+    .pdf-watermark span {
+        display: block;
+        font-size: 24px;
+        font-weight: 800;
+        color: rgba(30, 60, 114, 0.1);
+    }
+
+    /* Solution content needs relative positioning for watermark */
+    .solution-content {
+        position: relative;
+    }
+
+    /* Action buttons row */
+    .action-buttons-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="page-header-solutions">
+    <h1>✨ AI Solutions</h1>
+    {% if chapter_name %}
+        <p>📚 {{ chapter_name }}</p>
+    {% else %}
+        <p>Step-by-step solutions powered by AI</p>
+    {% endif %}
+    <span class="model-badge">📡 Model: {{ model_type }}</span>
+</div>
+
+<div class="container-fluid px-0">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2">
+            <div class="sidebar-solutions">
+                <a class="btn-back mb-3" href="{% url 'math_tools' %}" onclick="return clearSelectedQuestions()">
+                    ← Back to Questions
+                </a>
+                {% if solutions %}
+                    <hr style="margin: 15px 0; border-color: var(--border);">
+                    <h6>📋 Questions</h6>
+                    {% for solution in solutions %}
+                        <a href="#solution-{{ forloop.counter }}" class="question-nav-link">
+                            📝 Question {{ forloop.counter }}
+                        </a>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <div class="col-md-9 col-lg-10">
+            {% if solutions %}
+                <div class="solutions-container">
+                    {% for solution in solutions %}
+                        <div class="solution-card" id="solution-{{ forloop.counter }}">
+                            <div class="solution-card-header">
+                                📝 Question {{ forloop.counter }}
+                            </div>
+                            <div class="solution-card-body">
+                                <div class="question-box">
+                                    <div class="question-label">📌 Question:</div>
+                                    <div>
+                                        {{ solution.question }}
+                                        {% if solution.img %}
+                                            <div class="question-image">
+                                                <img src="/static/school_app/images/{{ solution.img }}" 
+                                                     alt="Question diagram" 
+                                                     class="img-fluid rounded" 
+                                                     style="max-width: 100%; height: auto;">
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="solution-box">
+                                    <div class="solution-label">✅ Solution:</div>
+                                    <div class="solution-content">
+                                        <!-- Watermark for PDF -->
+                                        <div class="pdf-watermark">
+                                            <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI">
+                                            <span>PadhaiWithAI</span>
+                                        </div>
+                                        {{ solution.solution|safe }}
+                                    </div>
+                                </div>
+                                <div class="mt-3 action-buttons-row">
+                                    <form action="{% url 'solve_again' %}" method="post" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="question" value="{{ solution.question }}">
+                                        <input type="hidden" name="img" value="{{ solution.img|default:'' }}">
+                                        <button type="submit" class="btn-solve-again">🔄 Solve Again</button>
+                                    </form>
+                                    <button type="button" class="btn-download-pdf" onclick="downloadPDF(this, {{ forloop.counter }})">
+                                        📄 Download PDF
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="solution-card">
+                    <div class="solution-card-body" style="text-align: center; padding: 40px;">
+                        <p style="color: var(--text-secondary); font-size: 1.1rem;">📭 No solutions available. Please select questions to solve.</p>
+                        <a href="{% url 'math_tools' %}" class="btn-back" style="margin-top: 15px;">← Go to Math Tools</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="height: 30px;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- html2pdf library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+    // Wait for MathJax to load and typeset the content
+    function typesetMath() {
+        if (typeof MathJax !== 'undefined' && MathJax.typesetPromise) {
+            MathJax.typesetPromise().catch(function(err) {
+                console.log('MathJax typeset error:', err);
+            });
+        } else {
+            // MathJax not loaded yet, retry after a short delay
+            setTimeout(typesetMath, 500);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Give MathJax time to initialize
+        setTimeout(typesetMath, 100);
+    });
+    
+    // Also typeset when window fully loads (backup)
+    window.addEventListener('load', function() {
+        setTimeout(typesetMath, 200);
+    });
+
+    // PDF Download function using html2canvas + jsPDF
+    function downloadPDF(btn, questionNum) {
+        const card = btn.closest('.solution-card');
+        const cardBody = card.querySelector('.solution-card-body');
+        const watermark = cardBody.querySelector('.pdf-watermark');
+        const actionButtons = cardBody.querySelector('.action-buttons-row');
+        
+        // Show watermark
+        if (watermark) watermark.style.display = 'block';
+        
+        // Hide buttons
+        if (actionButtons) actionButtons.style.display = 'none';
+        
+        // Change button text
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '⏳ Generating...';
+        btn.disabled = true;
+        
+        // Use html2canvas to capture
+        html2canvas(cardBody, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            logging: true
+        }).then(function(canvas) {
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.95);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            
+            const ratio = canvasWidth / canvasHeight;
+            let imgWidth = pdfWidth - 20;
+            let imgHeight = imgWidth / ratio;
+            
+            // If content is taller than page, scale down or add pages
+            if (imgHeight > pdfHeight - 20) {
+                // Multi-page handling
+                const pageHeight = pdfHeight - 20;
+                let heightLeft = imgHeight;
+                let position = 10;
+                
+                pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight + 10;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+            } else {
+                pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+            }
+            
+            pdf.save(`PadhaiWithAI_Q${questionNum}.pdf`);
+            
+            // Restore
+            if (watermark) watermark.style.display = 'none';
+            if (actionButtons) actionButtons.style.display = 'flex';
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            
+        }).catch(function(err) {
+            console.error('PDF generation error:', err);
+            alert('Error: ' + err.message);
+            if (watermark) watermark.style.display = 'none';
+            if (actionButtons) actionButtons.style.display = 'flex';
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    }
+
+    // Clear selected questions when going back
+    function clearSelectedQuestions() {
+        localStorage.removeItem('selectedQuestions');
+        return true;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,558 @@
+{% extends 'school_app/base.html' %}
+
+{% block extra_head %}
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<style>
+    /* DataTables wrapper styles */
+    .dataTables_wrapper {
+        margin-bottom: 20px;
+    }
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_paginate {
+        display: block !important;
+        visibility: visible !important;
+        margin: 10px 0;
+    }
+    .dataTables_wrapper .dataTables_filter {
+        float: right;
+        margin-bottom: 15px;
+    }
+    .dataTables_wrapper .dataTables_length {
+        float: left;
+        margin-bottom: 15px;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #ddd;
+        padding: 8px 12px;
+        border-radius: 6px;
+        margin-left: 8px;
+        min-width: 200px;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        border: 1px solid #ddd;
+        padding: 6px 10px;
+        border-radius: 6px;
+        margin: 0 5px;
+    }
+    .dataTables_wrapper .dataTables_info {
+        float: left;
+        padding-top: 10px;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        float: right;
+        padding-top: 5px;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 6px 14px;
+        margin: 2px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #f8f9fa;
+        display: inline-block;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: white !important;
+        border-color: #1e3c72;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current):not(.disabled) {
+        background: #e9ecef;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    .dataTables_wrapper::after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+    
+    /* Table Header Styles - Fix visibility */
+    #schoolsTable thead,
+    #testsTable thead {
+        background: linear-gradient(135deg, #1e3c72, #2a5298) !important;
+    }
+    #schoolsTable thead th,
+    #testsTable thead th {
+        background: linear-gradient(135deg, #1e3c72, #2a5298) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        padding: 12px 15px !important;
+        border: none !important;
+        text-align: left;
+    }
+    #schoolsTable tbody td,
+    #testsTable tbody td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #eee;
+    }
+    #schoolsTable tbody tr:hover,
+    #testsTable tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    #schoolsTable tbody tr:nth-child(even),
+    #testsTable tbody tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% load static %}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1>District Dashboard</h1>
+    <p>{{ district_name }} - Education Management System</p>
+</div>
+
+{% if user_role == 'state' or user_role == 'system_admin' %}
+<!-- District Selector for State Users -->
+<div class="district-selector">
+    <form method="GET" class="d-flex align-items-center gap-15">
+        <label for="district_id">Select District:</label>
+        <select name="district_id" id="district_id" class="form-select" onchange="this.form.submit()">
+            {% for dist in available_districts %}
+                <option value="{{ dist.id }}" {% if dist.id == current_district.id %}selected{% endif %}>
+                    {{ dist.name_english }} ({{ dist.name_hindi }})
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+    <a href="{% url 'state_dashboard' %}" class="back-link">Back to State Dashboard</a>
+</div>
+{% endif %}
+
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card purple">
+        <div class="stat-value">{{ total_schools }}</div>
+        <div class="stat-label">Total Schools</div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-value">{{ total_tests }}</div>
+        <div class="stat-label">Total Tests</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-value">{{ total_students }}</div>
+        <div class="stat-label">Total Students</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<h3 class="section-title">Quick Actions</h3>
+<div class="action-buttons">
+      <a href="{% url 'upload_school_users' %}" class="action-btn warning">
+        <i class="fas fa-user-plus me-2"></i> Create School Users
+    </a>
+    <a href="{% url 'school_student_list' %}" class="action-btn info">
+        <i class="fas fa-school me-2"></i> School Report
+    </a>
+    <a href="{% url 'add_test' %}" class="action-btn primary">
+        <i class="fas fa-calendar-plus me-2"></i> Schedule Test
+    </a>
+    <a href="{% url 'student_report' %}" class="action-btn success">
+        <i class="fas fa-chart-line me-2"></i> Student Analysis
+    </a>
+  
+    <a href="{% url 'report_dashboard' %}" class="action-btn info">
+        <i class="fas fa-clipboard-list me-2"></i> Report Dashboard
+    </a>
+    <a href="{% url 'change_password' %}" class="action-btn secondary">
+        <i class="fas fa-key me-2"></i> Change Password
+    </a>
+</div>
+
+<!-- Previous Years Results -->
+<h3 class="section-title">Mathematics Result of Previous Years</h3>
+<div class="table-responsive mb-30">
+    {% if error %}
+        <div class="alert-box danger">{{ error }}</div>
+    {% else %}
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Session Year</th>
+                    <th>Total Students</th>
+                    <th>Below 33%</th>
+                    <th>33-60%</th>
+                    <th>60-80%</th>
+                    <th>80-90%</th>
+                    <th>90-100%</th>
+                    <th>100%</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in results %}
+                    <tr>
+                        <td>{{ row.session_year }}</td>
+                        <td>{{ row.total_students }}</td>
+                        <td>{{ row.below33 }}</td>
+                        <td>{{ row.maths_33_60 }}</td>
+                        <td>{{ row.maths_60_80 }}</td>
+                        <td>{{ row.maths_80_90 }}</td>
+                        <td>{{ row.maths_90_100 }}</td>
+                        <td>{{ row.maths_100 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center">No data available</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+
+<!-- Student Performance Charts -->
+{% if data and data|length > 0 %}
+<h3 class="section-title">Student Performance: Test Categories</h3>
+<div class="test-performance-grid">
+    {% for test_data in data %}
+        <div class="test-card">
+            <h5>{{ test_data.test_name }}</h5>
+            <p class="subject">{{ test_data.subject_name }}</p>
+            <canvas id="pieChart{{ forloop.counter }}"></canvas>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- School Performance Charts -->
+{% if result and result|length > 0 %}
+<h3 class="section-title">Test-Wise School Performance</h3>
+<div class="chart-container">
+    {% for data in result %}
+    <div class="chart-card">
+        <h4>{{ data.test_name }} - {{ data.subject_name }}</h4>
+        <canvas id="chart_{{ data.test_name|slugify }}_{{ data.subject_name|slugify }}"></canvas>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Scheduled Tests Table -->
+<h3 class="section-title">List of Scheduled Tests</h3>
+<div class="table-responsive mb-30">
+    {% if tests %}
+    <table class="data-table" id="testsTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Test Name</th>
+                <th>Subject</th>
+                <th>Test Date</th>
+                <th>Status</th>
+                <th>Question Paper</th>
+                <th>Answer Key</th>
+                <th>Actions</th>
+                <th>Results</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ test.test_name }}</td>
+                <td>{{ test.subject_name }}</td>
+                <td>{{ test.test_date }}</td>
+                <td>
+                    {% if test.is_active %}
+                        <span class="status-badge success">Active</span>
+                    {% else %}
+                        <span class="status-badge warning">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if test.pdf_file_questions %}
+                        <a href="{{ test.pdf_file_questions.url }}" class="btn btn-danger btn-sm" download>Download</a>
+                    {% else %}
+                        <span class="text-muted">N/A</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if test.pdf_file_answers %}
+                        <a href="{{ test.pdf_file_answers.url }}" class="btn btn-info btn-sm" download>Download</a>
+                    {% else %}
+                        <span class="text-muted">N/A</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if not test.is_active %}
+                        <a href="{% url 'activate_test' test.test_number %}" class="btn btn-primary btn-sm">Activate</a>
+                    {% else %}
+                        <a href="{% url 'deactivate_test' test.test_number %}" class="btn btn-warning btn-sm">Deactivate</a>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'view_test_results' test.test_number %}" class="btn btn-success btn-sm">View</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert-box" style="text-align:center; padding:20px; color:#64748b;">No scheduled tests available.</div>
+    {% endif %}
+</div>
+
+<!-- Registered Schools Table -->
+<h3 class="section-title">List of Registered Schools</h3>
+<div class="table-responsive">
+    {% if schools %}
+    <table id="schoolsTable" class="data-table display" style="width:100%">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>School Name</th>
+                <th>Block</th>
+                <th>Email</th>
+                <th>Created At</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for school in schools %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ school.name }}</td>
+                <td>{{ school.block.name_english|default:"-" }}</td>
+                <td>{{ school.admin }}</td>
+                <td>{{ school.created_at|date:"d M Y, H:i"|default:"-" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert-box" style="text-align:center; padding:20px; color:#64748b;">No schools available.</div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- DataTables JS from CDN -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        console.log('Initializing Charts and DataTables...');
+        
+        // ===== PIE CHARTS FOR STUDENT PERFORMANCE =====
+        {% if data and data|length > 0 %}
+        {% for test_data in data %}
+        (function() {
+            var canvas = document.getElementById('pieChart{{ forloop.counter }}');
+            if (canvas && typeof Chart !== 'undefined') {
+                var ctx = canvas.getContext('2d');
+                var categories = {{ test_data.categories|safe }};
+                var totalStudents = categories.reduce((a, b) => a + b, 0);
+
+                if (totalStudents > 0) {
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['0-33%', '33-60%', '60-80%', '80-90%', '90-100%', '100%'],
+                            datasets: [{
+                                data: categories,
+                                backgroundColor: [
+                                    '#dc3545', '#fd7e14', '#ffc107',
+                                    '#20c997', '#0dcaf0', '#198754'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(tooltipItem) {
+                                            var count = tooltipItem.raw;
+                                            var percentage = ((count / totalStudents) * 100).toFixed(1);
+                                            return tooltipItem.label + ': ' + count + ' (' + percentage + '%)';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        })();
+        {% endfor %}
+        {% endif %}
+
+        // ===== BAR CHARTS FOR SCHOOL PERFORMANCE =====
+        {% if result and result|length > 0 %}
+        {% for data in result %}
+        (function() {
+            var chartId = 'chart_{{ data.test_name|slugify }}_{{ data.subject_name|slugify }}';
+            var canvas = document.getElementById(chartId);
+            if (canvas && typeof Chart !== 'undefined') {
+                var ctx = canvas.getContext('2d');
+                var categories = [
+                    {{ data.category_0_33|default:0 }},
+                    {{ data.category_33_60|default:0 }},
+                    {{ data.category_60_80|default:0 }},
+                    {{ data.category_80_90|default:0 }},
+                    {{ data.category_90_100|default:0 }},
+                    {{ data.category_100|default:0 }}
+                ];
+                var totalSchools = categories.reduce((a, b) => a + b, 0);
+                
+                // Define colors for each category
+                var bgColors = [
+                    'rgba(220, 53, 69, 0.8)',    // Red - 0-33%
+                    'rgba(253, 126, 20, 0.8)',   // Orange - 33-60%
+                    'rgba(255, 193, 7, 0.8)',    // Yellow - 60-80%
+                    'rgba(32, 201, 151, 0.8)',   // Teal - 80-90%
+                    'rgba(13, 202, 240, 0.8)',   // Cyan - 90-100%
+                    'rgba(25, 135, 84, 0.8)'     // Green - 100%
+                ];
+                var borderColors = [
+                    'rgb(220, 53, 69)',
+                    'rgb(253, 126, 20)',
+                    'rgb(255, 193, 7)',
+                    'rgb(32, 201, 151)',
+                    'rgb(13, 202, 240)',
+                    'rgb(25, 135, 84)'
+                ];
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['0-33%', '33-60%', '60-80%', '80-90%', '90-100%', '100%'],
+                        datasets: [{
+                            label: 'Schools in Category',
+                            data: categories,
+                            backgroundColor: bgColors,
+                            borderColor: borderColors,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    precision: 0
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Number of Schools'
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Performance Category'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { 
+                                display: false 
+                            },
+                            title: {
+                                display: true,
+                                text: 'Total Schools: ' + totalSchools
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        var count = tooltipItem.raw;
+                                        var percentage = totalSchools > 0 ? ((count / totalSchools) * 100).toFixed(1) : 0;
+                                        return count + ' schools (' + percentage + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+        {% endfor %}
+        {% endif %}
+
+        // ===== DATATABLES INITIALIZATION =====
+        // Initialize Schools Table
+        try {
+            if ($('#schoolsTable').length && typeof $.fn.DataTable !== 'undefined') {
+                if ($.fn.DataTable.isDataTable('#schoolsTable')) {
+                    $('#schoolsTable').DataTable().destroy();
+                }
+                $('#schoolsTable').DataTable({
+                    "paging": true,
+                    "pageLength": 10,
+                    "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                    "searching": true,
+                    "ordering": true,
+                    "info": true,
+                    "order": [[1, 'asc']],
+                    "dom": '<"top"lf>rt<"bottom"ip><"clear">',
+                    "language": {
+                        "search": "🔍 Search:",
+                        "lengthMenu": "Show _MENU_ entries",
+                        "info": "Showing _START_ to _END_ of _TOTAL_ schools",
+                        "infoEmpty": "No schools found",
+                        "zeroRecords": "No matching schools found",
+                        "paginate": {
+                            "first": "First",
+                            "last": "Last",
+                            "next": "Next →",
+                            "previous": "← Prev"
+                        }
+                    }
+                });
+                console.log('Schools DataTable initialized successfully');
+            }
+        } catch (e) {
+            console.error('Error initializing schoolsTable:', e);
+        }
+
+        // Initialize Tests Table
+        try {
+            if ($('#testsTable').length && typeof $.fn.DataTable !== 'undefined') {
+                if ($.fn.DataTable.isDataTable('#testsTable')) {
+                    $('#testsTable').DataTable().destroy();
+                }
+                $('#testsTable').DataTable({
+                    "paging": true,
+                    "pageLength": 10,
+                    "lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+                    "searching": true,
+                    "ordering": true,
+                    "info": true,
+                    "dom": '<"top"lf>rt<"bottom"ip><"clear">',
+                    "language": {
+                        "search": "🔍 Search:",
+                        "lengthMenu": "Show _MENU_ entries",
+                        "info": "Showing _START_ to _END_ of _TOTAL_ tests",
+                        "infoEmpty": "No tests found",
+                        "zeroRecords": "No matching tests found",
+                        "paginate": {
+                            "first": "First",
+                            "last": "Last",
+                            "next": "Next →",
+                            "previous": "← Prev"
+                        }
+                    }
+                });
+                console.log('Tests DataTable initialized successfully');
+            }
+        } catch (e) {
+            console.error('Error initializing testsTable:', e);
+        }
+    });
+</script>
+{% endblock %}
