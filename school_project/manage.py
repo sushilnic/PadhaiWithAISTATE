@@ -2,7 +2,8 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-
+# Add this line:
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def main():
     """Run administrative tasks."""
@@ -20,3 +21,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
