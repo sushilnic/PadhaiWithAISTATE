@@ -8,6 +8,7 @@ https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
 """
 
 import os
+import sys
 # Fix path for Appliku deployment
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from django.core.wsgi import get_wsgi_application
