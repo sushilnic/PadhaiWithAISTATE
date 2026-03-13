@@ -32,7 +32,7 @@ SECRET_KEY = env("SECRET_KEY")  # No default — app crashes at startup if not s
 
 DEBUG = env("DEBUG", default=False)
 
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
 AUTH_USER_MODEL = 'school_app.CustomUser'
 
@@ -243,4 +243,5 @@ PASSWORD_EXPIRY_DAYS = 90
 
 # Max file upload size (5 MB)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
