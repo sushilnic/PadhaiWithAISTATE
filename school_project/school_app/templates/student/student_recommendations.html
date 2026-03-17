@@ -307,22 +307,76 @@
             align-items: center;
             gap: 8px;
         }
-
         .btn-ai-tips:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
         .btn-ai-tips:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .tips-list {
-            margin-top: 20px;
-            list-style: none;
+        /* Structured tips */
+        .overall-msg {
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+            border-radius: 12px; padding: 16px 20px;
+            margin: 18px 0 10px; font-size: 1rem;
+            color: #4c1d95; font-weight: 500;
+            display: flex; align-items: flex-start; gap: 10px;
         }
-
-        .tips-list li {
-            background: #f5f3ff;
-            border-left: 4px solid #8b5cf6;
-            padding: 15px 20px;
-            margin-bottom: 10px;
-            border-radius: 0 10px 10px 0;
-            line-height: 1.5;
+        .priority-box {
+            background: #fff7ed; border-left: 4px solid #f59e0b;
+            border-radius: 0 12px 12px 0; padding: 14px 18px;
+            margin-bottom: 20px; font-size: 0.95rem; color: #92400e;
+        }
+        .priority-box strong { display: block; margin-bottom: 4px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        .topic-tip-card {
+            background: #fafafa; border-radius: 14px;
+            padding: 20px 22px; margin-bottom: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        .topic-tip-card .ttc-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 8px;
+        }
+        .topic-tip-card .ttc-name {
+            font-weight: 700; font-size: 1.05rem; color: var(--primary);
+        }
+        .topic-tip-card .ttc-why {
+            font-size: 0.85rem; color: var(--text-secondary);
+            margin-bottom: 12px; font-style: italic;
+        }
+        .topic-tip-card ul { list-style: none; padding: 0; margin: 0 0 12px 0; }
+        .topic-tip-card ul li {
+            padding: 6px 0 6px 24px; position: relative;
+            font-size: 0.92rem; border-bottom: 1px solid #f1f5f9;
+        }
+        .topic-tip-card ul li:last-child { border-bottom: none; }
+        .topic-tip-card ul li::before {
+            content: '✓'; position: absolute; left: 0;
+            color: #8b5cf6; font-weight: 700;
+        }
+        .quick-win {
+            background: #ecfdf5; border-radius: 8px;
+            padding: 10px 14px; font-size: 0.88rem; color: #065f46;
+            display: flex; align-items: flex-start; gap: 8px;
+        }
+        .daily-routine-section {
+            background: #f0f9ff; border-radius: 14px;
+            padding: 18px 22px; margin: 16px 0;
+        }
+        .daily-routine-section h4 {
+            color: #0369a1; font-size: 0.95rem; margin-bottom: 12px;
+        }
+        .routine-list { list-style: none; padding: 0; margin: 0; }
+        .routine-list li {
+            padding: 7px 0 7px 28px; position: relative;
+            font-size: 0.9rem; color: #1e293b;
+            border-bottom: 1px solid #e0f2fe;
+        }
+        .routine-list li:last-child { border-bottom: none; }
+        .routine-list li::before {
+            content: '📌'; position: absolute; left: 0; font-size: 0.85rem;
+        }
+        .motivational-quote {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white; border-radius: 12px; padding: 16px 22px;
+            margin-top: 16px; font-size: 1rem; font-style: italic;
+            text-align: center;
         }
 
         .spinner {
@@ -521,23 +575,55 @@
             .then(r => r.json())
             .then(data => {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-magic"></i> Get AI Study Tips';
+                btn.innerHTML = '<i class="fas fa-magic"></i> Refresh Tips';
                 if (data.error) {
-                    const errP = document.createElement('p');
-                    errP.style.cssText = 'color: var(--danger); margin-top: 15px;';
-                    errP.textContent = data.error;
-                    container.appendChild(errP);
+                    container.innerHTML = `<p style="color:var(--danger);margin-top:15px;">${escapeHtml(data.error)}</p>`;
                     return;
                 }
+
+                // Structured response
+                if (data.structured) {
+                    const s = data.structured;
+                    let html = '';
+
+                    if (s.overall_message) {
+                        html += `<div class="overall-msg"><i class="fas fa-comment-dots" style="margin-top:2px"></i><span>${escapeHtml(s.overall_message)}</span></div>`;
+                    }
+                    if (s.priority_action) {
+                        html += `<div class="priority-box"><strong>⚡ Priority Action Right Now</strong>${escapeHtml(s.priority_action)}</div>`;
+                    }
+                    if (s.topic_tips && s.topic_tips.length) {
+                        html += `<h4 style="color:var(--primary);margin:16px 0 10px;font-size:1rem;"><i class="fas fa-book-open"></i> Topic-wise Plan</h4>`;
+                        s.topic_tips.forEach(t => {
+                            html += `<div class="topic-tip-card">
+                                <div class="ttc-header"><i class="fas fa-bullseye" style="color:#8b5cf6"></i><span class="ttc-name">${escapeHtml(t.topic || '')}</span></div>`;
+                            if (t.why_hard) html += `<div class="ttc-why"><i class="fas fa-info-circle"></i> ${escapeHtml(t.why_hard)}</div>`;
+                            if (t.tips && t.tips.length) {
+                                html += `<ul>${t.tips.map(tip => `<li>${escapeHtml(tip)}</li>`).join('')}</ul>`;
+                            }
+                            if (t.quick_win) {
+                                html += `<div class="quick-win"><i class="fas fa-bolt" style="color:#059669;margin-top:2px"></i><span><strong>Today's Quick Win:</strong> ${escapeHtml(t.quick_win)}</span></div>`;
+                            }
+                            html += `</div>`;
+                        });
+                    }
+                    if (s.daily_routine && s.daily_routine.length) {
+                        html += `<div class="daily-routine-section"><h4><i class="fas fa-clock"></i> Daily Study Routine</h4>
+                            <ul class="routine-list">${s.daily_routine.map(r => `<li>${escapeHtml(r)}</li>`).join('')}</ul></div>`;
+                    }
+                    if (s.motivational_quote) {
+                        html += `<div class="motivational-quote"><i class="fas fa-quote-left" style="opacity:0.5;margin-right:8px"></i>${escapeHtml(s.motivational_quote)}<i class="fas fa-quote-right" style="opacity:0.5;margin-left:8px"></i></div>`;
+                    }
+                    container.innerHTML = html;
+                    return;
+                }
+
+                // Fallback: plain tips list
                 const ul = document.createElement('ul');
                 ul.className = 'tips-list';
-                (data.tips || []).forEach(function(tip) {
+                (data.tips || []).forEach(tip => {
                     const li = document.createElement('li');
-                    const icon = document.createElement('i');
-                    icon.className = 'fas fa-star';
-                    icon.style.cssText = 'color: #f59e0b; margin-right: 8px;';
-                    li.appendChild(icon);
-                    li.appendChild(document.createTextNode(tip));
+                    li.innerHTML = `<i class="fas fa-star" style="color:#f59e0b;margin-right:8px"></i>${escapeHtml(tip)}`;
                     ul.appendChild(li);
                 });
                 container.appendChild(ul);
