@@ -125,6 +125,7 @@ urlpatterns = [
     path('student/video-learning/', views.student_video_learning, name='student_video_learning'),
     path('student/get-study-tips/', views.get_study_tips, name='get_study_tips'),
     path('student/get-video-suggestions/', views.get_video_suggestions, name='get_video_suggestions'),
+    path('student/doubt-solver/', views.student_doubt_solver, name='student_doubt_solver'),
 
     # Hierarchical User Management URLs
     path('manage/states/', views.manage_states, name='manage_states'),

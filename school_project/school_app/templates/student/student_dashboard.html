@@ -394,6 +394,9 @@
             <a href="{% url 'student_video_learning' %}" class="nav-link">
                 <i class="fas fa-video"></i> <span>Videos</span>
             </a>
+            <a href="{% url 'student_doubt_solver' %}" class="nav-link">
+                <i class="fas fa-camera-retro"></i> <span>Doubt Solver</span>
+            </a>
             <form method="POST" action="{% url 'student_logout' %}" style="display:inline;margin:0;padding:0;">
                 {% csrf_token %}
                 <button type="submit" class="nav-link logout" style="background:none;border:none;font:inherit;cursor:pointer;">
@@ -486,6 +489,11 @@
                 <i class="fas fa-video" style="color: #dc2626;"></i>
                 <h3>Video Learning</h3>
                 <p>Watch & learn</p>
+            </a>
+            <a href="{% url 'student_doubt_solver' %}" class="action-card" style="border: 2px solid #0891b2;">
+                <i class="fas fa-camera-retro" style="color: #0891b2;"></i>
+                <h3>Doubt Solver</h3>
+                <p>Photo → AI solution</p>
             </a>
             <a href="{% url 'student_change_password' %}" class="action-card">
                 <i class="fas fa-key"></i>

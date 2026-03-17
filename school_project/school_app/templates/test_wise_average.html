@@ -261,10 +261,6 @@
                 <td><span class="category-badge cat-90-100">{{ test.category_90_100 }}</span></td>
                 <td><span class="category-badge cat-100">{{ test.category_100 }}</span></td>
             </tr>
-            {% empty %}
-            <tr>
-                <td colspan="12" class="text-center">No test data available</td>
-            </tr>
             {% endfor %}
         </tbody>
     </table>
@@ -663,7 +659,8 @@
                 "paginate": {
                     "next": "Next →",
                     "previous": "← Prev"
-                }
+                },
+                "emptyTable": "No test data available"
             }
         });
     });
