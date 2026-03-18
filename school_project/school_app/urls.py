@@ -159,6 +159,7 @@ urlpatterns = [
     # AI Question Paper Generator
     path('question-paper/', views.question_paper_generator, name='question_paper_generator'),
     path('question-paper/generate/', views.generate_question_paper_ai, name='generate_question_paper_ai'),
+    path('question-paper/history/', views.question_paper_history, name='question_paper_history'),
 
     # Academic Calendar
     path('academic-calendar/', views.academic_calendar_view, name='academic_calendar'),

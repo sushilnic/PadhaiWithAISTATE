@@ -485,3 +485,39 @@ class ActivityLog(models.Model):
 
     def __str__(self):
         return f"{self.timestamp} | {self.action_type} | {self.user_email}"
+
+
+class QuestionPaperHistory(models.Model):
+    """Stores AI-generated question papers for school users."""
+    DIFFICULTY_CHOICES = [
+        ('Easy', 'Easy'),
+        ('Medium', 'Medium'),
+        ('Hard', 'Hard'),
+        ('Mixed', 'Mixed'),
+    ]
+
+    user = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='question_papers',
+    )
+    subject     = models.CharField(max_length=100)
+    chapter     = models.CharField(max_length=200)
+    class_name  = models.CharField(max_length=5)
+    language    = models.CharField(max_length=20)
+    difficulty  = models.CharField(max_length=10, choices=DIFFICULTY_CHOICES, default='Medium')
+    total_marks = models.PositiveIntegerField()
+    time_allowed = models.PositiveIntegerField(help_text='minutes')
+    paper_json  = models.JSONField()
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Question Paper History'
+        verbose_name_plural = 'Question Paper Histories'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.subject} | Class {self.class_name} | {self.created_at:%d %b %Y}"
