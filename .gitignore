@@ -165,5 +165,5 @@ cython_debug/
 
 staticfiles/
 school_project/media
-school_project/school_project/settings.py
+#school_project/school_project/settings.py
 backup.dump
