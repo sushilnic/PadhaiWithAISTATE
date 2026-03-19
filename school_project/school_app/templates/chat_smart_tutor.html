@@ -3,8 +3,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PAI – AI Sathi, Tonk, Rajasthan</title>
+    <title>AI Sathi – Free AI Tutor for NCERT Students | PadhaiWithAI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="description" content="AI Sathi is a free AI-powered tutor for NCERT students (Class 6–12). Ask questions from any chapter and get step-by-step explanations in seconds.">
+    <meta name="keywords" content="AI tutor, NCERT, free study help, Class 10, Class 12, PadhaiWithAI, Rajasthan, Hindi medium">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="AI Sathi – Free AI Tutor for NCERT Students">
+    <meta property="og:description" content="Ask any question from your NCERT chapter and get instant, step-by-step answers. Free for all students.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://padhaiwithai.applikuapp.com/ai_sathi/">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="AI Sathi – Free NCERT AI Tutor">
+    <meta name="twitter:description" content="Free AI tutor for NCERT students. Ask chapter-wise questions and get instant explanations.">
 
     <!-- MathJax (async, non-blocking) -->
     <script>
@@ -566,6 +576,150 @@
             font-size: 11px;
             color: var(--text-muted);
             text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .char-count { flex-shrink: 0; }
+        .char-count.warn { color: #f59e0b; font-weight: 600; }
+        .char-count.over { color: #ef4444; font-weight: 700; }
+
+        .usage-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 11px; padding: 3px 10px; border-radius: 999px;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            white-space: nowrap;
+        }
+        .usage-badge.warn  { border-color: #f59e0b; color: #b45309; background: #fffbeb; }
+        .usage-badge.danger { border-color: #ef4444; color: #991b1b; background: #fee2e2; }
+
+        /* ===== STARTER QUESTION CHIPS ===== */
+        .starter-chips {
+            padding: 10px 16px 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .starter-chip {
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--accent);
+            background: var(--chip-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+        .starter-chip:hover {
+            background: var(--accent-soft);
+            transform: translateY(-1px);
+        }
+
+        /* ===== SIMPLER / DEEPER BUTTONS ===== */
+        .followup-btns {
+            display: flex;
+            gap: 6px;
+            margin: 6px 4px 0;
+            flex-wrap: wrap;
+        }
+        .followup-btn {
+            font-size: 11px;
+            padding: 3px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .followup-btn.simpler { border-color: #10b981; color: #059669; }
+        .followup-btn.deeper  { border-color: #8b5cf6; color: #7c3aed; }
+        .followup-btn:hover   { opacity: 0.75; transform: translateY(-1px); }
+
+        /* ===== MIC BUTTON ===== */
+        .mic-btn {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            font-size: 17px;
+        }
+        .mic-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .mic-btn.listening {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #ef4444;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+            50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+        }
+
+        .limit-banner {
+            margin: 0 16px 10px;
+            padding: 10px 16px;
+            background: #fee2e2;
+            border: 1px solid #fca5a5;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #991b1b;
+            text-align: center;
+        }
+        .expired-banner {
+            margin: 0 16px 10px;
+            padding: 10px 16px;
+            background: #fefce8;
+            border: 1px solid #fde68a;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #92400e;
+            text-align: center;
+        }
+        .timeout-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+            transition: width 1s linear;
+            border-radius: 0;
+        }
+
+        /* ===== FOOTER — matches login page ===== */
+        .footer {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            text-align: center;
+            padding: 8px 20px;
+            font-size: 0.82rem;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .footer span { opacity: 0.92; }
+        .footer img.pai-logo {
+            height: 28px;
+            border-radius: 5px;
+        }
+        .footer img.nic-logo {
+            height: 28px;
+            mix-blend-mode: multiply;
+        }
+        @media (max-width: 600px) {
+            .footer { font-size: 0.7rem; gap: 8px; padding: 6px 10px; }
+            .footer img.pai-logo, .footer img.nic-logo { height: 22px; }
         }
 
         /* ===== PDF WATERMARK ===== */
@@ -635,6 +789,11 @@
             </div>
         </header>
 
+        <!-- Session timeout progress bar -->
+        {% if guardrail %}
+        <div class="timeout-bar" id="timeoutBar" style="width:100%"></div>
+        {% endif %}
+
         <!-- ===== GUARDRAIL PANEL ===== -->
         <div class="guardrails" id="guardrailPanel" {% if guardrail %}style="display:none"{% endif %}>
             <h4>Choose your learning context</h4>
@@ -651,6 +810,30 @@
                 <select id="chapterSelect" disabled>
                     <option value="">Chapter</option>
                 </select>
+                <select id="languageSelect">
+                    <option value="Hindi"      selected>हिंदी (Hindi)</option>
+                    <option value="English">English</option>
+                    <option value="Bengali">বাংলা (Bengali)</option>
+                    <option value="Telugu">తెలుగు (Telugu)</option>
+                    <option value="Marathi">मराठी (Marathi)</option>
+                    <option value="Tamil">தமிழ் (Tamil)</option>
+                    <option value="Urdu">اردو (Urdu)</option>
+                    <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+                    <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+                    <option value="Odia">ଓଡ଼ିଆ (Odia)</option>
+                    <option value="Malayalam">മലയാളം (Malayalam)</option>
+                    <option value="Punjabi">ਪੰਜਾਬੀ (Punjabi)</option>
+                    <option value="Assamese">অসমীয়া (Assamese)</option>
+                    <option value="Maithili">मैथिली (Maithili)</option>
+                    <option value="Sanskrit">संस्कृत (Sanskrit)</option>
+                    <option value="Kashmiri">कश्मीरी (Kashmiri)</option>
+                    <option value="Nepali">नेपाली (Nepali)</option>
+                    <option value="Sindhi">سنڌي (Sindhi)</option>
+                    <option value="Konkani">कोंकणी (Konkani)</option>
+                    <option value="Dogri">डोगरी (Dogri)</option>
+                    <option value="Manipuri">মৈতৈলোন্ (Manipuri)</option>
+                    <option value="Bodo">बड़ो (Bodo)</option>
+                </select>
             </div>
             <div class="start-chat-wrapper">
                 <button id="startChatBtn" class="btn-primary" disabled>Start Learning</button>
@@ -663,8 +846,23 @@
                 <span class="chip">Class: <strong id="ctxClass"></strong></span>
                 <span class="chip">Subject: <strong id="ctxSubject"></strong></span>
                 <span class="chip">Chapter: <strong id="ctxChapter"></strong></span>
+                <span class="chip">🌐 <strong id="ctxLanguage">{{ language }}</strong></span>
+                {% if guardrail %}
+                <span class="usage-badge {% if msgs_left <= 3 %}danger{% elif msgs_left <= 7 %}warn{% endif %}" id="usageBadge">
+                    💬 {{ msg_count }}/{{ msg_limit }} questions
+                </span>
+                {% endif %}
             </div>
-            <a href="?clear=1" class="btn-secondary">Reset</a>
+            <a href="?clear=1" class="btn-secondary">New Chat</a>
+        </div>
+
+        <!-- ===== STARTER CHIPS ===== -->
+        <div class="starter-chips" id="starterChips" style="display:{% if guardrail and not history %}flex{% else %}none{% endif %}">
+            <button class="starter-chip" onclick="sendStarter(this)">What is this chapter about?</button>
+            <button class="starter-chip" onclick="sendStarter(this)">Give me key formulas / definitions</button>
+            <button class="starter-chip" onclick="sendStarter(this)">Explain with a real-life example</button>
+            <button class="starter-chip" onclick="sendStarter(this)">What are common exam questions?</button>
+            <button class="starter-chip" onclick="sendStarter(this)">Quiz me on this chapter</button>
         </div>
 
         <!-- ===== CHAT BODY ===== -->
@@ -694,8 +892,13 @@
                                 </div>
                                 <div class="action-buttons">
                                     <button type="button" onclick="speakText(this)">Listen</button>
+                                    <button type="button" onclick="copyAnswer(this)">Copy</button>
                                     <button type="button" onclick="downloadPDF(this)">PDF</button>
                                     <button type="button" onclick="regenerateSolution(this)">Regenerate</button>
+                                </div>
+                                <div class="followup-btns">
+                                    <button type="button" class="followup-btn simpler" onclick="sendFollowup(this,'simpler')">🟢 Explain simpler</button>
+                                    <button type="button" class="followup-btn deeper"  onclick="sendFollowup(this,'deeper')">🟣 Go deeper</button>
                                 </div>
                             </div>
                         </div>
@@ -722,33 +925,56 @@
         </main>
 
         <!-- ===== INPUT ===== -->
+        {% if session_expired %}
+        <div class="expired-banner">
+            ⏱️ Your session expired after 30 minutes of inactivity. <a href="?clear=1">Start a new chat</a>.
+        </div>
+        {% endif %}
+        {% if limit_reached %}
+        <div class="limit-banner">
+            🚫 You've used all 20 questions for this session. Click <a href="?clear=1">New Chat</a> to start fresh.
+        </div>
+        {% endif %}
         <form method="post" class="chat-input-area" id="chatForm">
             {% csrf_token %}
             <div class="input-row">
                 <div class="input-wrapper">
                     <textarea name="prompt" id="chatPrompt" rows="1"
-                        placeholder="{% if guardrail %}Ask your question…{% else %}Select Class, Subject & Chapter first…{% endif %}"
-                        {% if not guardrail %}disabled{% endif %}
+                        placeholder="{% if limit_reached %}Session limit reached — start a new chat…{% elif guardrail %}Ask your question…{% else %}Select Class, Subject & Chapter first…{% endif %}"
+                        {% if not guardrail or limit_reached %}disabled{% endif %}
+                        maxlength="500"
                         required></textarea>
                 </div>
+                <button type="button" class="mic-btn" id="micBtn" title="Voice input"
+                    {% if not guardrail or limit_reached %}disabled style="opacity:.4;cursor:not-allowed"{% endif %}>
+                    🎤
+                </button>
                 <button type="submit" class="send-btn" id="sendBtn"
-                    {% if not guardrail %}disabled{% endif %}
+                    {% if not guardrail or limit_reached %}disabled{% endif %}
                     aria-label="Send message">
                     <svg viewBox="0 0 24 24" class="send-icon" id="sendIcon" aria-hidden="true">
                         <path d="M12 4l6 6h-4v6h-4v-6H6z"></path>
                     </svg>
                 </button>
             </div>
-            <div class="helper-text">Enter to send &middot; Alt+Enter for new line</div>
+            <div class="helper-text">
+                <span>Enter to send &middot; Alt+Enter for new line</span>
+                <span class="char-count" id="charCount">0/500</span>
+            </div>
             <input type="hidden" name="class_level" id="class_level" value="{{ request.session.class_level|default:'' }}">
-            <input type="hidden" name="subject" id="subject" value="{{ request.session.subject|default:'' }}">
-            <input type="hidden" name="chapter" id="chapter" value="{{ request.session.chapter|default:'' }}">
+            <input type="hidden" name="subject"     id="subject"     value="{{ request.session.subject|default:'' }}">
+            <input type="hidden" name="chapter"     id="chapter"     value="{{ request.session.chapter|default:'' }}">
+            <input type="hidden" name="language"    id="language"    value="{{ request.session.language|default:'Hindi' }}">
         </form>
 
     </div>
 </div>
 
-<div class="footer">PadhaiWithAI &ndash; Tonk, Rajasthan</div>
+<div class="footer">
+    <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
+    <span>© 2024 PadhaiWithAI - Tonk, Rajasthan &nbsp;|&nbsp; All Rights Reserved &nbsp;|&nbsp; Empowering Education Through Technology</span>
+    <img src="https://raj.nic.in/wp-content/themes/sdo-theme/images/nic.png" alt="NIC Logo" class="nic-logo">
+</div>
 
 <!-- ============================================================
      SCRIPT BLOCK 1: Core Chat (scroll, submit, textarea, enter)
@@ -768,7 +994,7 @@
 
     function setLoading(on){
         sendBtn.disabled = on;
-        textarea.disabled = on;
+        textarea.readOnly = on;
         if(on){
             sendIcon.style.display = 'none';
             var sp = document.createElement('div');
@@ -808,10 +1034,16 @@
         }
     });
 
-    // Auto-grow textarea
+    // Auto-grow textarea + char counter
+    var charCount = document.getElementById('charCount');
     textarea.addEventListener('input', function(){
         this.style.height = 'auto';
         this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        if(charCount){
+            var len = this.value.length;
+            charCount.textContent = len + '/500';
+            charCount.className = 'char-count' + (len >= 500 ? ' over' : len >= 400 ? ' warn' : '');
+        }
     });
 
     // Scroll on load
@@ -882,6 +1114,159 @@
     })();
     {% endif %}
 })();
+
+// --- Starter chips: fill textarea and submit ---
+function sendStarter(btn) {
+    var chips = document.getElementById('starterChips');
+    if (chips) chips.style.display = 'none';
+    var ta = document.getElementById('chatPrompt');
+    var form = document.getElementById('chatForm');
+    if (!ta || !form) return;
+    ta.value = btn.textContent.trim();
+    form.submit();
+}
+
+// --- Simpler / Deeper follow-up ---
+function sendFollowup(btn, type) {
+    var wrap = btn.closest('.bubble-wrap');
+    var prev = wrap ? wrap.closest('.msg-row') : null;
+    // find the preceding user question
+    var userRow = prev ? prev.previousElementSibling : null;
+    while (userRow && !userRow.classList.contains('user')) {
+        userRow = userRow.previousElementSibling;
+    }
+    var question = '';
+    if (userRow) {
+        var ub = userRow.querySelector('.bubble-user');
+        if (ub) question = ub.innerText.trim();
+    }
+    var prompt = type === 'simpler'
+        ? 'Please explain this in simpler words, as if I am a beginner: ' + question
+        : 'Give a deeper, more detailed explanation with advanced concepts: ' + question;
+
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var f = document.createElement('form');
+    f.method = 'POST';
+    f.action = '';
+    f.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrf + '">'
+        + '<input type="hidden" name="prompt" value="' + prompt.replace(/"/g, '&quot;') + '">';
+    document.body.appendChild(f);
+    f.submit();
+}
+
+// --- Voice input (mic) ---
+(function(){
+    var micBtn  = document.getElementById('micBtn');
+    var textarea = document.getElementById('chatPrompt');
+    if (!micBtn || !textarea) return;
+
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        micBtn.title = 'Voice input not supported in this browser';
+        micBtn.style.opacity = '0.3';
+        return;
+    }
+
+    var langMap = {
+        'Hindi':'hi-IN','English':'en-IN','Bengali':'bn-IN','Telugu':'te-IN',
+        'Marathi':'mr-IN','Tamil':'ta-IN','Urdu':'ur-IN','Gujarati':'gu-IN',
+        'Kannada':'kn-IN','Odia':'or-IN','Malayalam':'ml-IN','Punjabi':'pa-IN',
+        'Assamese':'as-IN','Nepali':'ne-NP','Sanskrit':'sa-IN',
+        'Kashmiri':'ks-IN','Sindhi':'sd-IN','Konkani':'kok-IN',
+        'Maithili':'mai-IN','Dogri':'doi-IN','Manipuri':'mni-IN','Bodo':'brx-IN'
+    };
+
+    function getMicLang(){
+        var l = window._micLang || '{{ language|escapejs }}' || 'Hindi';
+        return langMap[l] || 'hi-IN';
+    }
+
+    var recog = new SpeechRecognition();
+    recog.interimResults = true;
+    recog.maxAlternatives = 1;
+    var listening = false;
+
+    micBtn.addEventListener('click', function(){
+        if (listening) {
+            recog.stop();
+            return;
+        }
+        recog.lang = getMicLang();
+        recog.start();
+    });
+
+    recog.onstart = function(){
+        listening = true;
+        micBtn.classList.add('listening');
+        micBtn.title = 'Listening… click to stop';
+    };
+
+    recog.onresult = function(e){
+        var transcript = '';
+        for (var i = e.resultIndex; i < e.results.length; i++) {
+            transcript += e.results[i][0].transcript;
+        }
+        textarea.value = transcript;
+        // trigger auto-grow
+        textarea.dispatchEvent(new Event('input'));
+    };
+
+    recog.onend = function(){
+        listening = false;
+        micBtn.classList.remove('listening');
+        micBtn.title = 'Voice input';
+    };
+
+    recog.onerror = function(){
+        listening = false;
+        micBtn.classList.remove('listening');
+        micBtn.title = 'Voice input';
+    };
+})();
+
+// --- Copy answer to clipboard ---
+function copyAnswer(btn){
+    var wrap = btn.closest('.bubble-wrap');
+    var mdEl = wrap ? wrap.querySelector('.md-content') : null;
+    if(!mdEl) return;
+    var text = mdEl.innerText.trim();
+    navigator.clipboard.writeText(text).then(function(){
+        var orig = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(function(){ btn.textContent = orig; }, 1500);
+    }).catch(function(){
+        btn.textContent = 'Failed';
+        setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
+    });
+}
+
+// --- Session timeout countdown bar ---
+{% if guardrail %}
+(function(){
+    var bar = document.getElementById('timeoutBar');
+    if(!bar) return;
+    var totalSecs = {{ mins_left }} * 60;
+    var elapsed = 0;
+    var iv = setInterval(function(){
+        elapsed++;
+        var pct = Math.max(0, ((totalSecs - elapsed) / totalSecs) * 100);
+        bar.style.width = pct + '%';
+        if(pct <= 0){
+            clearInterval(iv);
+            // Show inactivity warning
+            var banner = document.createElement('div');
+            banner.className = 'expired-banner';
+            banner.innerHTML = '⏱️ Session expired. <a href="?clear=1">Start a new chat</a>.';
+            var form = document.getElementById('chatForm');
+            if(form) form.parentNode.insertBefore(banner, form);
+            var ta = document.getElementById('chatPrompt');
+            var sb = document.getElementById('sendBtn');
+            if(ta) ta.disabled = true;
+            if(sb) sb.disabled = true;
+        }
+    }, 1000);
+})();
+{% endif %}
 
 // --- TTS: speakText reads only the bubble content, not buttons ---
 var _ttsUtterance = null;
@@ -1347,9 +1732,10 @@ var chapters = {
     var cls  = document.getElementById('classSelect');
     var sub  = document.getElementById('subjectSelect');
     var ch   = document.getElementById('chapterSelect');
-    var btn  = document.getElementById('startChatBtn');
-    var prompt  = document.getElementById('chatPrompt');
-    var sendBtn = document.getElementById('sendBtn');
+    var btn      = document.getElementById('startChatBtn');
+    var prompt   = document.getElementById('chatPrompt');
+    var sendBtn  = document.getElementById('sendBtn');
+    var langSel  = document.getElementById('languageSelect');
 
     cls.onchange = function(){
         sub.disabled = !cls.value;
@@ -1387,25 +1773,35 @@ var chapters = {
         prompt.disabled = false;
         prompt.placeholder = 'Ask your question\u2026';
         sendBtn.disabled = false;
+        var mb = document.getElementById('micBtn');
+        if (mb) { mb.disabled = false; mb.style.opacity = ''; mb.style.cursor = ''; }
 
         // Set hidden fields
         document.getElementById('class_level').value = cls.value;
-        document.getElementById('subject').value = sub.value;
-        document.getElementById('chapter').value = ch.value;
+        document.getElementById('subject').value     = sub.value;
+        document.getElementById('chapter').value     = ch.value;
+        document.getElementById('language').value    = langSel.value;
+
+        // Update mic language
+        window._micLang = langSel.value;
 
         // Show context bar
-        document.getElementById('ctxClass').textContent   = cls.value;
-        document.getElementById('ctxSubject').textContent  = sub.value;
-        document.getElementById('ctxChapter').textContent  = ch.value;
+        document.getElementById('ctxClass').textContent    = cls.value;
+        document.getElementById('ctxSubject').textContent   = sub.value;
+        document.getElementById('ctxChapter').textContent   = ch.value;
+        document.getElementById('ctxLanguage').textContent  = langSel.value;
         document.getElementById('contextBar').style.display = 'flex';
 
         // Hide empty state
         var es = document.getElementById('emptyState');
         if(es) es.style.display = 'none';
 
-        // Auto-generate first prompt and submit
-        prompt.value = 'Explain "' + ch.value + '" for Class ' + cls.value + ' ' + sub.value + ' with examples and step-by-step explanation.';
-        document.getElementById('chatForm').submit();
+        // Show starter chips so user can pick a question
+        var sc = document.getElementById('starterChips');
+        if(sc) sc.style.display = 'flex';
+
+        // Focus textarea
+        prompt.focus();
     };
 })();
 </script>

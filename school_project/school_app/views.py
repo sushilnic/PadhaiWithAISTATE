@@ -3423,75 +3423,127 @@ def chat_view(request):
 sarvam_key = os.getenv("SARVAM_API_KEY")
 client = SarvamAI(api_subscription_key=sarvam_key) if SarvamAI and sarvam_key else None
 
+MSG_LIMIT        = 20   # max user messages per session
+SESSION_TIMEOUT  = 1800 # 30 minutes in seconds
+
 def chat_smart_tutor(request):
     history = request.session.get("history", [])
 
     if request.GET.get("clear") == "1":
-        for key in ['history', 'guardrail_set', 'class_level', 'subject', 'chapter']:
+        for key in ['history', 'guardrail_set', 'class_level', 'subject', 'chapter', 'language', 'last_activity']:
             request.session.pop(key, None)
         return redirect("ai_sathi")
+
+    # Auto-clear session after 30 minutes of inactivity
+    import time as _time
+    now_ts = _time.time()
+    last_activity = request.session.get("last_activity")
+    session_expired = False
+    if last_activity and (now_ts - last_activity) > SESSION_TIMEOUT:
+        for key in ['history', 'guardrail_set', 'class_level', 'subject', 'chapter', 'language', 'last_activity']:
+            request.session.pop(key, None)
+        history = []
+        session_expired = True
+    request.session["last_activity"] = now_ts
+
+    ALLOWED_LANGUAGES = {
+        'English', 'Hindi', 'Bengali', 'Telugu', 'Marathi', 'Tamil', 'Urdu',
+        'Gujarati', 'Kannada', 'Odia', 'Malayalam', 'Punjabi', 'Assamese',
+        'Maithili', 'Sanskrit', 'Kashmiri', 'Nepali', 'Sindhi', 'Konkani',
+        'Dogri', 'Manipuri', 'Bodo',
+    }
 
     # Store guardrail once
     if request.method == "POST":
         if not request.session.get("guardrail_set"):
             request.session["class_level"] = request.POST.get("class_level")
-            request.session["subject"] = request.POST.get("subject")
-            request.session["chapter"] = request.POST.get("chapter")
+            request.session["subject"]     = request.POST.get("subject")
+            request.session["chapter"]     = request.POST.get("chapter")
+            lang = request.POST.get("language", "Hindi")
+            request.session["language"]    = lang if lang in ALLOWED_LANGUAGES else "Hindi"
             request.session["guardrail_set"] = True
 
     class_level = request.session.get("class_level")
-    subject = request.session.get("subject")
-    chapter = request.session.get("chapter")
+    subject     = request.session.get("subject")
+    chapter     = request.session.get("chapter")
+    language    = request.session.get("language", "Hindi")
+
+    # Count user messages already sent
+    user_msg_count = sum(1 for m in history if m["role"] == "user")
 
     if request.method == "POST":
-        user_prompt = request.POST.get("prompt", "").strip()
+        # Server-side guardrail check
+        if not class_level or not subject or not chapter:
+            pass  # guardrail panel handles this client-side; ignore prompt silently
+        else:
+            # Input length cap
+            user_prompt = request.POST.get("prompt", "").strip()[:500]
 
-        if user_prompt:
-            system_prompt = f"""
-                    You are a government school teacher.
+            if user_prompt:
+                msg_ts = timezone.now().strftime("%I:%M %p")
 
-                    Class: {class_level}
-                    Subject: {subject}
-                    Chapter: {chapter}
+                if user_msg_count >= MSG_LIMIT:
+                    reply = (
+                        "You have reached the limit of 20 questions for this session. "
+                        "Click 'New Chat' to start a fresh session."
+                    )
+                    history.append({"role": "user", "content": user_prompt, "timestamp": msg_ts})
+                    history.append({"role": "assistant", "content": reply, "timestamp": msg_ts})
+                else:
+                    system_prompt = f"""You are a government school teacher.
 
-                    Rules:
-                    - Answer ONLY from this chapter
-                    - Use NCERT textbook language
-                    - Step-by-step explanation
-                    - If outside syllabus, politely refuse
-                    """
+Class: {class_level}
+Subject: {subject}
+Chapter: {chapter}
+Response Language: {language}
 
-            api_messages = (
-                [{"role": "system", "content": system_prompt}]
-                + [{"role": m["role"], "content": m["content"]} for m in history]
-                + [{"role": "user", "content": user_prompt}]
-            )
+Rules:
+- Answer ONLY from this chapter
+- Use NCERT textbook language
+- Step-by-step explanation
+- If outside syllabus, politely refuse
+- ALWAYS respond in {language} language only, regardless of what language the student writes in"""
 
-            now_ts = timezone.now().strftime("%I:%M %p")
+                    api_messages = (
+                        [{"role": "system", "content": system_prompt}]
+                        + [{"role": m["role"], "content": m["content"]} for m in history]
+                        + [{"role": "user", "content": user_prompt}]
+                    )
 
-            try:
-                if not client:
-                    raise Exception("AI service not configured.")
-                response = client.chat.completions(
-                    messages=api_messages, temperature=0.2,
-                    max_tokens=8192, top_p=0.5,
-                )
-                reply = _strip_think(response.choices[0].message.content)
-            except Exception:
-                reply = "Sorry, something went wrong. Please try again."
+                    try:
+                        if not client:
+                            raise Exception("AI service not configured.")
+                        response = client.chat.completions(
+                            messages=api_messages, temperature=0.2,
+                            max_tokens=8192, top_p=0.5,
+                        )
+                        reply = _strip_think(response.choices[0].message.content)
+                    except Exception:
+                        reply = "Sorry, something went wrong. Please try again."
 
-            history.append({"role": "user", "content": user_prompt, "timestamp": now_ts})
-            history.append({"role": "assistant", "content": reply, "timestamp": now_ts})
+                    history.append({"role": "user", "content": user_prompt, "timestamp": msg_ts})
+                    history.append({"role": "assistant", "content": reply, "timestamp": msg_ts})
+                    user_msg_count += 1
 
-            # Cap history at 20 messages to prevent session overflow
-            if len(history) > 20:
-                history = history[-20:]
+                # Keep session from growing unbounded (store all but cap at 40 entries)
+                if len(history) > 40:
+                    history = history[-40:]
 
-            request.session["history"] = history
+                request.session["history"] = history
+
+    msgs_left = max(0, MSG_LIMIT - user_msg_count)
+    mins_left = max(0, int((SESSION_TIMEOUT - (now_ts - request.session.get("last_activity", now_ts))) / 60))
 
     return render(request, "chat_smart_tutor.html", {
         "history": history,
-        "guardrail": class_level
+        "guardrail": class_level,
+        "language": language,
+        "msg_count": user_msg_count,
+        "msg_limit": MSG_LIMIT,
+        "msgs_left": msgs_left,
+        "limit_reached": user_msg_count >= MSG_LIMIT,
+        "session_expired": session_expired,
+        "mins_left": mins_left,
     })
 
 
