@@ -3385,7 +3385,7 @@ def attendance_summary(request):
     return render(request, 'attendance_summary.html', context)
 
 sarvam_key = os.getenv("SARVAM_API_KEY")
-client = SarvamAI(api_subscription_key=sarvam_key)
+client = SarvamAI(api_subscription_key=sarvam_key) if SarvamAI and sarvam_key else None
 def chat_view(request):
     # Get or create history from session
     history = request.session.get("history", [])
@@ -3421,7 +3421,7 @@ def chat_view(request):
 
 
 sarvam_key = os.getenv("SARVAM_API_KEY")
-client = SarvamAI(api_subscription_key=sarvam_key)
+client = SarvamAI(api_subscription_key=sarvam_key) if SarvamAI and sarvam_key else None
 
 def chat_smart_tutor(request):
     history = request.session.get("history", [])
@@ -3470,6 +3470,8 @@ def chat_smart_tutor(request):
             now_ts = timezone.now().strftime("%I:%M %p")
 
             try:
+                if not client:
+                    raise Exception("AI service not configured.")
                 response = client.chat.completions(
                     messages=api_messages, temperature=0.2,
                     max_tokens=8192, top_p=0.5,
