@@ -286,13 +286,14 @@ async def async_solve_math_problem(
                 max_tokens=4096,
                 top_p=0.5,
             )
-            return response.choices[0].message.content
+            return _strip_think(response.choices[0].message.content.strip())
         else:
             return "Error: Invalid model type. Status=400"
 
     except Exception as e:
         print(f"Error calling AI API: {e}")
         return f"Error solving problem: {str(e)}"
+
 
 
 # Temperature and top_p reference:
@@ -302,3 +303,27 @@ async def async_solve_math_problem(
 # 0.5         | Balanced creativity and accuracy
 # 0.8 - 1.0   | Very creative, open-ended responses
 # 1.0         | Full probability space used (default)
+
+
+def _strip_think(text: str) -> str:
+    """Remove Sarvam reasoning model's <think>...</think> block.
+    Strategy: if </think> exists, take everything after it.
+    If only <think> with no closing tag, strip from <think> onward.
+    This handles cases where the model wraps JSON inside <think>.
+    """
+    import re
+    # Case 1: properly closed — take content after </think>
+    if '</think>' in text:
+        after = text.split('</think>', 1)[1].strip()
+        if after:
+            return after
+        # nothing after </think> — extract what was inside
+        inner = re.search(r'<think>(.*?)</think>', text, re.DOTALL)
+        return inner.group(1).strip() if inner else text.strip()
+    # Case 2: unclosed <think> tag — strip it and everything before first {
+    if '<think>' in text:
+        text = text.split('<think>', 1)[1]
+        # find first JSON-like start
+        brace = text.find('{')
+        return text[brace:].strip() if brace != -1 else text.strip()
+    return text.strip()
