@@ -1,0 +1,26 @@
+{% extends "school_app/base.html" %}
+{% block title %}Block Attendance Report{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2>Block Attendance Report</h2>
+  {% if report %}
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead><tr><th>School</th><th>Present</th><th>Absent</th><th>Total</th></tr></thead>
+      <tbody>
+        {% for row in report %}
+        <tr>
+          <td>{{ row.school }}</td>
+          <td>{{ row.present }}</td>
+          <td>{{ row.absent }}</td>
+          <td>{{ row.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p>No report data available.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "school_app/base.html" %}
+{% block title %}School Daily Attendance Summary{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h2>School Daily Attendance Summary</h2>
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead class="thead-dark">
+        <tr><th>Date</th><th>Present</th><th>Absent</th><th>Total</th><th>%</th></tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+        <tr>
+          <td>{{ row.date }}</td>
+          <td>{{ row.present }}</td>
+          <td>{{ row.absent }}</td>
+          <td>{{ row.total }}</td>
+          <td>{{ row.percentage|floatformat:1 }}%</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center">No data available.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

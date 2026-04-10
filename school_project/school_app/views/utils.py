@@ -1,0 +1,256 @@
+"""
+Shared utilities, helpers, constants, and all top-level imports for the views package.
+"""
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
+
+import json
+import logging
+import os
+import time
+import urllib.parse
+
+logger = logging.getLogger(__name__)
+
+import pandas as pd
+
+from django import forms
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, authenticate, logout, update_session_auth_hash
+from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth.models import User
+from django.contrib.sessions.models import Session
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import IntegrityError, connection, transaction
+from django.db.models import (
+    Avg, Count, Case, When, F, Q, Sum, Max, Min,
+    ExpressionWrapper, FloatField, IntegerField, Value
+)
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponseForbidden, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.utils.dateparse import parse_date
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.http import require_http_methods
+
+from asgiref.sync import async_to_sync
+
+from ..forms import (
+    StudentForm, MarksForm, SchoolForm, SchoolAdminRegistrationForm,
+    TestForm, LoginForm, ExcelFileUploadForm,
+    StateCreateForm, StateEditForm, DistrictCreateForm, DistrictEditForm,
+    BlockCreateForm, BlockEditForm, SchoolCreateForm, SchoolEditForm,
+)
+from ..math_utils import async_solve_math_problem, async_generate_similar_questions
+from ..models import (
+    School, Student, Marks, Block, Attendance, District, Test, CustomUser, State, PracticeTest,
+    ActivityLog, AcademicCalendarEvent,
+)
+from ..solution_formatter import SolutionFormatter
+
+# Constants for grade category thresholds
+CATEGORY_THRESHOLD_33 = 0.33
+CATEGORY_THRESHOLD_60 = 0.60
+CATEGORY_THRESHOLD_80 = 0.80
+CATEGORY_THRESHOLD_90 = 0.90
+
+# Sarvam AI configuration
+try:
+    from sarvamai import SarvamAI
+    from sarvamai.core.api_error import ApiError
+    SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
+except ImportError:
+    SarvamAI = None
+    ApiError = Exception
+    SARVAM_API_KEY = None
+
+
+# ===== Activity Log Helpers =====
+
+def get_client_ip(request):
+    """Return the client IP address.
+    Uses REMOTE_ADDR (the trusted network peer) to prevent X-Forwarded-For spoofing.
+    """
+    return request.META.get('REMOTE_ADDR', '')
+
+
+def _get_user_role(user):
+    """Return a human-readable role string for a CustomUser."""
+    if user.is_system_admin:
+        return 'System Admin'
+    if user.is_state_user:
+        return 'State'
+    if user.is_district_user:
+        return 'District'
+    if user.is_block_user:
+        return 'Block'
+    if user.is_school_user:
+        return 'School'
+    return 'Unknown'
+
+
+def resolve_district(user=None, student=None):
+    """Walk the hierarchy to find the district for a user or student."""
+    try:
+        if student:
+            return student.school.block.district
+        if user:
+            if user.is_district_user:
+                return District.objects.filter(admin=user).first()
+            if user.is_block_user:
+                block = Block.objects.filter(admin=user).first()
+                return block.district if block else None
+            if user.is_school_user:
+                school = School.objects.filter(admin=user).first()
+                return school.block.district if school and school.block else None
+    except Exception:
+        pass
+    return None
+
+
+def log_activity(request, action_type, description, user=None, student=None, district=None):
+    """Create an ActivityLog record. Never raises — logging must not break main flow."""
+    try:
+        log_user = user or (request.user if hasattr(request, 'user') and request.user.is_authenticated else None)
+        log_student = student
+
+        if log_user:
+            email = log_user.email
+            role = _get_user_role(log_user)
+        elif log_student:
+            email = f"student:{log_student.roll_number}"
+            role = 'Student'
+        else:
+            email = ''
+            role = ''
+
+        if district is None:
+            district = resolve_district(user=log_user, student=log_student)
+
+        ActivityLog.objects.create(
+            user=log_user,
+            student=log_student,
+            user_email=email,
+            user_role=role,
+            action_type=action_type,
+            description=description,
+            district=district,
+            ip_address=get_client_ip(request),
+        )
+    except Exception:
+        pass
+
+
+def login_or_student_required(view_func):
+    """Decorator to allow access for Django auth users OR student session login."""
+    def wrapper(request, *args, **kwargs):
+        # Check if user is authenticated via Django auth OR student session
+        is_django_user = request.user.is_authenticated
+        is_student = request.session.get('is_student', False)
+
+        if is_django_user or is_student:
+            return view_func(request, *args, **kwargs)
+
+        # Redirect to login page
+        messages.error(request, 'Please login to access this page.')
+        return redirect('login')
+    return wrapper
+
+
+@login_required
+def get_active_users_count():
+    sessions = Session.objects.filter(expire_date__gte=timezone.now())
+
+    active_users_count = 0
+
+    for session in sessions:
+        session_data = session.get_decoded()
+
+        if 'user_id' in session_data:
+            user_id = session_data['user_id']
+            try:
+                User.objects.get(id=user_id)
+                active_users_count += 1
+            except User.DoesNotExist:
+                continue
+
+    return active_users_count
+
+
+def _strip_think(text: str) -> str:
+    """Remove Sarvam reasoning model's <think>...</think> block.
+    Strategy: if </think> exists, take everything after it.
+    If only <think> with no closing tag, strip from <think> onward.
+    This handles cases where the model wraps JSON inside <think>.
+    """
+    import re
+    # Case 1: properly closed — take content after </think>
+    if '</think>' in text:
+        after = text.split('</think>', 1)[1].strip()
+        if after:
+            return after
+        # nothing after </think> — extract what was inside
+        inner = re.search(r'<think>(.*?)</think>', text, re.DOTALL)
+        return inner.group(1).strip() if inner else text.strip()
+    # Case 2: unclosed <think> tag — strip it and everything before first {
+    if '<think>' in text:
+        text = text.split('<think>', 1)[1]
+        # find first JSON-like start
+        brace = text.find('{')
+        return text[brace:].strip() if brace != -1 else text.strip()
+    return text.strip()
+
+
+def _get_user_district(request):
+    """Return the District for the logged-in user (district / block / school)."""
+    user = request.user
+    if user.is_district_user:
+        try:
+            return District.objects.get(admin=user)
+        except District.DoesNotExist:
+            return None
+    if user.is_block_user:
+        try:
+            return Block.objects.get(admin=user).district
+        except Block.DoesNotExist:
+            return None
+    # School user
+    try:
+        return School.objects.get(admin=user).block.district
+    except School.DoesNotExist:
+        return None
+
+
+def _events_as_json(district):
+    """Return calendar events for a district as a JSON-serialisable list."""
+    events = AcademicCalendarEvent.objects.filter(district=district)
+    color_map = {
+        'teaching': '#1e3c72',
+        'exam':     '#dc2626',
+        'holiday':  '#059669',
+        'meeting':  '#d97706',
+        'other':    '#6d28d9',
+    }
+    result = []
+    for e in events:
+        result.append({
+            'start': str(e.start_date),
+            'end':   str(e.end_date),
+            'title': e.title,
+            'type':  e.event_type,
+            'color': color_map.get(e.event_type, '#1e3c72'),
+            'id':    e.id,
+        })
+    return result
+
+
+def _generate_math_captcha(request):
+    """Generate a simple math captcha and store answer in session."""
+    import random
+    a = random.randint(1, 20)
+    b = random.randint(1, 20)
+    request.session['captcha_answer'] = a + b
+    return f"{a} + {b}"
