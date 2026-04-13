@@ -146,165 +146,137 @@ def generate_question_paper_ai(request):
             return JsonResponse({'error': 'Subject and chapter are required.'}, status=400)
 
         difficulty_hindi = {'Easy': 'सरल', 'Medium': 'मध्यम', 'Hard': 'कठिन', 'Mixed': 'मिश्रित'}.get(difficulty, 'मध्यम')
+
         if language == 'Hindi':
-            prompt = f"""कक्षा {class_name} के लिए "{subject}" विषय के "{chapter}" अध्याय पर एक पूर्ण प्रश्न पत्र बनाएं।
-कुल अंक: {total_marks}
-कठिनाई स्तर: {difficulty_hindi}
-
-निम्नलिखित खंड शामिल करें:
-खंड A: {mcq_count} बहुविकल्पीय प्रश्न (प्रत्येक {mcq_marks} अंक)
-खंड B: {tf_count} सही/गलत प्रश्न (प्रत्येक {tf_marks} अंक)
-खंड C: {fib_count} रिक्त स्थान भरो प्रश्न (प्रत्येक {fib_marks} अंक)
-खंड D: {short_count} लघु उत्तरीय प्रश्न (प्रत्येक {short_marks} अंक)
-खंड E: {long_count} दीर्घ उत्तरीय प्रश्न (प्रत्येक {long_marks} अंक)
-
-इस JSON प्रारूप में उत्तर दें:
-{{
-  "paper_title": "...",
-  "subject": "{subject}",
-  "class": "{class_name}",
-  "chapter": "{chapter}",
-  "total_marks": {total_marks},
-  "time_allowed": "...",
-  "sections": [
-    {{
-      "section": "A",
-      "section_title": "बहुविकल्पीय प्रश्न",
-      "marks_each": {mcq_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}
-      ]
-    }},
-    {{
-      "section": "B",
-      "section_title": "सही / गलत",
-      "marks_each": {tf_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "answer": "सही"}}
-      ]
-    }},
-    {{
-      "section": "C",
-      "section_title": "रिक्त स्थान भरो",
-      "marks_each": {fib_marks},
-      "questions": [
-        {{"q_no": 1, "question": "_______ का मान π होता है।", "answer": "..."}}
-      ]
-    }},
-    {{
-      "section": "D",
-      "section_title": "लघु उत्तरीय प्रश्न",
-      "marks_each": {short_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "answer": "..."}}
-      ]
-    }},
-    {{
-      "section": "E",
-      "section_title": "दीर्घ उत्तरीय प्रश्न",
-      "marks_each": {long_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "answer": "..."}}
-      ]
-    }}
-  ]
-}}
-केवल JSON लौटाएं। सभी प्रश्न और उत्तर हिंदी में होने चाहिए।"""
             system_msg = "आप एक अनुभवी शिक्षक हैं। केवल वैध JSON में उत्तर दें।"
         else:
-            prompt = f"""Create a complete question paper for Class {class_name} on the chapter "{chapter}" of subject "{subject}".
-Total Marks: {total_marks}
-Difficulty Level: {difficulty}
-
-Include the following sections:
-Section A: {mcq_count} Multiple Choice Questions ({mcq_marks} mark each)
-Section B: {tf_count} True/False Questions ({tf_marks} mark each)
-Section C: {fib_count} Fill in the Blank Questions ({fib_marks} mark each)
-Section D: {short_count} Short Answer Questions ({short_marks} marks each)
-Section E: {long_count} Long Answer Questions ({long_marks} marks each)
-
-Respond strictly in this JSON format:
-{{
-  "paper_title": "...",
-  "subject": "{subject}",
-  "class": "{class_name}",
-  "chapter": "{chapter}",
-  "total_marks": {total_marks},
-  "time_allowed": "...",
-  "sections": [
-    {{
-      "section": "A",
-      "section_title": "Multiple Choice Questions",
-      "marks_each": {mcq_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}
-      ]
-    }},
-    {{
-      "section": "B",
-      "section_title": "True / False",
-      "marks_each": {tf_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "answer": "True"}}
-      ]
-    }},
-    {{
-      "section": "C",
-      "section_title": "Fill in the Blanks",
-      "marks_each": {fib_marks},
-      "questions": [
-        {{"q_no": 1, "question": "The value of pi is approximately ___.", "answer": "3.14"}}
-      ]
-    }},
-    {{
-      "section": "D",
-      "section_title": "Short Answer Questions",
-      "marks_each": {short_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "answer": "..."}}
-      ]
-    }},
-    {{
-      "section": "E",
-      "section_title": "Long Answer Questions",
-      "marks_each": {long_marks},
-      "questions": [
-        {{"q_no": 1, "question": "...", "answer": "..."}}
-      ]
-    }}
-  ]
-}}
-Return ONLY the JSON. No extra text."""
             system_msg = "You are an experienced teacher. Always respond with valid JSON only."
 
         client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
-        response = client.chat.completions(
-            messages=[
-                {"role": "system", "content": system_msg},
-                {"role": "user",   "content": prompt},
-            ],
-            temperature=0.4,
-            max_tokens=2000,
-            top_p=0.5,
-        )
 
-        ai_text = _strip_think(response.choices[0].message.content)
+        def call_ai(user_prompt):
+            """Call Sarvam and return parsed JSON dict, or raise json.JSONDecodeError."""
+            resp = client.chat.completions(
+                messages=[
+                    {"role": "system", "content": system_msg},
+                    {"role": "user",   "content": user_prompt},
+                ],
+                temperature=0.5,
+                max_tokens=2000,
+            )
+            text = _strip_think(resp.choices[0].message.content)
+            if '```' in text:
+                for part in text.split('```'):
+                    if part.startswith('json'):
+                        text = part[4:].strip(); break
+                    elif '{' in part:
+                        text = part.strip(); break
+            s, e = text.find('{'), text.rfind('}')
+            if s != -1 and e != -1:
+                text = text[s:e + 1]
+            return json.loads(text)
 
-        # Extract JSON robustly
-        if '```' in ai_text:
-            for part in ai_text.split('```'):
-                if part.startswith('json'):
-                    ai_text = part[4:].strip()
-                    break
-                elif '{' in part:
-                    ai_text = part.strip()
-                    break
-        start = ai_text.find('{')
-        end   = ai_text.rfind('}')
-        if start != -1 and end != -1:
-            ai_text = ai_text[start:end + 1]
+        # ── Call 1: header + sections A (MCQ) + B (True/False) ──
+        # ── Call 2: sections C (FIB) + D (Short) + E (Long)    ──
+        if language == 'Hindi':
+            prompt1 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
+कठिनाई: {difficulty_hindi}
 
-        paper_data = json.loads(ai_text)
+केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
+{{
+  "paper_title": "...",
+  "subject": "{subject}",
+  "class": "{class_name}",
+  "chapter": "{chapter}",
+  "total_marks": {total_marks},
+  "time_allowed": "3 घंटे",
+  "sections": [
+    {{
+      "section": "A", "section_title": "बहुविकल्पीय प्रश्न", "marks_each": {mcq_marks},
+      "questions": [{{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]
+    }},
+    {{
+      "section": "B", "section_title": "सही / गलत", "marks_each": {tf_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "सही"}}]
+    }}
+  ]
+}}
+खंड A में {mcq_count} प्रश्न और खंड B में {tf_count} प्रश्न दें। सभी हिंदी में।"""
+
+            prompt2 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
+कठिनाई: {difficulty_hindi}
+
+केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
+{{
+  "sections": [
+    {{
+      "section": "C", "section_title": "रिक्त स्थान भरो", "marks_each": {fib_marks},
+      "questions": [{{"q_no": 1, "question": "_______ का मान π होता है।", "answer": "..."}}]
+    }},
+    {{
+      "section": "D", "section_title": "लघु उत्तरीय प्रश्न", "marks_each": {short_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
+    }},
+    {{
+      "section": "E", "section_title": "दीर्घ उत्तरीय प्रश्न", "marks_each": {long_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
+    }}
+  ]
+}}
+खंड C में {fib_count} प्रश्न, खंड D में {short_count} प्रश्न और खंड E में {long_count} प्रश्न दें। सभी हिंदी में।"""
+        else:
+            prompt1 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+
+Return ONLY this JSON (no extra text):
+{{
+  "paper_title": "...",
+  "subject": "{subject}",
+  "class": "{class_name}",
+  "chapter": "{chapter}",
+  "total_marks": {total_marks},
+  "time_allowed": "3 Hours",
+  "sections": [
+    {{
+      "section": "A", "section_title": "Multiple Choice Questions", "marks_each": {mcq_marks},
+      "questions": [{{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]
+    }},
+    {{
+      "section": "B", "section_title": "True / False", "marks_each": {tf_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "True"}}]
+    }}
+  ]
+}}
+Section A: {mcq_count} questions, Section B: {tf_count} questions."""
+
+            prompt2 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+
+Return ONLY this JSON (no extra text):
+{{
+  "sections": [
+    {{
+      "section": "C", "section_title": "Fill in the Blanks", "marks_each": {fib_marks},
+      "questions": [{{"q_no": 1, "question": "The value of pi is ___.", "answer": "3.14"}}]
+    }},
+    {{
+      "section": "D", "section_title": "Short Answer Questions", "marks_each": {short_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
+    }},
+    {{
+      "section": "E", "section_title": "Long Answer Questions", "marks_each": {long_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
+    }}
+  ]
+}}
+Section C: {fib_count} questions, Section D: {short_count} questions, Section E: {long_count} questions."""
+
+        part1 = call_ai(prompt1)
+        part2 = call_ai(prompt2)
+
+        # Merge: use part1 as the base, append sections from part2
+        paper_data = part1
+        paper_data['sections'].extend(part2.get('sections', []))
+
+        paper_data = json.loads(json.dumps(paper_data))  # validate round-trip
 
         from ..models import QuestionPaperHistory
         history = QuestionPaperHistory.objects.create(

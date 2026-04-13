@@ -324,9 +324,7 @@ def login_chat_api(request):
             try:
                 response = client.chat.completions(
                     messages=messages_list,
-                    temperature=0.2,
-                    max_tokens=2000,
-                    top_p=0.5,
+                    temperature=0.7
                 )
 
                 reply = _strip_think(response.choices[0].message.content.strip())
