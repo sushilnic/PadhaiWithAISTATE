@@ -325,7 +325,7 @@ def login_chat_api(request):
                 response = client.chat.completions(
                     messages=messages_list,
                     temperature=0.2,
-                    max_tokens=4096 ,
+                    max_tokens=2000,
                     top_p=0.5,
                 )
 

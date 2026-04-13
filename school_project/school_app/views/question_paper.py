@@ -284,7 +284,7 @@ Return ONLY the JSON. No extra text."""
                 {"role": "user",   "content": prompt},
             ],
             temperature=0.4,
-            max_tokens=4000,
+            max_tokens=2000,
             top_p=0.5,
         )
 

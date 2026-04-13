@@ -283,7 +283,7 @@ async def async_solve_math_problem(
             response = client.chat.completions(
                 messages=messages,
                 temperature=0.2,
-                max_tokens=4096,
+                max_tokens=2000,
                 top_p=0.5,
             )
             return _strip_think(response.choices[0].message.content.strip())

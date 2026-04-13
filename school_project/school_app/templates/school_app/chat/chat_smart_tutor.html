@@ -1230,14 +1230,34 @@ function copyAnswer(btn){
     var mdEl = wrap ? wrap.querySelector('.md-content') : null;
     if(!mdEl) return;
     var text = mdEl.innerText.trim();
-    navigator.clipboard.writeText(text).then(function(){
-        var orig = btn.textContent;
+    var orig = btn.textContent;
+
+    function onSuccess(){
         btn.textContent = 'Copied!';
         setTimeout(function(){ btn.textContent = orig; }, 1500);
-    }).catch(function(){
+    }
+    function onFail(){
         btn.textContent = 'Failed';
-        setTimeout(function(){ btn.textContent = 'Copy'; }, 1500);
-    });
+        setTimeout(function(){ btn.textContent = orig; }, 1500);
+    }
+
+    if(navigator.clipboard && window.isSecureContext){
+        navigator.clipboard.writeText(text).then(onSuccess).catch(onFail);
+    } else {
+        // Fallback for HTTP (non-secure) contexts
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        try {
+            document.execCommand('copy') ? onSuccess() : onFail();
+        } catch(e) {
+            onFail();
+        }
+        document.body.removeChild(ta);
+    }
 }
 
 // --- Session timeout countdown bar ---

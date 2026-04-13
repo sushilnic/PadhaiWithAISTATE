@@ -29,7 +29,7 @@ def chat_view(request):
             #     model="gpt-4o",        # or "gpt-4o-mini", etc.
             #     messages=history,
             # )
-            response = client.chat.completions(messages=history, temperature=0.2, max_tokens=4096, top_p=0.5,)
+            response = client.chat.completions(messages=history, temperature=0.2, max_tokens=2000, top_p=0.5,)
             assistant_reply = _strip_think(response.choices[0].message.content)
 
             # 3. Add assistant message
@@ -46,7 +46,7 @@ def chat_smart_tutor(request):
     history = request.session.get("history", [])
 
     if request.GET.get("clear") == "1":
-        for key in ['history', 'guardrail_set', 'class_level', 'subject', 'chapter']:
+        for key in ['history', 'guardrail_set', 'class_level', 'subject', 'chapter', 'language', 'session_start']:
             request.session.pop(key, None)
         return redirect("ai_sathi")
 
@@ -56,11 +56,14 @@ def chat_smart_tutor(request):
             request.session["class_level"] = request.POST.get("class_level")
             request.session["subject"] = request.POST.get("subject")
             request.session["chapter"] = request.POST.get("chapter")
+            request.session["language"] = request.POST.get("language", "Hindi")
             request.session["guardrail_set"] = True
+            request.session["session_start"] = timezone.now().isoformat()
 
     class_level = request.session.get("class_level")
     subject = request.session.get("subject")
     chapter = request.session.get("chapter")
+    language = request.session.get("language", "Hindi")
 
     if request.method == "POST":
         user_prompt = request.POST.get("prompt", "").strip()
@@ -72,6 +75,7 @@ def chat_smart_tutor(request):
                     Class: {class_level}
                     Subject: {subject}
                     Chapter: {chapter}
+                    Language: Respond in {language}
 
                     Rules:
                     - Answer ONLY from this chapter
@@ -92,7 +96,7 @@ def chat_smart_tutor(request):
             try:
                 response = client.chat.completions(
                     messages=api_messages, temperature=0.2,
-                    max_tokens=4096, top_p=0.5,
+                    max_tokens=2000, top_p=0.5,
                 )
                 reply = _strip_think(response.choices[0].message.content)
             except Exception:
@@ -107,9 +111,36 @@ def chat_smart_tutor(request):
 
             request.session["history"] = history
 
+    # Compute session stats for template
+    MSG_LIMIT = 20
+    SESSION_MINS = 30
+    user_msgs = [m for m in history if m.get("role") == "user"]
+    msg_count = len(user_msgs)
+    msgs_left = max(0, MSG_LIMIT - msg_count)
+    limit_reached = msg_count >= MSG_LIMIT
+
+    mins_left = SESSION_MINS
+    if class_level:
+        start_iso = request.session.get("session_start")
+        if start_iso:
+            try:
+                from datetime import datetime, timezone as dt_tz
+                start_dt = datetime.fromisoformat(start_iso)
+                elapsed_mins = int((timezone.now() - start_dt).total_seconds() / 60)
+                mins_left = max(0, SESSION_MINS - elapsed_mins)
+            except Exception:
+                pass
+
     return render(request, "school_app/chat/chat_smart_tutor.html", {
         "history": history,
-        "guardrail": class_level
+        "guardrail": class_level,
+        "language": request.session.get("language", "Hindi"),
+        "msg_count": msg_count,
+        "msg_limit": MSG_LIMIT,
+        "msgs_left": msgs_left,
+        "limit_reached": limit_reached,
+        "mins_left": mins_left,
+        "session_expired": mins_left == 0 and bool(class_level),
     })
 
 
@@ -147,7 +178,7 @@ def ask_pai(request):
         ]
 
         try:
-            response = client.chat.completions(messages=messages, temperature=0.2, max_tokens=4096, top_p=0.5,)
+            response = client.chat.completions(messages=messages, temperature=0.2, max_tokens=2000, top_p=0.5,)
             answer = _strip_think(response.choices[0].message.content)
         except ApiError as e:
             answer = f"API Error {e.status_code}: {e.body}"
@@ -228,7 +259,7 @@ def student_doubt_solver(request):
                         ]},
                     ],
                     "temperature": 0.3,
-                    "max_tokens": 4096,
+                    "max_tokens": 2000,
                     "top_p": 0.5,
                 }
                 resp = http_requests.post(
@@ -250,7 +281,7 @@ def student_doubt_solver(request):
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": question_text},
                         ],
-                        temperature=0.3, max_tokens=4096, top_p=0.5,
+                        temperature=0.3, max_tokens=2000, top_p=0.5,
                     )
                     sarvam_answer = _strip_think(response.choices[0].message.content)
         except Exception as e:
