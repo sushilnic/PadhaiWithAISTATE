@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from sarvamai import SarvamAI
 from asgiref.sync import sync_to_async
+from .text_utils import _strip_think
 
 # Load environment variables
 load_dotenv()
@@ -309,26 +310,3 @@ async def async_solve_math_problem(
 # 0.8 - 1.0   | Very creative, open-ended responses
 # 1.0         | Full probability space used (default)
 
-
-def _strip_think(text: str) -> str:
-    """Remove Sarvam reasoning model's <think>...</think> block.
-    Strategy: if </think> exists, take everything after it.
-    If only <think> with no closing tag, strip from <think> onward.
-    This handles cases where the model wraps JSON inside <think>.
-    """
-    import re
-    # Case 1: properly closed — take content after </think>
-    if '</think>' in text:
-        after = text.split('</think>', 1)[1].strip()
-        if after:
-            return after
-        # nothing after </think> — extract what was inside
-        inner = re.search(r'<think>(.*?)</think>', text, re.DOTALL)
-        return inner.group(1).strip() if inner else text.strip()
-    # Case 2: unclosed <think> tag — strip it and everything before first {
-    if '<think>' in text:
-        text = text.split('<think>', 1)[1]
-        # find first JSON-like start
-        brace = text.find('{')
-        return text[brace:].strip() if brace != -1 else text.strip()
-    return text.strip()

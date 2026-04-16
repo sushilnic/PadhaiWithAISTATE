@@ -1,12 +1,29 @@
 """
 Chat / AI tutor views.
 """
+import logging
 from .utils import *
 from .utils import _strip_think
 from ..models import AISathiClass, AISathiSubject, AISathiChapter
 
-sarvam_key = os.getenv("SARVAM_API_KEY")
-client = SarvamAI(api_subscription_key=sarvam_key)
+logger = logging.getLogger(__name__)
+
+# ── Singleton Sarvam client ───────────────────────────────────────────────────
+# Created once at startup. If the key is missing we set it to None and log a
+# warning — the module still imports cleanly and every other URL keeps working.
+_sarvam_key = os.getenv("SARVAM_API_KEY")
+if _sarvam_key:
+    _sarvam_client = SarvamAI(api_subscription_key=_sarvam_key)
+else:
+    _sarvam_client = None
+    logger.warning("SARVAM_API_KEY is not set — AI chat features will be unavailable")
+
+
+def _get_client():
+    """Return the shared Sarvam client. Raises RuntimeError if not configured."""
+    if _sarvam_client is None:
+        raise RuntimeError("Sarvam AI is not configured (SARVAM_API_KEY missing)")
+    return _sarvam_client
 
 
 def chat_view(request):
@@ -16,7 +33,7 @@ def chat_view(request):
     # Clear chat if ?clear=1
     if request.GET.get("clear") == "1":
         request.session["history"] = []
-        return redirect("chat_page")   # make sure this matches your URL name
+        return redirect("chat_page")
 
     if request.method == "POST":
         user_prompt = (request.POST.get("prompt") or "").strip()
@@ -25,13 +42,19 @@ def chat_view(request):
             # 1. Add user message
             history.append({"role": "user", "content": user_prompt})
 
-            # 2. Call OpenAI Chat Completions (sync)
-            # response = client.chat.completions.create(
-            #     model="gpt-4o",        # or "gpt-4o-mini", etc.
-            #     messages=history,
-            # )
-            response = client.chat.completions(messages=history, temperature=0.2, max_tokens=2000, top_p=0.5,)
-            assistant_reply = _strip_think(response.choices[0].message.content)
+            # 2. Call Sarvam AI — wrapped in try/except so API failures
+            #    return a friendly message instead of crashing with 500
+            try:
+                response = _get_client().chat.completions(
+                    messages=history,
+                    temperature=0.3,
+                    max_tokens=2000,
+                    top_p=0.9,
+                )
+                assistant_reply = _strip_think(response.choices[0].message.content)
+            except Exception:
+                logger.exception("chat_view: Sarvam AI call failed")
+                assistant_reply = "Sorry, something went wrong. Please try again."
 
             # 3. Add assistant message
             history.append({"role": "assistant", "content": assistant_reply})
@@ -95,12 +118,13 @@ def chat_smart_tutor(request):
             now_ts = timezone.now().strftime("%I:%M %p")
 
             try:
-                response = client.chat.completions(
+                response = _get_client().chat.completions(
                     messages=api_messages, temperature=0.2,
                     max_tokens=2000, top_p=0.5,
                 )
                 reply = _strip_think(response.choices[0].message.content)
             except Exception:
+                logger.exception("chat_smart_tutor: Sarvam AI call failed")
                 reply = "Sorry, something went wrong. Please try again."
 
             history.append({"role": "user", "content": user_prompt, "timestamp": now_ts})
@@ -161,12 +185,6 @@ def ask_pai(request):
             answer = "Please enter your question before submitting."
             return render(request, "school_app/chat/ask_pai.html", {"question": question, "answer": answer})
 
-        if not SarvamAI or not SARVAM_API_KEY:
-            answer = "AI service is not configured properly."
-            return render(request, "school_app/chat/ask_pai.html", {"question": question, "answer": answer})
-
-        client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
-
         messages = [
             {"role": "system", "content": """You are an experienced mathematics teacher. Solve the questions given, following these guidelines:
                 1. Include step-by-step solutions
@@ -184,24 +202,25 @@ def ask_pai(request):
         ]
 
         try:
-            response = client.chat.completions(messages=messages, temperature=0.2, max_tokens=2000, top_p=0.5,)
+            response = _get_client().chat.completions(messages=messages, temperature=0.2, max_tokens=2000, top_p=0.5,)
             answer = _strip_think(response.choices[0].message.content)
         except ApiError as e:
-            answer = f"API Error {e.status_code}: {e.body}"
-        except Exception as e:
-            answer = f"Error: {str(e)}"
-        # Save to chat_history table directly
+            logger.error("ask_pai: Sarvam API error status=%s body=%s", e.status_code, e.body)
+            answer = "AI service returned an error. Please try again."
+        except Exception:
+            logger.exception("ask_pai: unexpected error during AI call")
+            answer = "Something went wrong. Please try again."
+
+        # Save to chat_history — log failure silently, never show DB errors to user
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    """
-                    INSERT INTO chat_history (question, answer,use_model,  school_id)
-                    VALUES (%s, %s, %s, %s)
-                    """,
-                    [question, answer, "SARVAM", None]
+                    "INSERT INTO chat_history (question, answer, use_model, school_id)"
+                    " VALUES (%s, %s, %s, %s)",
+                    [question, answer, "SARVAM", None],
                 )
-        except Exception as db_error:
-            answer = f"Database Error: {str(db_error)}"
+        except Exception:
+            logger.exception("ask_pai: failed to save to chat_history")
 
     return render(request, "school_app/chat/ask_pai.html", {"question": question, "answer": answer})
 
@@ -279,17 +298,15 @@ def student_doubt_solver(request):
                 else:
                     sarvam_error = f"Sarvam {resp.status_code}: {resp.text[:200]}"
             else:
-                # Text-only: use SDK
-                if SarvamAI:
-                    client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
-                    response = client.chat.completions(
-                        messages=[
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": question_text},
-                        ],
-                        temperature=0.3, max_tokens=2000, top_p=0.9,
-                    )
-                    sarvam_answer = _strip_think(response.choices[0].message.content)
+                # Text-only: use shared singleton client
+                response = _get_client().chat.completions(
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": question_text},
+                    ],
+                    temperature=0.3, max_tokens=2000, top_p=0.9,
+                )
+                sarvam_answer = _strip_think(response.choices[0].message.content)
         except Exception as e:
             sarvam_error = str(e)
 

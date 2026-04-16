@@ -1,6 +1,7 @@
 """
 Shared utilities, helpers, constants, and all top-level imports for the views package.
 """
+from ..text_utils import _strip_think  # noqa: F401  re-exported for views package
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 
@@ -178,32 +179,6 @@ def get_active_users_count():
                 continue
 
     return active_users_count
-
-
-def _strip_think(text: str) -> str:
-    """Remove Sarvam reasoning model's <think>...</think> block.
-    Strategy: if </think> exists, take everything after it.
-    If only <think> with no closing tag, strip from <think> onward.
-    This handles cases where the model wraps JSON inside <think>.
-    """
-    if not text:
-        return ''
-    import re
-    # Case 1: properly closed — take content after </think>
-    if '</think>' in text:
-        after = text.split('</think>', 1)[1].strip()
-        if after:
-            return after
-        # nothing after </think> — extract what was inside
-        inner = re.search(r'<think>(.*?)</think>', text, re.DOTALL)
-        return inner.group(1).strip() if inner else text.strip()
-    # Case 2: unclosed <think> tag — strip it and everything before first {
-    if '<think>' in text:
-        text = text.split('<think>', 1)[1]
-        # find first JSON-like start
-        brace = text.find('{')
-        return text[brace:].strip() if brace != -1 else text.strip()
-    return text.strip()
 
 
 def _get_user_district(request):
