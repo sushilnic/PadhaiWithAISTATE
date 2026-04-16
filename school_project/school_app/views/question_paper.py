@@ -162,8 +162,9 @@ def generate_question_paper_ai(request):
                     {"role": "system", "content": system_msg},
                     {"role": "user",   "content": user_prompt},
                 ],
-                temperature=0.2,
+                temperature=0.3,
                 max_tokens=2000,
+                top_p=0.9,
             )
             msg = resp.choices[0].message
             raw = msg.content or msg.reasoning_content

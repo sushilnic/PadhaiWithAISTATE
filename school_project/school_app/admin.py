@@ -7,7 +7,8 @@ from django.contrib.auth.admin import UserAdmin
 from django.utils.html import format_html
 
 from .models import (
-    CustomUser, School, Student, Marks, Attendance, Block, District, Test, State
+    CustomUser, School, Student, Marks, Attendance, Block, District, Test, State,
+    AISathiClass, AISathiSubject, AISathiChapter,
 )
 
 
@@ -173,3 +174,49 @@ class DistrictAdmin(admin.ModelAdmin):
     list_filter = ('state',)
     search_fields = ('name_english', 'name_hindi')
     autocomplete_fields = ['state', 'admin']
+
+
+# ─── AI Sathi curriculum tables ───────────────────────────────────────────────
+
+class AISathiSubjectInline(admin.TabularInline):
+    model = AISathiSubject
+    extra = 1
+    fields = ('name', 'order', 'is_active')
+
+
+class AISathiChapterInline(admin.TabularInline):
+    model = AISathiChapter
+    extra = 1
+    fields = ('name', 'order', 'is_active')
+
+
+@admin.register(AISathiClass)
+class AISathiClassAdmin(admin.ModelAdmin):
+    list_display = ('number', 'order', 'is_active', 'subject_count')
+    list_editable = ('order', 'is_active')
+    inlines = [AISathiSubjectInline]
+
+    def subject_count(self, obj):
+        return obj.subjects.filter(is_active=True).count()
+    subject_count.short_description = 'Active Subjects'
+
+
+@admin.register(AISathiSubject)
+class AISathiSubjectAdmin(admin.ModelAdmin):
+    list_display = ('name', 'class_ref', 'order', 'is_active', 'chapter_count')
+    list_filter = ('class_ref', 'is_active')
+    list_editable = ('order', 'is_active')
+    search_fields = ('name',)
+    inlines = [AISathiChapterInline]
+
+    def chapter_count(self, obj):
+        return obj.chapters.filter(is_active=True).count()
+    chapter_count.short_description = 'Active Chapters'
+
+
+@admin.register(AISathiChapter)
+class AISathiChapterAdmin(admin.ModelAdmin):
+    list_display = ('name', 'subject', 'order', 'is_active')
+    list_filter = ('subject__class_ref', 'subject', 'is_active')
+    list_editable = ('order', 'is_active')
+    search_fields = ('name',)

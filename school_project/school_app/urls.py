@@ -106,6 +106,8 @@ urlpatterns = [
     path("ask-pai/", views.ask_pai, name="ask-pai"),
     path("chat/", views.chat_view, name="chat_page"),
     path("ai_sathi/", views.chat_smart_tutor, name="ai_sathi"),
+    path("ai_sathi/api/subjects/", views.ai_sathi_subjects, name="ai_sathi_subjects"),
+    path("ai_sathi/api/chapters/", views.ai_sathi_chapters, name="ai_sathi_chapters"),
     path("presentation/", views.presentation, name="presentation"),
     path("user-manual/", views.user_manual, name="user_manual"),
 

@@ -521,3 +521,59 @@ class QuestionPaperHistory(models.Model):
 
     def __str__(self):
         return f"{self.subject} | Class {self.class_name} | {self.created_at:%d %b %Y}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AI Sathi — curriculum dropdown tables
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AISathiClass(models.Model):
+    """Stores class numbers available in AI Sathi (e.g. 6, 7, … 12)."""
+    number = models.PositiveSmallIntegerField(unique=True)
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'AI Sathi Class'
+        verbose_name_plural = 'AI Sathi Classes'
+        ordering = ['order', 'number']
+
+    def __str__(self):
+        return f"Class {self.number}"
+
+
+class AISathiSubject(models.Model):
+    """Stores subjects per class for the AI Sathi dropdown."""
+    class_ref = models.ForeignKey(
+        AISathiClass, on_delete=models.CASCADE, related_name='subjects'
+    )
+    name = models.CharField(max_length=100)
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        verbose_name = 'AI Sathi Subject'
+        verbose_name_plural = 'AI Sathi Subjects'
+        unique_together = ('class_ref', 'name')
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return f"Class {self.class_ref.number} – {self.name}"
+
+
+class AISathiChapter(models.Model):
+    """Stores chapters per subject for the AI Sathi dropdown."""
+    subject = models.ForeignKey(
+        AISathiSubject, on_delete=models.CASCADE, related_name='chapters'
+    )
+    name = models.CharField(max_length=300)
+    order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'AI Sathi Chapter'
+        verbose_name_plural = 'AI Sathi Chapters'
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"{self.subject} → {self.name}"

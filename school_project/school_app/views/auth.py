@@ -325,8 +325,8 @@ def login_chat_api(request):
                 response = client.chat.completions(
                     model="sarvam-105b",
                     messages=messages_list,
-                    temperature=0.5,
-                    top_p=0.5,
+                    temperature=0.3,
+                    top_p=0.9,
                 )
 
                 reply = _strip_think(response.choices[0].message.content.strip())

@@ -3,6 +3,7 @@ Chat / AI tutor views.
 """
 from .utils import *
 from .utils import _strip_think
+from ..models import AISathiClass, AISathiSubject, AISathiChapter
 
 sarvam_key = os.getenv("SARVAM_API_KEY")
 client = SarvamAI(api_subscription_key=sarvam_key)
@@ -131,6 +132,10 @@ def chat_smart_tutor(request):
             except Exception:
                 pass
 
+    ai_classes = list(
+        AISathiClass.objects.filter(is_active=True).values_list('number', flat=True)
+    )
+
     return render(request, "school_app/chat/chat_smart_tutor.html", {
         "history": history,
         "guardrail": class_level,
@@ -141,6 +146,7 @@ def chat_smart_tutor(request):
         "limit_reached": limit_reached,
         "mins_left": mins_left,
         "session_expired": mins_left == 0 and bool(class_level),
+        "ai_classes": ai_classes,
     })
 
 
@@ -331,3 +337,50 @@ def student_doubt_solver(request):
         return JsonResponse({"error": "openai package not installed. Run: pip install openai"}, status=503)
     except Exception as e:
         return JsonResponse({"error": f"All AI services failed. Sarvam: {sarvam_error}. OpenAI: {str(e)}"}, status=500)
+
+
+@require_http_methods(["GET"])
+def ai_sathi_subjects(request):
+    """Return active subjects for a given class number."""
+    try:
+        class_number = int(request.GET.get('class', ''))
+    except (ValueError, TypeError):
+        return JsonResponse({'subjects': []})
+
+    try:
+        cls = AISathiClass.objects.get(number=class_number, is_active=True)
+    except AISathiClass.DoesNotExist:
+        return JsonResponse({'subjects': []})
+
+    subjects = list(
+        cls.subjects.filter(is_active=True).order_by('order', 'name').values_list('name', flat=True)
+    )
+    return JsonResponse({'subjects': subjects})
+
+
+@require_http_methods(["GET"])
+def ai_sathi_chapters(request):
+    """Return active chapters for a given class + subject."""
+    try:
+        class_number = int(request.GET.get('class', ''))
+    except (ValueError, TypeError):
+        return JsonResponse({'chapters': []})
+
+    subject_name = request.GET.get('subject', '').strip()
+    if not subject_name:
+        return JsonResponse({'chapters': []})
+
+    try:
+        subj = AISathiSubject.objects.get(
+            class_ref__number=class_number,
+            class_ref__is_active=True,
+            name=subject_name,
+            is_active=True,
+        )
+    except AISathiSubject.DoesNotExist:
+        return JsonResponse({'chapters': []})
+
+    chapters = list(
+        subj.chapters.filter(is_active=True).order_by('order', 'id').values_list('name', flat=True)
+    )
+    return JsonResponse({'chapters': chapters})
