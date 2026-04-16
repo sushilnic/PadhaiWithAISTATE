@@ -323,8 +323,9 @@ def login_chat_api(request):
         for attempt in range(3):
             try:
                 response = client.chat.completions(
+                    model="sarvam-105b",
                     messages=messages_list,
-                    temperature=0.7,
+                    temperature=0.5,
                     top_p=0.5,
                 )
 

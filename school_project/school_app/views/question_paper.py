@@ -157,14 +157,21 @@ def generate_question_paper_ai(request):
         def call_ai(user_prompt):
             """Call Sarvam and return parsed JSON dict, or raise json.JSONDecodeError."""
             resp = client.chat.completions(
+                #model="sarvam-105b",
                 messages=[
                     {"role": "system", "content": system_msg},
                     {"role": "user",   "content": user_prompt},
                 ],
-                temperature=0.5,
+                temperature=0.2,
                 max_tokens=2000,
             )
-            text = _strip_think(resp.choices[0].message.content)
+            msg = resp.choices[0].message
+            raw = msg.content or msg.reasoning_content
+            if not raw:
+                raise json.JSONDecodeError("Empty AI response", "", 0)
+            text = _strip_think(raw)
+            if not text:
+                raise json.JSONDecodeError("Empty AI response after stripping", "", 0)
             if '```' in text:
                 for part in text.split('```'):
                     if part.startswith('json'):
@@ -174,10 +181,12 @@ def generate_question_paper_ai(request):
             s, e = text.find('{'), text.rfind('}')
             if s != -1 and e != -1:
                 text = text[s:e + 1]
+            logger.warning("Sarvam text before json.loads: %r", text)
             return json.loads(text)
 
-        # ── Call 1: header + sections A (MCQ) + B (True/False) ──
-        # ── Call 2: sections C (FIB) + D (Short) + E (Long)    ──
+        # ── Call 1: header + Section A (MCQ) ──────────────────────────
+        # ── Call 2: Section B (True/False) + Section C (FIB) ──────────
+        # ── Call 3: Section D (Short Answer) + Section E (Long Answer) ─
         if language == 'Hindi':
             prompt1 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
 कठिनाई: {difficulty_hindi}
@@ -194,14 +203,10 @@ def generate_question_paper_ai(request):
     {{
       "section": "A", "section_title": "बहुविकल्पीय प्रश्न", "marks_each": {mcq_marks},
       "questions": [{{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]
-    }},
-    {{
-      "section": "B", "section_title": "सही / गलत", "marks_each": {tf_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "सही"}}]
     }}
   ]
 }}
-खंड A में {mcq_count} प्रश्न और खंड B में {tf_count} प्रश्न दें। सभी हिंदी में।"""
+खंड A में {mcq_count} प्रश्न दें। सभी हिंदी में।"""
 
             prompt2 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
 कठिनाई: {difficulty_hindi}
@@ -210,9 +215,23 @@ def generate_question_paper_ai(request):
 {{
   "sections": [
     {{
+      "section": "B", "section_title": "सही / गलत", "marks_each": {tf_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "सही"}}]
+    }},
+    {{
       "section": "C", "section_title": "रिक्त स्थान भरो", "marks_each": {fib_marks},
       "questions": [{{"q_no": 1, "question": "_______ का मान π होता है।", "answer": "..."}}]
-    }},
+    }}
+  ]
+}}
+खंड B में {tf_count} प्रश्न और खंड C में {fib_count} प्रश्न दें। सभी हिंदी में।"""
+
+            prompt3 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
+कठिनाई: {difficulty_hindi}
+
+केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
+{{
+  "sections": [
     {{
       "section": "D", "section_title": "लघु उत्तरीय प्रश्न", "marks_each": {short_marks},
       "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
@@ -223,7 +242,7 @@ def generate_question_paper_ai(request):
     }}
   ]
 }}
-खंड C में {fib_count} प्रश्न, खंड D में {short_count} प्रश्न और खंड E में {long_count} प्रश्न दें। सभी हिंदी में।"""
+खंड D में {short_count} प्रश्न और खंड E में {long_count} प्रश्न दें। सभी हिंदी में।"""
         else:
             prompt1 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
 
@@ -239,14 +258,10 @@ Return ONLY this JSON (no extra text):
     {{
       "section": "A", "section_title": "Multiple Choice Questions", "marks_each": {mcq_marks},
       "questions": [{{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]
-    }},
-    {{
-      "section": "B", "section_title": "True / False", "marks_each": {tf_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "True"}}]
     }}
   ]
 }}
-Section A: {mcq_count} questions, Section B: {tf_count} questions."""
+Section A: {mcq_count} questions."""
 
             prompt2 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
 
@@ -254,9 +269,22 @@ Return ONLY this JSON (no extra text):
 {{
   "sections": [
     {{
+      "section": "B", "section_title": "True / False", "marks_each": {tf_marks},
+      "questions": [{{"q_no": 1, "question": "...", "answer": "True"}}]
+    }},
+    {{
       "section": "C", "section_title": "Fill in the Blanks", "marks_each": {fib_marks},
       "questions": [{{"q_no": 1, "question": "The value of pi is ___.", "answer": "3.14"}}]
-    }},
+    }}
+  ]
+}}
+Section B: {tf_count} questions, Section C: {fib_count} questions."""
+
+            prompt3 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+
+Return ONLY this JSON (no extra text):
+{{
+  "sections": [
     {{
       "section": "D", "section_title": "Short Answer Questions", "marks_each": {short_marks},
       "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
@@ -267,14 +295,16 @@ Return ONLY this JSON (no extra text):
     }}
   ]
 }}
-Section C: {fib_count} questions, Section D: {short_count} questions, Section E: {long_count} questions."""
+Section D: {short_count} questions, Section E: {long_count} questions."""
 
         part1 = call_ai(prompt1)
         part2 = call_ai(prompt2)
+        part3 = call_ai(prompt3)
 
-        # Merge: use part1 as the base, append sections from part2
+        # Merge: use part1 as the base, append sections from part2 and part3
         paper_data = part1
         paper_data['sections'].extend(part2.get('sections', []))
+        paper_data['sections'].extend(part3.get('sections', []))
 
         paper_data = json.loads(json.dumps(paper_data))  # validate round-trip
 

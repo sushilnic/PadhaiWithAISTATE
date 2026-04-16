@@ -260,7 +260,7 @@ def student_doubt_solver(request):
                     ],
                     "temperature": 0.3,
                     "max_tokens": 2000,
-                    "top_p": 0.5,
+                    "top_p": 0.9,
                 }
                 resp = http_requests.post(
                     "https://api.sarvam.ai/v1/chat/completions",
@@ -281,7 +281,7 @@ def student_doubt_solver(request):
                             {"role": "system", "content": system_prompt},
                             {"role": "user", "content": question_text},
                         ],
-                        temperature=0.3, max_tokens=2000, top_p=0.5,
+                        temperature=0.3, max_tokens=2000, top_p=0.9,
                     )
                     sarvam_answer = _strip_think(response.choices[0].message.content)
         except Exception as e:
@@ -320,7 +320,7 @@ def student_doubt_solver(request):
         resp = oai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=oai_messages,
-            temperature=0.2,
+            temperature=0.3,
             max_tokens=4096,
         )
         oai_answer = resp.choices[0].message.content

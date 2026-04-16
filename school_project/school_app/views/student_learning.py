@@ -402,8 +402,8 @@ Return ONLY the JSON, no other text."""
         response = client.chat.completions(
             messages=messages,
             temperature=0.3,
-            max_tokens=4000,
-            top_p=0.5
+            max_tokens=2000,
+            top_p=0.9
         )
 
         ai_response = _strip_think(response.choices[0].message.content.strip())
@@ -686,6 +686,21 @@ def get_study_tips(request):
         ]
         response = client.chat.completions(messages=ai_messages, temperature=0.3, max_tokens=2048)
         content = _strip_think(response.choices[0].message.content.strip())
+        # Strip markdown code fences if present
+        if '```' in content:
+            parts = content.split('```')
+            for part in parts:
+                if part.startswith('json'):
+                    content = part[4:].strip()
+                    break
+                elif '{' in part:
+                    content = part.strip()
+                    break
+        # Extract first JSON object
+        start = content.find('{')
+        end = content.rfind('}')
+        if start != -1 and end != -1:
+            content = content[start:end + 1]
         try:
             data = json.loads(content)
             tips = data.get('tips', [])
@@ -795,6 +810,19 @@ def get_video_suggestions(request):
             ]
             response = client.chat.completions(messages=ai_messages, temperature=0.3, max_tokens=1024)
             content = _strip_think(response.choices[0].message.content)
+            if '```' in content:
+                parts = content.split('```')
+                for part in parts:
+                    if part.startswith('json'):
+                        content = part[4:].strip()
+                        break
+                    elif '{' in part:
+                        content = part.strip()
+                        break
+            start = content.find('{')
+            end = content.rfind('}')
+            if start != -1 and end != -1:
+                content = content[start:end + 1]
             try:
                 data = json.loads(content)
                 for v in data.get('videos', [])[:3]:

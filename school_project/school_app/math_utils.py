@@ -24,8 +24,9 @@ async_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 # Default model settings
 DEFAULT_MODEL_TYPE = "sarvam"
 GPT_MODEL = "gpt-4o"
-
-
+#GPT_MODEL = "gpt-5.3"
+temperature = 0.3  # stable for education
+top_p = 0.9
 def get_system_message_generate(language: str, difficulty: str, question_type: str) -> str:
     """
     Generate the system message for question generation based on language and parameters.
@@ -166,7 +167,8 @@ async def async_generate_similar_questions(
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=temperature,
+            top_p=top_p
         )
     else:  # Default to Sarvam AI
         client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
@@ -175,11 +177,12 @@ async def async_generate_similar_questions(
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0.2,
-            max_tokens=4096
+            temperature=temperature,            
+            top_p=top_p,
+            max_tokens=2000,
         )
 
-    return response.choices[0].message.content
+    return _strip_think(response.choices[0].message.content)
 
 
 def encode_image(image_path: str) -> str:
@@ -264,8 +267,9 @@ async def async_solve_math_problem(
             response = await async_client.chat.completions.create(
                 model=GPT_MODEL,
                 messages=messages,
-                temperature=0.7,
-                max_tokens=4096
+                temperature=temperature,              
+                top_p=top_p,
+                max_tokens=4096,
             )
             return response.choices[0].message.content
 
@@ -274,17 +278,18 @@ async def async_solve_math_problem(
             response = await async_client.chat.completions.create(
                 model=GPT_MODEL,
                 messages=messages,
-                temperature=0.7,
-                max_tokens=4096
+                temperature=temperature,                
+                top_p=top_p,
+                max_tokens=4096,
             )
             return response.choices[0].message.content
         elif model_type == "sarvam":
             client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
             response = client.chat.completions(
                 messages=messages,
-                temperature=0.2,
+                temperature=temperature,                
+                top_p=top_p,
                 max_tokens=2000,
-                top_p=0.5,
             )
             return _strip_think(response.choices[0].message.content.strip())
         else:

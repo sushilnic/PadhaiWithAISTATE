@@ -186,6 +186,8 @@ def _strip_think(text: str) -> str:
     If only <think> with no closing tag, strip from <think> onward.
     This handles cases where the model wraps JSON inside <think>.
     """
+    if not text:
+        return ''
     import re
     # Case 1: properly closed — take content after </think>
     if '</think>' in text:
