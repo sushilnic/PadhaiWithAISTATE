@@ -1,0 +1,69 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    :root { --primary:#1e3c72; --primary-light:#2a5298; --surface:#fff; --border:#E2E8F0; }
+    .ap-header { background:linear-gradient(135deg,var(--primary),var(--primary-light)); border-radius:12px; padding:20px 28px; margin-bottom:24px; color:white; box-shadow:0 4px 15px rgba(30,60,114,.3); display:flex; justify-content:space-between; align-items:center; }
+    .ap-header h1 { font-size:1.4rem; font-weight:700; margin:0; }
+    .assign-card { background:var(--surface); border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.07); border:1px solid var(--border); margin-bottom:14px; transition:box-shadow .2s; }
+    .assign-card:hover { box-shadow:0 4px 18px rgba(0,0,0,.12); }
+    .assign-body { padding:18px 22px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+    .assign-info h6 { margin:0 0 4px; font-size:1rem; font-weight:700; color:#1e293b; }
+    .assign-info .meta { font-size:.82rem; color:#64748b; }
+    .progress-bar-wrap { background:#e2e8f0; border-radius:20px; height:8px; width:120px; margin-top:6px; }
+    .progress-bar-fill { background:linear-gradient(90deg,#059669,#10b981); border-radius:20px; height:100%; transition:width .3s; }
+    .btn-report { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; padding:7px 16px; border-radius:7px; font-size:.85rem; font-weight:600; cursor:pointer; text-decoration:none; }
+    .empty-state { text-align:center; padding:60px 20px; color:#64748b; }
+    .badge-active { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .badge-inactive { background:#fee2e2; color:#991b1b; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+</style>
+
+<div class="ap-header">
+    <div>
+        <h1>📋 Assigned Papers</h1>
+        <p style="opacity:.9;margin:4px 0 0;font-size:.9rem;">Track student test progress and view results</p>
+    </div>
+    <a href="{% url 'question_paper_history' %}" class="btn btn-light btn-sm fw-600">📄 My Papers</a>
+</div>
+
+{% if assignments %}
+<div class="col-lg-11 mx-auto px-0">
+    {% for a in assignments %}
+    <div class="assign-card">
+        <div class="assign-body">
+            <div class="assign-info">
+                <h6>{{ a.question_paper.subject }} — Class {{ a.class_name }}
+                    <span class="{% if a.is_active %}badge-active{% else %}badge-inactive{% endif %} ms-2">
+                        {% if a.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </h6>
+                <div class="meta">
+                    📖 {{ a.question_paper.chapter }} &nbsp;|&nbsp;
+                    🎯 {{ a.question_paper.total_marks }} marks &nbsp;|&nbsp;
+                    🗓️ Assigned {{ a.created_at|date:"d M Y" }}
+                    {% if a.due_date %}&nbsp;|&nbsp; 📅 Due {{ a.due_date|date:"d M Y, h:i A" }}{% endif %}
+                </div>
+                <div style="margin-top:6px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:.82rem;color:#64748b;">
+                        {{ a.submitted_count }} submitted
+                    </span>
+                    <div class="progress-bar-wrap">
+                        <div class="progress-bar-fill" style="width:{{ a.submitted_count }}%"></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'assignment_report' a.pk %}" class="btn-report">📊 View Report</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div style="font-size:3rem;margin-bottom:12px;">📋</div>
+    <h5>No assigned papers yet</h5>
+    <p>Go to <a href="{% url 'question_paper_history' %}">My Papers</a> and assign a paper to a class.</p>
+</div>
+{% endif %}
+{% endblock %}

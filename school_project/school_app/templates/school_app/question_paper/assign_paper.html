@@ -1,0 +1,98 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    :root { --primary:#1e3c72; --primary-light:#2a5298; --surface:#fff; --border:#E2E8F0; }
+    .ap-header {
+        background:linear-gradient(135deg,var(--primary),var(--primary-light));
+        border-radius:12px; padding:20px 28px; margin-bottom:24px;
+        color:white; box-shadow:0 4px 15px rgba(30,60,114,.3);
+        display:flex; justify-content:space-between; align-items:center;
+    }
+    .ap-header h1 { font-size:1.4rem; font-weight:700; margin:0; }
+    .ap-card { background:var(--surface); border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,.08); border:1px solid var(--border); padding:28px; }
+    .paper-info { background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; padding:16px; margin-bottom:24px; }
+    .paper-info h3 { color:var(--primary); font-weight:700; margin:0 0 6px; }
+    .paper-info .meta { font-size:.85rem; color:#64748b; }
+    .form-label { font-weight:600; color:#1e293b; margin-bottom:6px; }
+    .form-control, .form-select { border:2px solid var(--border); border-radius:8px; padding:10px 14px; font-size:.95rem; transition:border-color .2s; width:100%; }
+    .form-control:focus, .form-select:focus { border-color:var(--primary); outline:none; box-shadow:0 0 0 3px rgba(30,60,114,.1); }
+    .btn-assign { background:linear-gradient(135deg,var(--primary),var(--primary-light)); color:white; border:none; padding:12px 32px; border-radius:8px; font-size:1rem; font-weight:700; cursor:pointer; transition:all .2s; }
+    .btn-assign:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(30,60,114,.3); }
+    .class-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(80px,1fr)); gap:10px; margin-top:8px; }
+    .class-btn { border:2px solid var(--border); border-radius:8px; padding:10px; text-align:center; cursor:pointer; font-weight:600; color:#64748b; background:white; transition:all .2s; }
+    .class-btn.selected, .class-btn:hover { border-color:var(--primary); color:var(--primary); background:#eff6ff; }
+    #class_name_input { display:none; }
+</style>
+
+<div class="ap-header">
+    <div>
+        <h1>📋 Assign Question Paper</h1>
+        <p style="opacity:.9;margin:4px 0 0;font-size:.9rem;">Assign to a class so students can take the test online</p>
+    </div>
+    <a href="{% url 'question_paper_history' %}" class="btn btn-light btn-sm fw-600">← Back</a>
+</div>
+
+<div class="col-lg-8 mx-auto px-0">
+    <div class="ap-card">
+        <div class="paper-info">
+            <h3>{{ paper.subject }} — Class {{ paper.class_name }}</h3>
+            <div class="meta">
+                📖 {{ paper.chapter }} &nbsp;|&nbsp;
+                🎯 {{ paper.total_marks }} marks &nbsp;|&nbsp;
+                ⏰ {{ paper.time_allowed }} min &nbsp;|&nbsp;
+                🎚️ {{ paper.difficulty }} &nbsp;|&nbsp;
+                🌐 {{ paper.language }}
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="class_name" id="class_name_input">
+
+            <div class="mb-4">
+                <label class="form-label">🏫 Assign to Class *</label>
+                {% if classes %}
+                <div class="class-grid" id="classGrid">
+                    {% for c in classes %}
+                    <div class="class-btn" data-class="{{ c }}" onclick="selectClass('{{ c }}')">Class {{ c }}</div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted">No students found in your school. Please add students first.</p>
+                {% endif %}
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">📅 Due Date (optional)</label>
+                    <input type="datetime-local" name="due_date" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">⏱️ Time Limit (minutes, optional)</label>
+                    <input type="number" name="time_limit" class="form-control" placeholder="e.g. 90" min="5" max="300" value="{{ paper.time_allowed }}">
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">📝 Special Instructions (optional)</label>
+                <textarea name="instructions" class="form-control" rows="3" placeholder="Any special instructions for students..."></textarea>
+            </div>
+
+            <div class="d-flex gap-3">
+                <button type="submit" class="btn-assign" id="submitBtn" disabled>📤 Assign to Class</button>
+                <a href="{% url 'question_paper_history' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function selectClass(c) {
+    document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    document.getElementById('class_name_input').value = c;
+    document.getElementById('submitBtn').disabled = false;
+}
+</script>
+{% endblock %}

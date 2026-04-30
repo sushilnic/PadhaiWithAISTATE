@@ -163,6 +163,17 @@ urlpatterns = [
     path('question-paper/generate/', views.generate_question_paper_ai, name='generate_question_paper_ai'),
     path('question-paper/history/', views.question_paper_history, name='question_paper_history'),
 
+    # Assigned Papers — teacher
+    path('question-paper/<int:pk>/assign/', views.assign_paper, name='assign_paper'),
+    path('question-paper/assignments/', views.assigned_papers, name='assigned_papers'),
+    path('question-paper/assignment/<int:pk>/report/', views.assignment_report, name='assignment_report'),
+
+    # Assigned Papers — student
+    path('student/assigned-tests/', views.student_assigned_papers, name='student_assigned_papers'),
+    path('student/test/<int:pk>/take/', views.take_paper, name='take_paper'),
+    path('student/test/<int:pk>/submit/', views.submit_paper, name='submit_paper'),
+    path('student/test/<int:pk>/result/', views.paper_result, name='paper_result'),
+
     # Academic Calendar
     path('academic-calendar/', views.academic_calendar_view, name='academic_calendar'),
     path('academic-calendar/manage/', views.academic_calendar_manage, name='academic_calendar_manage'),

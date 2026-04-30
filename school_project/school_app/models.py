@@ -524,6 +524,84 @@ class QuestionPaperHistory(models.Model):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Assigned Papers — teacher assigns a question paper to a class
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AssignedPaper(models.Model):
+    question_paper = models.ForeignKey(
+        QuestionPaperHistory, on_delete=models.CASCADE, related_name='assignments'
+    )
+    assigned_by = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name='paper_assignments'
+    )
+    school = models.ForeignKey(
+        School, on_delete=models.CASCADE, related_name='assigned_papers'
+    )
+    class_name   = models.CharField(max_length=5)
+    due_date     = models.DateTimeField(null=True, blank=True)
+    time_limit   = models.PositiveIntegerField(help_text='minutes', null=True, blank=True)
+    instructions = models.TextField(blank=True)
+    is_active    = models.BooleanField(default=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Assigned Paper'
+        verbose_name_plural = 'Assigned Papers'
+
+    def __str__(self):
+        return f"{self.question_paper.subject} → Class {self.class_name} | {self.school.name}"
+
+    @property
+    def attempt_count(self):
+        return self.attempts.filter(is_submitted=True).count()
+
+    @property
+    def student_count(self):
+        return Student.objects.filter(school=self.school, class_name=self.class_name).count()
+
+
+class StudentPaperAttempt(models.Model):
+    assigned_paper = models.ForeignKey(
+        AssignedPaper, on_delete=models.CASCADE, related_name='attempts'
+    )
+    student      = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name='paper_attempts'
+    )
+    started_at   = models.DateTimeField(auto_now_add=True)
+    submitted_at = models.DateTimeField(null=True, blank=True)
+    # answers: {"A": {"1": "B", "2": "A"}, "B": {"1": "True"}, "C": {"1": "..."}, ...}
+    answers      = models.JSONField(default=dict)
+    score        = models.FloatField(null=True, blank=True)
+    max_score    = models.FloatField(null=True, blank=True)
+    is_submitted = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('assigned_paper', 'student')
+        ordering = ['-started_at']
+        verbose_name = 'Student Paper Attempt'
+
+    def __str__(self):
+        return f"{self.student.name} — {self.assigned_paper.question_paper.subject}"
+
+    @property
+    def percentage(self):
+        if self.max_score and self.max_score > 0:
+            return round((self.score or 0) / self.max_score * 100, 1)
+        return 0
+
+    @property
+    def grade(self):
+        pct = self.percentage
+        if pct >= 90: return 'A+'
+        if pct >= 75: return 'A'
+        if pct >= 60: return 'B'
+        if pct >= 45: return 'C'
+        if pct >= 33: return 'D'
+        return 'F'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # AI Sathi — curriculum dropdown tables
 # ─────────────────────────────────────────────────────────────────────────────
 

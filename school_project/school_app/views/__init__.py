@@ -18,3 +18,4 @@ from .reports import *
 from .admin_tools import *
 from .analysis import *
 from .calendar import *
+from .assigned_paper import *

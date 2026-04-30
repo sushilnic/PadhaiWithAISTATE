@@ -1,0 +1,100 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tests — PadhaiWithAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="{% static 'school_app/images/favicon.ico' %}">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Segoe UI',sans-serif;background:#f0f4f8;color:#1e293b;min-height:100vh;}
+        .topbar{background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;}
+        .topbar h2{font-size:1.1rem;font-weight:700;}
+        .topbar a{color:rgba(255,255,255,.85);text-decoration:none;font-size:.88rem;}
+        .content{max-width:900px;margin:30px auto;padding:0 16px;}
+        .page-title{font-size:1.4rem;font-weight:800;color:#1e3c72;margin-bottom:20px;}
+        .test-card{background:white;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid #e2e8f0;margin-bottom:14px;transition:box-shadow .2s;}
+        .test-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.12);}
+        .card-body{padding:18px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;}
+        .test-info h6{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:4px;}
+        .test-info .meta{font-size:.82rem;color:#64748b;}
+        .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.75rem;font-weight:700;margin-left:6px;}
+        .badge-new{background:#ede9fe;color:#6d28d9;}
+        .badge-done{background:#d1fae5;color:#065f46;}
+        .badge-prog{background:#dbeafe;color:#1d4ed8;}
+        .btn-take{background:linear-gradient(135deg,#1e3c72,#2a5298);color:white;border:none;padding:8px 22px;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
+        .btn-result{background:linear-gradient(135deg,#059669,#10b981);color:white;border:none;padding:8px 22px;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
+        .empty{text-align:center;padding:60px 20px;color:#64748b;}
+        .empty .icon{font-size:3rem;margin-bottom:12px;}
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <h2>📚 PadhaiWithAI — My Tests</h2>
+    <div style="display:flex;gap:16px;align-items:center;">
+        <span>{{ student.name }} ({{ student.roll_number }})</span>
+        <a href="{% url 'student_dashboard' %}">Dashboard</a>
+        <a href="{% url 'student_logout' %}">Logout</a>
+    </div>
+</div>
+
+<div class="content">
+    <div class="page-title">📋 Assigned Tests</div>
+
+    {% if messages %}
+    {% for m in messages %}
+    <div style="background:#d1fae5;border:1px solid #6ee7b7;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#065f46;">{{ m }}</div>
+    {% endfor %}
+    {% endif %}
+
+    {% if items %}
+    {% for item in items %}
+    <div class="test-card">
+        <div class="card-body">
+            <div class="test-info">
+                <h6>
+                    {{ item.assignment.question_paper.subject }}
+                    <span class="badge {% if item.status == 'Submitted' %}badge-done{% elif item.status == 'In Progress' %}badge-prog{% else %}badge-new{% endif %}">
+                        {% if item.status == 'Submitted' %}✓ Done{% elif item.status == 'In Progress' %}⏳ In Progress{% else %}New{% endif %}
+                    </span>
+                </h6>
+                <div class="meta">
+                    📖 {{ item.assignment.question_paper.chapter }} &nbsp;|&nbsp;
+                    🎯 {{ item.assignment.question_paper.total_marks }} marks &nbsp;|&nbsp;
+                    ⏰ {% if item.assignment.time_limit %}{{ item.assignment.time_limit }} min{% else %}No limit{% endif %}
+                    {% if item.assignment.due_date %}&nbsp;|&nbsp; 📅 Due {{ item.assignment.due_date|date:"d M, h:i A" }}{% endif %}
+                </div>
+                {% if item.assignment.instructions %}
+                <div style="font-size:.8rem;color:#475569;margin-top:6px;background:#f8fafc;padding:6px 10px;border-radius:6px;">
+                    📌 {{ item.assignment.instructions }}
+                </div>
+                {% endif %}
+            </div>
+            <div>
+                {% if item.attempt and item.attempt.is_submitted %}
+                    <div style="text-align:right;">
+                        <div style="font-size:1.4rem;font-weight:800;color:#059669;">{{ item.attempt.score }}/{{ item.attempt.max_score }}</div>
+                        <div style="font-size:.8rem;color:#64748b;">{{ item.attempt.percentage }}% — Grade {{ item.attempt.grade }}</div>
+                        <a href="{% url 'paper_result' item.attempt.pk %}" class="btn-result" style="margin-top:8px;">📊 View Result</a>
+                    </div>
+                {% elif item.can_take %}
+                    <a href="{% url 'take_paper' item.assignment.pk %}" class="btn-take">
+                        {% if item.status == 'In Progress' %}▶️ Continue Test{% else %}✏️ Start Test{% endif %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty">
+        <div class="icon">📋</div>
+        <h5>No tests assigned yet</h5>
+        <p>Your teacher hasn't assigned any test to your class. Check back later.</p>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>

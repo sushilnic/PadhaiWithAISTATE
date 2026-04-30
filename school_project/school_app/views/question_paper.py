@@ -341,4 +341,18 @@ def question_paper_history(request):
         school_name = request.user.administered_school.name
     except Exception:
         pass
-    return render(request, 'school_app/question_paper/question_paper_history.html', {'papers': papers, 'school_name': school_name})
+    papers_dict = {
+        p.pk: {
+            'paper': p.paper_json,
+            'language': p.language,
+            'difficulty': p.difficulty,
+            'time_allowed': p.time_allowed,
+            'school_name': school_name,
+        }
+        for p in papers
+    }
+    return render(request, 'school_app/question_paper/question_paper_history.html', {
+        'papers': papers,
+        'school_name': school_name,
+        'papers_json': json.dumps(papers_dict, ensure_ascii=False),
+    })

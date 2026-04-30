@@ -1,0 +1,122 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    :root { --primary:#1e3c72; --primary-light:#2a5298; --surface:#fff; --border:#E2E8F0; }
+    .rpt-header { background:linear-gradient(135deg,var(--primary),var(--primary-light)); border-radius:12px; padding:20px 28px; margin-bottom:24px; color:white; box-shadow:0 4px 15px rgba(30,60,114,.3); }
+    .rpt-header h1 { font-size:1.3rem; font-weight:700; margin:0 0 4px; }
+    .stat-row { display:flex; gap:16px; flex-wrap:wrap; margin-bottom:24px; }
+    .stat-box { background:var(--surface); border-radius:10px; padding:16px 22px; box-shadow:0 2px 10px rgba(0,0,0,.07); border:1px solid var(--border); flex:1; min-width:140px; text-align:center; }
+    .stat-box .num { font-size:1.8rem; font-weight:800; color:var(--primary); }
+    .stat-box .lbl { font-size:.8rem; color:#64748b; margin-top:2px; }
+    table { width:100%; border-collapse:collapse; }
+    thead tr { background:#f1f5f9; }
+    th { padding:10px 14px; font-size:.85rem; font-weight:700; color:#475569; text-align:left; }
+    td { padding:10px 14px; font-size:.88rem; border-bottom:1px solid #f1f5f9; }
+    tr:hover td { background:#f8fafc; }
+    .badge-submitted { background:#d1fae5; color:#065f46; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .badge-progress  { background:#dbeafe; color:#1d4ed8; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .badge-notstarted{ background:#f1f5f9; color:#64748b; padding:3px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .grade-A { color:#059669; font-weight:700; }
+    .grade-B { color:#2563eb; font-weight:700; }
+    .grade-C { color:#d97706; font-weight:700; }
+    .grade-D { color:#dc2626; font-weight:700; }
+    .grade-F { color:#991b1b; font-weight:700; }
+    .btn-view { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:white; border:none; padding:5px 14px; border-radius:6px; font-size:.82rem; font-weight:600; text-decoration:none; }
+</style>
+
+<div class="rpt-header">
+    <h1>📊 Class Report — {{ assignment.question_paper.subject }}</h1>
+    <div style="font-size:.88rem;opacity:.9;margin-top:4px;">
+        Class {{ assignment.class_name }} &nbsp;|&nbsp;
+        {{ assignment.question_paper.chapter }} &nbsp;|&nbsp;
+        {{ assignment.question_paper.total_marks }} marks &nbsp;|&nbsp;
+        Assigned {{ assignment.created_at|date:"d M Y" }}
+    </div>
+</div>
+
+<div class="stat-row">
+    <div class="stat-box">
+        <div class="num">{{ total_students }}</div>
+        <div class="lbl">Total Students</div>
+    </div>
+    <div class="stat-box">
+        <div class="num" style="color:#059669;">{{ submitted_count }}</div>
+        <div class="lbl">Submitted</div>
+    </div>
+    <div class="stat-box">
+        <div class="num" style="color:#d97706;">{{ total_students|add:"-1"|add:"1"|add:submitted_count|add:"-1" }}</div>
+        <div class="lbl">Pending</div>
+    </div>
+    <div class="stat-box">
+        <div class="num">{{ avg_score }} / {{ max_score }}</div>
+        <div class="lbl">Avg Score</div>
+    </div>
+</div>
+
+<div style="background:var(--surface);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.07);border:1px solid var(--border);overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);font-weight:700;font-size:1rem;color:var(--primary);">
+        Student Results
+    </div>
+    <div style="overflow-x:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Student Name</th>
+                    <th>Roll No.</th>
+                    <th>Status</th>
+                    <th>Score</th>
+                    <th>%</th>
+                    <th>Grade</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td><strong>{{ row.student.name }}</strong></td>
+                    <td>{{ row.student.roll_number }}</td>
+                    <td>
+                        {% if row.status == 'Submitted' %}
+                            <span class="badge-submitted">✓ Submitted</span>
+                        {% elif row.status == 'In Progress' %}
+                            <span class="badge-progress">⏳ In Progress</span>
+                        {% else %}
+                            <span class="badge-notstarted">— Not Started</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if row.attempt and row.attempt.is_submitted %}
+                            {{ row.attempt.score }} / {{ row.attempt.max_score }}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if row.attempt and row.attempt.is_submitted %}
+                            {{ row.attempt.percentage }}%
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if row.attempt and row.attempt.is_submitted %}
+                            <span class="grade-{{ row.attempt.grade }}">{{ row.attempt.grade }}</span>
+                        {% else %}—{% endif %}
+                    </td>
+                    <td>
+                        {% if row.attempt and row.attempt.is_submitted %}
+                            <a href="{% url 'paper_result' row.attempt.pk %}" class="btn-view">View</a>
+                        {% else %}—{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" style="text-align:center;color:#64748b;padding:30px;">No students found in this class.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="margin-top:16px;">
+    <a href="{% url 'assigned_papers' %}" class="btn btn-outline-secondary btn-sm">← Back to Assignments</a>
+</div>
+{% endblock %}

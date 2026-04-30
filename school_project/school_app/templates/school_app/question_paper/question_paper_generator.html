@@ -465,16 +465,37 @@
     }
 
     function downloadPDF() {
-        const element = document.getElementById('paperContent');
+        const paperEl  = document.getElementById('paperContent');
+        const answerEl = document.getElementById('answerKeyContent');
+
+        // Clone paper section and remove fixed watermark to avoid blank-page bug
+        const paperClone = paperEl.cloneNode(true);
+        const wm = paperClone.querySelector('.pai-watermark');
+        if (wm) wm.remove();
+
+        // Build combined wrapper: questions + answer key
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'background:white;font-family:Times New Roman,serif;padding:0;';
+        wrapper.appendChild(paperClone);
+
+        const ansSection = document.createElement('div');
+        ansSection.style.cssText = 'margin-top:28px;padding:20px;border-top:2px solid #1e3c72;';
+        ansSection.innerHTML = `
+            <div style="font-size:1rem;font-weight:700;color:#fff;background:linear-gradient(135deg,#059669,#10b981);
+                        padding:10px 16px;border-radius:6px;margin-bottom:14px;">🗝️ Answer Key</div>
+            ${answerEl.innerHTML}`;
+        wrapper.appendChild(ansSection);
+
+        document.body.appendChild(wrapper);
+
         const filename = `QuestionPaper_${currentPaperSubject}_Class${currentPaperClass}.pdf`.replace(/\s+/g, '_');
-        const opt = {
+        html2pdf().set({
             margin:      [10, 10, 10, 10],
             filename:    filename,
             image:       { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, useCORS: true },
             jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(element).save();
+        }).from(wrapper).save().then(() => document.body.removeChild(wrapper));
     }
 
     function printSection(sectionId) {
