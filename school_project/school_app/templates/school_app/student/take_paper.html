@@ -113,9 +113,13 @@ function buildSections() {
             if (sec.section === 'A' && q.options && q.options.length) {
                 // MCQ
                 html += `<div class="options">`;
-                q.options.forEach(opt => {
+                q.options.forEach((opt, i) => {
                     const checked = saved === opt.charAt(0) ? 'checked' : '';
-                    html += `<label class="opt-label"><input type="radio" name="${key}" value="${opt.charAt(0)}" ${checked} onchange="countAnswered()"> ${opt}</label>`;
+                    const optId = `${key}_${i}`;
+                    html += `<div class="opt-wrap">
+                        <input type="radio" name="${key}" id="${optId}" value="${opt.charAt(0)}" ${checked} onchange="countAnswered()">
+                        <label class="opt-label" for="${optId}">${opt}</label>
+                    </div>`;
                 });
                 html += `</div>`;
             } else if (sec.section === 'B') {

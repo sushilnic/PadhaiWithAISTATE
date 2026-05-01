@@ -155,7 +155,12 @@
         margin: 0 auto 20px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spinner-label { font-weight: 700; color: var(--primary); font-size: 1rem; margin-bottom: 14px; }
+    .spinner-label { font-weight: 700; color: var(--primary); font-size: 1rem; margin-bottom: 6px; }
+    .spinner-step  { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px; min-height: 18px; }
+    .gen-timer {
+        font-size: 2rem; font-weight: 800; color: var(--primary);
+        letter-spacing: .06em; margin-bottom: 16px; font-variant-numeric: tabular-nums;
+    }
     .spinner-bar-track {
         width: 100%; height: 6px; background: #e2e8f0;
         border-radius: 99px; overflow: hidden;
@@ -175,7 +180,6 @@
         .paper-container { border: none; padding: 10px; box-shadow: none; }
     }
 </style>
-
 <div class="qp-header d-flex justify-content-between align-items-start flex-wrap gap-2">
     <div>
         <h1>📄 AI Question Paper Generator</h1>
@@ -307,6 +311,8 @@
                 <div class="spinner-box">
                     <div class="spinner-ring"></div>
                     <div class="spinner-label">AI is generating your question paper…</div>
+                    <div class="spinner-step" id="genStep">Preparing Section A (MCQ)…</div>
+                    <div class="gen-timer" id="genTimer">0:00</div>
                     <div class="spinner-bar-track">
                         <div class="spinner-bar-fill"></div>
                     </div>
@@ -389,6 +395,33 @@
         document.getElementById('spinnerWrap').classList.add('active');
         document.getElementById('paperPreview').style.display = 'none';
 
+        // Timer + step messages
+        const steps = [
+            'Generating Section A (MCQ)…',
+            'Generating Sections B & C (T/F + Fill in Blanks)…',
+            'Generating Section D (Short Answers)…',
+            'Generating Section E (Long Answers)…',
+            'Finalising and saving your paper…',
+        ];
+        let elapsed = 0;
+        const timerEl = document.getElementById('genTimer');
+        const stepEl  = document.getElementById('genStep');
+        const stepInterval = Math.ceil(30 / steps.length); // spread steps over ~30s
+        const genInterval = setInterval(() => {
+            elapsed++;
+            const m = Math.floor(elapsed / 60), s = elapsed % 60;
+            timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+            const stepIdx = Math.min(Math.floor(elapsed / stepInterval), steps.length - 1);
+            stepEl.textContent = steps[stepIdx];
+        }, 1000);
+
+        function stopTimer() {
+            clearInterval(genInterval);
+            timerEl.textContent = '0:00';
+            stepEl.textContent  = 'Preparing Section A (MCQ)…';
+            elapsed = 0;
+        }
+
         fetch('{% url "generate_question_paper_ai" %}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
@@ -396,6 +429,7 @@
         })
         .then(r => r.json())
         .then(data => {
+            stopTimer();
             document.getElementById('spinnerWrap').classList.remove('active');
             document.getElementById('generateBtn').disabled = false;
             if (data.error) { alert('Error: ' + data.error); return; }
@@ -404,6 +438,7 @@
             document.getElementById('paperPreview').scrollIntoView({ behavior: 'smooth' });
         })
         .catch(() => {
+            stopTimer();
             document.getElementById('spinnerWrap').classList.remove('active');
             document.getElementById('generateBtn').disabled = false;
             alert('Something went wrong. Please try again.');
@@ -468,14 +503,15 @@
         const paperEl  = document.getElementById('paperContent');
         const answerEl = document.getElementById('answerKeyContent');
 
-        // Clone paper section and remove fixed watermark to avoid blank-page bug
         const paperClone = paperEl.cloneNode(true);
+        // Remove watermark and strip card styling (padding/border causes blank space at top of PDF)
         const wm = paperClone.querySelector('.pai-watermark');
         if (wm) wm.remove();
+        paperClone.style.cssText = 'padding:0;border:none;border-radius:0;background:white;font-family:Times New Roman,serif;';
 
-        // Build combined wrapper: questions + answer key
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'background:white;font-family:Times New Roman,serif;padding:0;';
+        // position:absolute top:0 so element is at y=0; z-index:-9999 keeps it hidden behind page
+        wrapper.style.cssText = 'background:white;font-family:Times New Roman,serif;width:794px;position:absolute;top:0;left:0;z-index:-9999;';
         wrapper.appendChild(paperClone);
 
         const ansSection = document.createElement('div');
@@ -486,14 +522,15 @@
             ${answerEl.innerHTML}`;
         wrapper.appendChild(ansSection);
 
-        document.body.appendChild(wrapper);
+        // Prepend at top of body so element sits at y=0 in the document
+        document.body.insertBefore(wrapper, document.body.firstChild);
 
         const filename = `QuestionPaper_${currentPaperSubject}_Class${currentPaperClass}.pdf`.replace(/\s+/g, '_');
         html2pdf().set({
             margin:      [10, 10, 10, 10],
             filename:    filename,
             image:       { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
+            html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0 },
             jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
         }).from(wrapper).save().then(() => document.body.removeChild(wrapper));
     }
