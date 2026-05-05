@@ -88,6 +88,7 @@ urlpatterns = [
     path('report/school/', views.report_dashboard, name='report_dashboard'),
     path('update-block-name/', views.update_block_name_from_excel, name='update_block_name'),
     path('test-average/', views.test_wise_average_marks, name='test_wise_average'),
+    path('historical-analysis/', views.historical_analysis, name='historical_analysis'),
 
     path('attendance/submit/', views.submit_attendance, name='submit_attendance'),
     path('attendance/summary/', views.attendance_summary, name='attendance_summary'),

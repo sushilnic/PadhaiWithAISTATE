@@ -174,15 +174,16 @@
         /* Steps */
         .steps { counter-reset: step; }
         .step {
+            counter-increment: step;
             display: flex; gap: 16px; margin-bottom: 18px; align-items: flex-start;
         }
         .step-num {
-            counter-increment: step;
             min-width: 30px; height: 30px;
             background: var(--primary); color: white;
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 0.8rem; font-weight: 700; flex-shrink: 0; margin-top: 2px;
         }
+        .step-num::before { content: counter(step); }
         .step-content h4 { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; }
         .step-content p  { font-size: 0.87rem; color: var(--muted); line-height: 1.6; }
 
@@ -269,12 +270,25 @@
             .section { page-break-inside: avoid; }
         }
 
+        /* Mobile toggle */
+        .btn-menu {
+            display: none; background: none; border: none; cursor: pointer;
+            color: var(--primary); font-size: 1.3rem; padding: 4px 8px;
+        }
+        .sidebar-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        .sidebar-overlay.open { display: block; }
+
         /* Responsive */
         @media (max-width: 900px) {
-            .sidebar { transform: translateX(-100%); }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s; }
+            .sidebar.open { transform: translateX(0); }
             .main { margin-left: 0; }
             .quick-ref { grid-template-columns: repeat(2,1fr); }
             .toc-grid { grid-template-columns: 1fr; }
+            .btn-menu { display: inline-flex; align-items: center; }
         }
     </style>
 </head>
@@ -313,10 +327,15 @@
     </div>
 </aside>
 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <!-- ── Top Bar ── -->
 <div class="main">
 <div class="topbar">
-    <span class="topbar-title"><i class="fas fa-book-open"></i>&nbsp; PadhaiWithAI – System User Manual</span>
+    <div style="display:flex; align-items:center; gap:12px;">
+        <button class="btn-menu" id="menuToggle" title="Open Menu"><i class="fas fa-bars"></i></button>
+        <span class="topbar-title"><i class="fas fa-book-open"></i>&nbsp; PadhaiWithAI – System User Manual</span>
+    </div>
     <div class="topbar-actions">
         <a href="{% url 'presentation' %}" class="btn-top btn-outline"><i class="fas fa-chalkboard"></i> Presentation</a>
         <button class="btn-top btn-primary" onclick="window.print()"><i class="fas fa-print"></i> Print Manual</button>
@@ -889,6 +908,17 @@
 </div><!-- /main -->
 
 <script>
+    // Mobile sidebar toggle
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuBtn = document.getElementById('menuToggle');
+    function openSidebar()  { sidebar.classList.add('open'); overlay.classList.add('open'); }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+    menuBtn.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    // Close sidebar when a nav link is clicked on mobile
+    document.querySelectorAll('.nav-item').forEach(a => a.addEventListener('click', closeSidebar));
+
     // Highlight active nav item on scroll
     const sections = document.querySelectorAll('.section[id], .cover[id]');
     const navItems = document.querySelectorAll('.nav-item');

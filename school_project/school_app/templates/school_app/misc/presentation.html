@@ -145,12 +145,12 @@
         .stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
 
         /* ── How it Works Steps ── */
-        .steps { display: flex; gap: 0; align-items: stretch; flex-wrap: wrap; }
+        .steps { display: flex; gap: 8px; align-items: stretch; flex-wrap: nowrap; }
         .step {
-            flex: 1; min-width: 200px;
+            flex: 1; min-width: 0;
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px; padding: 32px 24px; text-align: center;
+            border-radius: 16px; padding: 32px 20px; text-align: center;
             position: relative; transition: all 0.3s;
         }
         .step:hover { background: rgba(255,255,255,0.09); transform: translateY(-4px); }
@@ -162,7 +162,7 @@
         .step h4 { font-size: 1rem; font-weight: 700; margin-bottom: 10px; }
         .step p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; }
         .step-arrow {
-            display: flex; align-items: center; padding: 0 12px;
+            display: flex; align-items: center; padding: 0 8px;
             color: var(--accent); font-size: 1.6rem; flex-shrink: 0;
         }
 
@@ -237,15 +237,18 @@
             .grid-3, .grid-4 { grid-template-columns: repeat(2,1fr); }
             .impact-grid { grid-template-columns: repeat(2,1fr); }
         }
+        @media (max-width: 900px) {
+            .steps { flex-direction: column; gap: 0; }
+            .step-arrow { transform: rotate(90deg); padding: 4px 0; }
+        }
         @media (max-width: 768px) {
             .slide { padding: 80px 20px 40px; }
             .main-title { font-size: 2.5rem; }
             .section-title { font-size: 1.8rem; }
             .grid-2, .grid-3, .grid-4, .impact-grid { grid-template-columns: 1fr; }
             .problem-solution { grid-template-columns: 1fr; }
-            .steps { flex-direction: column; }
-            .step-arrow { transform: rotate(90deg); }
             .roles { flex-direction: column; align-items: center; }
+            .role-arrow { transform: rotate(90deg); }
             .nav-links { display: none; }
         }
 
@@ -341,9 +344,9 @@
 
     <div class="stats-row">
         <div class="stat-box"><div class="stat-num">8</div><div class="stat-label">Blocks Covered</div></div>
-        <div class="stat-box"><div class="stat-num">600+</div><div class="stat-label">Schools</div></div>
-        <div class="stat-box"><div class="stat-num">60K+</div><div class="stat-label">Students Served</div></div>
-        <div class="stat-box"><div class="stat-num">69K+</div><div class="stat-label">Marks Recorded</div></div>
+        <div class="stat-box"><div class="stat-num">300+</div><div class="stat-label">Schools</div></div>
+        <div class="stat-box"><div class="stat-num">20K+</div><div class="stat-label">Students Served</div></div>
+        <div class="stat-box"><div class="stat-num">150K+</div><div class="stat-label">Marks Recorded</div></div>
         <div class="stat-box"><div class="stat-num">2</div><div class="stat-label">Languages</div></div>
     </div>
 </section>
@@ -366,21 +369,21 @@
             <h4>Login by Role</h4>
             <p>Each user (School / Block / District / State / Student) logs in with their own account and sees only their relevant data.</p>
         </div>
-        <div class="step-arrow">→</div>
+        <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="step">
             <div class="step-num">2</div>
             <i class="fas fa-tasks fa-2x" style="color:var(--success); margin-bottom:14px;"></i>
             <h4>Manage &amp; Enter Data</h4>
             <p>Schools add students, mark attendance, enter test marks, and use AI tools. Everything is saved in real time.</p>
         </div>
-        <div class="step-arrow">→</div>
+        <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="step">
             <div class="step-num">3</div>
             <i class="fas fa-chart-bar fa-2x" style="color:var(--purple); margin-bottom:14px;"></i>
             <h4>View Reports &amp; Insights</h4>
             <p>Block and District officers see dashboards, charts, and reports automatically — no manual effort needed.</p>
         </div>
-        <div class="step-arrow">→</div>
+        <div class="step-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="step">
             <div class="step-num">4</div>
             <i class="fas fa-robot fa-2x" style="color:var(--warning); margin-bottom:14px;"></i>
@@ -482,25 +485,25 @@
             <strong>State Admin</strong>
             <span>Full state overview &amp; all district data</span>
         </div>
-        <div class="role-arrow">→</div>
+        <div class="role-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="role-card">
             <i class="fas fa-building" style="color:#f59e0b;"></i>
             <strong>District Officer</strong>
             <span>Manage blocks, schools &amp; calendar</span>
         </div>
-        <div class="role-arrow">→</div>
+        <div class="role-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="role-card">
             <i class="fas fa-sitemap" style="color:#10b981;"></i>
             <strong>Block Officer</strong>
             <span>Monitor schools in their block</span>
         </div>
-        <div class="role-arrow">→</div>
+        <div class="role-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="role-card">
             <i class="fas fa-school" style="color:#38bdf8;"></i>
             <strong>School (Teacher)</strong>
             <span>Students, marks, attendance &amp; AI tools</span>
         </div>
-        <div class="role-arrow">→</div>
+        <div class="role-arrow"><i class="fas fa-chevron-right"></i></div>
         <div class="role-card">
             <i class="fas fa-user-graduate" style="color:#8b5cf6;"></i>
             <strong>Student</strong>
@@ -711,7 +714,7 @@
             </div>
             <div style="display:flex; align-items:center; gap:10px; font-size:1rem;">
                 <i class="fas fa-envelope" style="color:var(--accent); font-size:1.4rem;"></i>
-                <span>Contact District Administration</span>
+                <span>dm-ton-rj@nic.in, rajton@nic.in</span>
             </div>
         </div>
 

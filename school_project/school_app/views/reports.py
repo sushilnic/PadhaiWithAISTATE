@@ -208,6 +208,90 @@ def test_wise_average_marks(request):
 
 
 @login_required
+def historical_analysis(request):
+    """Test-wise analysis from archived year-suffix tables (e.g. school_app_test_2025)."""
+    from django.db import connection
+
+    # Discover available years from pg_tables
+    with connection.cursor() as cur:
+        cur.execute("""
+            SELECT tablename FROM pg_tables
+            WHERE schemaname = 'public'
+              AND tablename ~ '^school_app_test_[0-9]{4}$'
+            ORDER BY tablename DESC
+        """)
+        available_years = [r[0].replace('school_app_test_', '') for r in cur.fetchall()]
+
+    selected_year = request.GET.get('year', available_years[0] if available_years else None)
+    if selected_year not in available_years:
+        selected_year = available_years[0] if available_years else None
+
+    data = []
+    if selected_year:
+        t_tbl = f'school_app_test_{selected_year}'
+        m_tbl = f'school_app_marks_{selected_year}'
+        s_tbl = f'school_app_student_{selected_year}'
+        sch_tbl = f'school_app_school_{selected_year}'
+        b_tbl = f'school_app_block_{selected_year}'
+
+        join_sql = ''
+        where_sql = ''
+        params = []
+
+        try:
+            if request.user.is_district_user:
+                district = get_object_or_404(District, admin=request.user)
+                join_sql = f'JOIN {s_tbl} s ON m.student_id=s.id JOIN {sch_tbl} sch ON s.school_id=sch.id JOIN {b_tbl} b ON sch.block_id=b.id'
+                where_sql = 'WHERE b.district_id = %s'
+                params = [district.id]
+            elif request.user.is_block_user:
+                block = get_object_or_404(Block, admin=request.user)
+                join_sql = f'JOIN {s_tbl} s ON m.student_id=s.id JOIN {sch_tbl} sch ON s.school_id=sch.id'
+                where_sql = 'WHERE sch.block_id = %s'
+                params = [block.id]
+            elif request.user.is_school_user:
+                school = get_object_or_404(School, admin=request.user)
+                join_sql = f'JOIN {s_tbl} s ON m.student_id=s.id'
+                where_sql = 'WHERE s.school_id = %s'
+                params = [school.id]
+        except Exception:
+            pass
+
+        sql = f"""
+            SELECT
+                t.test_name, t.test_number, t.max_marks,
+                COUNT(m.id)                                                         AS total_students,
+                COALESCE(AVG(m.marks), 0)                                           AS avg_marks,
+                CASE WHEN t.max_marks > 0
+                     THEN COALESCE(AVG(m.marks), 0) * 100.0 / t.max_marks
+                     ELSE 0 END                                                     AS percentage,
+                COUNT(CASE WHEN m.marks <= 0                                              THEN 1 END) AS category_0_and_less,
+                COUNT(CASE WHEN m.marks >= t.max_marks*0.01 AND m.marks < t.max_marks*0.33 THEN 1 END) AS category_0_33,
+                COUNT(CASE WHEN m.marks >= t.max_marks*0.33 AND m.marks < t.max_marks*0.60 THEN 1 END) AS category_33_60,
+                COUNT(CASE WHEN m.marks >= t.max_marks*0.60 AND m.marks < t.max_marks*0.80 THEN 1 END) AS category_60_80,
+                COUNT(CASE WHEN m.marks >= t.max_marks*0.80 AND m.marks < t.max_marks*0.90 THEN 1 END) AS category_80_90,
+                COUNT(CASE WHEN m.marks >= t.max_marks*0.90 AND m.marks < t.max_marks      THEN 1 END) AS category_90_100,
+                COUNT(CASE WHEN m.marks = t.max_marks                                      THEN 1 END) AS category_100
+            FROM {t_tbl} t
+            JOIN {m_tbl} m ON m.test_id = t.test_number
+            {join_sql}
+            {where_sql}
+            GROUP BY t.test_name, t.test_number, t.max_marks
+            ORDER BY t.test_number
+        """
+        with connection.cursor() as cur:
+            cur.execute(sql, params)
+            cols = [c[0] for c in cur.description]
+            data = [dict(zip(cols, row)) for row in cur.fetchall()]
+
+    return render(request, 'school_app/tests/historical_analysis.html', {
+        'data': data,
+        'available_years': available_years,
+        'selected_year': selected_year,
+    })
+
+
+@login_required
 def school_average_marks(request):
     """School average marks with hierarchy-based filtering."""
     # Filter schools based on user hierarchy

@@ -89,6 +89,7 @@
             <p class="card-description">View average marks for each test across all students.</p>
             <div class="card-links">
                 <a href="{% url 'test_wise_average' %}" class="card-link">View Averages</a>
+                
             </div>
         </div>
     </div>
@@ -103,6 +104,19 @@
             <p class="card-description">Analyze percentage-wise distribution of test scores.</p>
             <div class="card-links">
                 <a href="{% url 'test_results_analysis' %}" class="card-link">View Analysis</a>
+            </div>
+        </div>
+    </div>
+    <!-- Historical Analysis -->
+    <div class="dashboard-card">
+        <div class="card-header">
+            <span class="card-header-icon"><i class="fas fa-history"></i></span>
+            <h3>Historical Analysis</h3>
+        </div>
+        <div class="card-body">
+            <p class="card-description">Analyse test performance from previous years using archived year-wise data.</p>
+            <div class="card-links">
+                <a href="{% url 'historical_analysis' %}" class="card-link">View History</a>
             </div>
         </div>
     </div>

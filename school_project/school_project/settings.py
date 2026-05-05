@@ -108,7 +108,7 @@ WHITENOISE_AUTOREFRESH = DEBUG
 # Use environment variable DATABASE_URL if available, otherwise use PostgreSQL config
 DATABASES = {
     'default': env.db(
-        default='postgresql://postgres:postgres@localhost:5432/padhaiwithai_19022026'
+        default='postgresql://postgres:postgres@localhost:5432/padhaiwithai_05052026'
     )
 }
 # Enable WAL mode for SQLite
