@@ -302,8 +302,8 @@ def take_paper(request, pk):
     return render(request, 'school_app/student/take_paper.html', {
         'assignment': assignment,
         'attempt': attempt,
-        'paper_json': json.dumps(paper_json, ensure_ascii=False),
-        'saved_answers': json.dumps(attempt.answers, ensure_ascii=False),
+        'paper_json': paper_json,
+        'saved_answers': attempt.answers,
         'student': student,
     })
 
