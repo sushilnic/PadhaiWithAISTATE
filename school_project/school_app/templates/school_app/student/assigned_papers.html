@@ -36,7 +36,7 @@
     <div style="display:flex;gap:16px;align-items:center;">
         <span>{{ student.name }} ({{ student.roll_number }})</span>
         <a href="{% url 'student_dashboard' %}">Dashboard</a>
-        <a href="{% url 'student_logout' %}">Logout</a>
+        <form method="POST" action="{% url 'student_logout' %}" style="display:inline;margin:0;padding:0;">{% csrf_token %}<button type="submit" style="background:none;border:none;font:inherit;cursor:pointer;color:inherit;padding:0;">Logout</button></form>
     </div>
 </div>
 
