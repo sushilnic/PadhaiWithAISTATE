@@ -17,7 +17,7 @@
                 <option value="" {% if not selected_test_numbers %}selected{% endif %}>All Tests</option>
                 {% for test in tests %}
                     <option value="{{ test.test_number }}" {% if test.test_number in selected_test_numbers %}selected{% endif %}>
-                        {{ test.subject_name }} - {{ test.name }}
+                        {{ test.test_name }} ({{ test.subject_name }})
                     </option>
                 {% endfor %}
             </select>

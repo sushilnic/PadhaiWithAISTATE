@@ -58,9 +58,13 @@
                     <a href="{% url 'edit_student' student.id %}" class="btn btn-info btn-sm">
                         <i class="fas fa-edit"></i> Edit
                     </a>
-                    <a href="{% url 'delete_student' student.id %}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete {{ student.name }}?');">
-                        <i class="fas fa-trash-alt"></i> Delete
-                    </a>
+                    <form method="post" action="{% url 'delete_student' student.id %}" style="display:inline;"
+                          onsubmit="return confirm('Are you sure you want to delete {{ student.name }}?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </form>
                 </td>
             </tr>
             {% endfor %}

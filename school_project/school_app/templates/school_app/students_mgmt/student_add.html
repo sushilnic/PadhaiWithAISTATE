@@ -1,14 +1,259 @@
 {% extends 'school_app/base.html' %}
-{% load crispy_forms_tags %}
+{% block title %}Add New Student{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Add New Student</h2>
-    <form method="post">
-        {% csrf_token %}
-        {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Add Student</button>
-    </form>
-    <a href="{% url 'dashboard' %}" class="action-btn edit-btn" style="margin-left: 20px;">Back to Dashboard</a>
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1><i class="fas fa-user-plus me-2"></i> Add New Student</h1>
+    <p>Register a new student to your school — fill in the details below</p>
 </div>
+
+<!-- Flash Messages -->
+{% if messages %}
+<div class="mb-20">
+    {% for message in messages %}
+    <div class="alert-msg alert-{{ message.tags }}">
+        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div style="display:grid; grid-template-columns: 1fr 380px; gap:25px; align-items:start;">
+
+    <!-- LEFT: Form -->
+    <div class="form-container" style="margin-bottom:0;">
+        <div class="form-title">
+            <i class="fas fa-id-card me-2"></i> Student Information
+        </div>
+
+        <form method="POST" id="addStudentForm" novalidate>
+            {% csrf_token %}
+
+            <!-- Student Name -->
+            <div class="form-group-custom">
+                <label class="field-label" for="id_name">
+                    <i class="fas fa-user me-1" style="color:var(--accent-purple);"></i>
+                    Student Full Name <span class="required-star">*</span>
+                </label>
+                <input type="text"
+                       id="id_name"
+                       name="name"
+                       class="field-input {% if form.name.errors %}field-error{% endif %}"
+                       placeholder="e.g. Sushil Kumar Agrawal"
+                       value="{{ form.name.value|default:'' }}"
+                       required
+                       autocomplete="off">
+                {% if form.name.errors %}
+                    <div class="field-hint error">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.name.errors.0 }}
+                    </div>
+                {% else %}
+                    <div class="field-hint">Enter the student's full name as per official records</div>
+                {% endif %}
+            </div>
+
+            <!-- Roll Number -->
+            <div class="form-group-custom">
+                <label class="field-label" for="id_roll_number">
+                    <i class="fas fa-fingerprint me-1" style="color:var(--accent-blue);"></i>
+                    Roll Number (NIC ID) <span class="required-star">*</span>
+                </label>
+                <input type="text"
+                       id="id_roll_number"
+                       name="roll_number"
+                       class="field-input {% if form.roll_number.errors %}field-error{% endif %}"
+                       placeholder="e.g. 202510123456"
+                       value="{{ form.roll_number.value|default:'' }}"
+                       required
+                       autocomplete="off">
+                {% if form.roll_number.errors %}
+                    <div class="field-hint error">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.roll_number.errors.0 }}
+                    </div>
+                {% else %}
+                    <div class="field-hint">Shala Darpan NIC ID — must be unique across all students</div>
+                {% endif %}
+            </div>
+
+            <!-- Class -->
+            <div class="form-group-custom">
+                <label class="field-label" for="id_class_name">
+                    <i class="fas fa-chalkboard me-1" style="color:var(--accent-green);"></i>
+                    Class <span class="required-star">*</span>
+                </label>
+                <select id="id_class_name"
+                        name="class_name"
+                        class="field-input {% if form.class_name.errors %}field-error{% endif %}"
+                        required>
+                    {% for val, label in form.fields.class_name.choices %}
+                    <option value="{{ val }}"
+                        {% if form.class_name.value == val %}selected
+                        {% elif not form.class_name.value and val == '10' %}selected
+                        {% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                {% if form.class_name.errors %}
+                    <div class="field-hint error">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.class_name.errors.0 }}
+                    </div>
+                {% else %}
+                    <div class="field-hint">Select the student's current class</div>
+                {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div style="display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;">
+                <button type="submit" class="btn-primary-custom" id="submitBtn"
+                        style="flex:1; min-width:160px; font-size:1rem; padding:13px 20px;">
+                    <i class="fas fa-user-plus me-2"></i> Add Student
+                </button>
+                <a href="{% url 'student_list' %}" class="btn-secondary-custom"
+                   style="flex:1; min-width:140px; font-size:1rem; padding:13px 20px; text-align:center;">
+                    <i class="fas fa-times me-2"></i> Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- RIGHT: Info Panel -->
+    <div style="display:flex; flex-direction:column; gap:20px;">
+
+        <!-- Quick Tips -->
+        <div class="form-container" style="margin-bottom:0;">
+            <div class="form-title" style="font-size:0.95rem;">
+                <i class="fas fa-lightbulb me-2" style="color:#f59e0b;"></i> Quick Tips
+            </div>
+            <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:12px;">
+                <li style="display:flex; gap:10px; align-items:flex-start; font-size:0.9rem; color:var(--text-secondary); line-height:1.5;">
+                    <i class="fas fa-check-circle" style="color:var(--status-success); margin-top:2px; flex-shrink:0;"></i>
+                    <span>Use the <strong style="color:var(--text-primary);">official name</strong> as per school records</span>
+                </li>
+                <li style="display:flex; gap:10px; align-items:flex-start; font-size:0.9rem; color:var(--text-secondary); line-height:1.5;">
+                    <i class="fas fa-check-circle" style="color:var(--status-success); margin-top:2px; flex-shrink:0;"></i>
+                    <span>Roll Number = <strong style="color:var(--text-primary);">Shala Darpan NIC ID</strong> — यह यूनिक होना चाहिए</span>
+                </li>
+                <li style="display:flex; gap:10px; align-items:flex-start; font-size:0.9rem; color:var(--text-secondary); line-height:1.5;">
+                    <i class="fas fa-info-circle" style="color:var(--accent-blue); margin-top:2px; flex-shrink:0;"></i>
+                    <span>Default password <code style="background:var(--bg-light); padding:1px 5px; border-radius:4px; font-size:0.85rem;">1234</code> is set automatically</span>
+                </li>
+                <li style="display:flex; gap:10px; align-items:flex-start; font-size:0.9rem; color:var(--text-secondary); line-height:1.5;">
+                    <i class="fas fa-users" style="color:var(--accent-purple); margin-top:2px; flex-shrink:0;"></i>
+                    <span>Adding multiple students? Use <strong style="color:var(--text-primary);">Excel Upload</strong> instead</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Bulk Upload Shortcut -->
+        <div class="stat-card blue" style="padding:20px; text-align:left;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+                <i class="fas fa-file-excel" style="font-size:1.8rem; color:var(--accent-blue);"></i>
+                <div>
+                    <div style="font-weight:700; color:var(--text-primary); font-size:0.95rem;">Bulk Upload</div>
+                    <div class="stat-label">Add many students at once</div>
+                </div>
+            </div>
+            <a href="{% url 'upload_student_data' %}"
+               style="display:inline-flex; align-items:center; gap:6px; font-size:0.85rem; font-weight:600;
+                      color:var(--accent-blue); text-decoration:none; transition:color 0.2s;">
+                <i class="fas fa-arrow-right"></i> Upload Excel File
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<!-- Back Button -->
+<div class="dashboard-actions" style="margin-top:25px;">
+    <a href="{% url 'student_list' %}" class="back-link">
+        <i class="fas fa-arrow-left me-2"></i> Back to Student List
+    </a>
+</div>
+
+<style>
+.form-group-custom {
+    margin-bottom: 22px;
+}
+.field-label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 7px;
+}
+.required-star {
+    color: var(--status-danger);
+    margin-left: 2px;
+}
+.field-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    background: var(--bg-white);
+    transition: border-color 0.25s, box-shadow 0.25s;
+    box-sizing: border-box;
+}
+.field-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+.field-input.field-error {
+    border-color: var(--status-danger);
+}
+.field-input::placeholder {
+    color: var(--text-muted, #a0aec0);
+}
+.field-hint {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 5px;
+}
+.field-hint.error {
+    color: var(--status-danger);
+    font-weight: 500;
+}
+.btn-secondary-custom {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-light);
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.25s;
+}
+.btn-secondary-custom:hover {
+    background: var(--border-light);
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+    div[style*="grid-template-columns: 1fr 380px"] {
+        display: block !important;
+    }
+    div[style*="grid-template-columns: 1fr 380px"] > div:first-child {
+        margin-bottom: 20px;
+    }
+}
+</style>
+
+<script>
+document.getElementById('addStudentForm').addEventListener('submit', function () {
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Adding…';
+    btn.disabled = true;
+});
+</script>
+
 {% endblock %}

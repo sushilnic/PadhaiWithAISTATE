@@ -1,63 +1,406 @@
 {% extends 'school_app/base.html' %}
+{% block title %}Upload Student Data{% endblock %}
 
 {% block content %}
-    <div class="container mt-5">
-        <!-- Page Title -->
-        <h2 class="text-center mb-4">Upload Student Data</h2>
-        <div class="mb-4"></div>
-        
 
-        <!-- Form Card -->
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <!-- Form Start -->
-                <form method="POST" enctype="multipart/form-data">
-                    {% csrf_token %}
-                    <div class="form-group mb-3">
-                        <label for="excel_file" class="form-label">Upload Student information Excel File</label>
-                        {{ form.as_p }}
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg w-30">Upload Data</button>
-                </form>
-                <!-- Form End -->
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <h1><i class="fas fa-file-upload me-2"></i> Upload Student Data</h1>
+    <p>Bulk import students from an Excel file — fast, safe, and verified</p>
+</div>
+
+<!-- Flash Messages -->
+{% if messages %}
+<div class="mb-20">
+    {% for message in messages %}
+    <div class="alert-msg alert-{{ message.tags }}">
+        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' or message.tags == 'danger' %}exclamation-circle{% else %}exclamation-triangle{% endif %} me-2"></i>
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Requirements Summary Cards -->
+<div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 30px;">
+    <div class="stat-card blue" style="text-align:left; padding: 20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <i class="fas fa-file-excel" style="font-size:1.8rem; color:var(--accent-blue);"></i>
+            <div>
+                <div class="stat-label">Accepted Formats</div>
+                <div style="font-weight:700; color:var(--text-primary);">.xlsx &nbsp;/&nbsp; .xls</div>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card green" style="text-align:left; padding: 20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <i class="fas fa-weight-hanging" style="font-size:1.8rem; color:var(--accent-green);"></i>
+            <div>
+                <div class="stat-label">Max File Size</div>
+                <div style="font-weight:700; color:var(--text-primary);">5 MB</div>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card purple" style="text-align:left; padding: 20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <i class="fas fa-columns" style="font-size:1.8rem; color:var(--accent-purple);"></i>
+            <div>
+                <div class="stat-label">Required Columns</div>
+                <div style="font-weight:700; color:var(--text-primary);">3 columns</div>
+            </div>
+        </div>
+    </div>
+    <div class="stat-card orange" style="text-align:left; padding: 20px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+            <i class="fas fa-id-card" style="font-size:1.8rem; color:#f093fb;"></i>
+            <div>
+                <div class="stat-label">Roll Number</div>
+                <div style="font-weight:700; color:var(--text-primary);">Must be unique (NIC ID)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Two-column layout: Upload form + Instructions -->
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:25px; margin-bottom:30px;">
+
+    <!-- LEFT: Upload Form -->
+    <div class="form-container" style="margin-bottom:0;">
+        <div class="form-title">
+            <i class="fas fa-cloud-upload-alt me-2"></i> Select Excel File
+        </div>
+
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+
+            <!-- Drag & Drop Zone -->
+            <div id="dropZone" class="drop-zone">
+                <i class="fas fa-file-excel drop-icon"></i>
+                <p class="drop-title">Drag &amp; drop your Excel file here</p>
+                <p class="drop-sub">or click to browse</p>
+                <span class="drop-badge">.xlsx / .xls &nbsp;·&nbsp; Max 5 MB</span>
+                <!-- Hidden real file input (rendered from form) -->
+                <div style="display:none;">{{ form.excel_file }}</div>
+            </div>
+
+            <!-- File Preview -->
+            <div id="filePreview" class="file-preview" style="display:none;">
+                <i class="fas fa-file-excel" style="color:var(--accent-green); font-size:1.4rem;"></i>
+                <div style="flex:1; min-width:0;">
+                    <div id="fileName" class="file-name"></div>
+                    <div id="fileSize" class="file-size"></div>
+                </div>
+                <button type="button" class="file-remove" onclick="clearFile()" title="Remove file">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Upload Button -->
+            <button type="submit" class="btn-primary-custom" id="uploadBtn"
+                    style="width:100%; margin-top:20px; font-size:1rem; padding:14px;"
+                    disabled>
+                <i class="fas fa-upload me-2"></i> Upload Students
+            </button>
+        </form>
+
+        <!-- Download Sample -->
+        <div style="text-align:center; margin-top:16px;">
+            <a href="{% url 'download_sample_student_excel' %}" class="sample-link">
+                <i class="fas fa-download me-1"></i> Download Sample Excel Template
+            </a>
+        </div>
+    </div>
+
+    <!-- RIGHT: Instructions -->
+    <div>
+        <!-- Column Reference -->
+        <div class="form-container" style="margin-bottom:20px;">
+            <div class="form-title">
+                <i class="fas fa-table me-2"></i> Required Column Format
+            </div>
+            <table style="width:100%; border-collapse:collapse; font-size:0.93rem;">
+                <thead>
+                    <tr style="background:linear-gradient(135deg,var(--primary-gradient-start),var(--primary-gradient-end)); color:#fff;">
+                        <th style="padding:10px 12px; border-radius:6px 0 0 0;">Column Name</th>
+                        <th style="padding:10px 12px;">Description</th>
+                        <th style="padding:10px 12px; border-radius:0 6px 0 0; text-align:center;">Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom:1px solid var(--border-light);">
+                        <td style="padding:10px 12px;"><code>name</code></td>
+                        <td style="padding:10px 12px; color:var(--text-secondary);">Full name of the student</td>
+                        <td style="padding:10px 12px; text-align:center;"><span class="status-badge success">Yes</span></td>
+                    </tr>
+                    <tr style="border-bottom:1px solid var(--border-light);">
+                        <td style="padding:10px 12px;"><code>roll_number</code></td>
+                        <td style="padding:10px 12px; color:var(--text-secondary);">Shala Darpan NIC ID (unique)</td>
+                        <td style="padding:10px 12px; text-align:center;"><span class="status-badge success">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 12px;"><code>class_name</code></td>
+                        <td style="padding:10px 12px; color:var(--text-secondary);">Class (e.g. 8, 9, 10)</td>
+                        <td style="padding:10px 12px; text-align:center;"><span class="status-badge success">Yes</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Sample Preview -->
+            <div style="margin-top:16px; background:var(--bg-light); border-radius:var(--radius-sm); padding:12px; font-size:0.85rem; font-family:monospace; overflow-x:auto; border:1px solid var(--border-light);">
+                <div style="color:var(--text-secondary); margin-bottom:6px; font-family:inherit; font-weight:600;">Example rows:</div>
+                <table style="width:100%; border-collapse:collapse;">
+                    <tr style="border-bottom:1px solid var(--border-color);">
+                        <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">name</th>
+                        <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">roll_number</th>
+                        <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">class_name</th>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px 10px;">Sushil Agrawal</td>
+                        <td style="padding:4px 10px;">202510123456</td>
+                        <td style="padding:4px 10px;">10</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:4px 10px;">Bhaskar Mishra</td>
+                        <td style="padding:4px 10px;">202510123457</td>
+                        <td style="padding:4px 10px;">10</td>
+                    </tr>
+                </table>
             </div>
         </div>
 
-        <!-- Flash Messages -->
-        {% if messages %}
-            <div class="messages mt-4">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
+        <!-- Important Rules -->
+        <div class="form-container" style="margin-bottom:0;">
+            <div class="form-title">
+                <i class="fas fa-info-circle me-2"></i> महत्वपूर्ण निर्देश / Important Rules
             </div>
-        {% endif %}
+            <ul class="rules-list">
+                <li>
+                    <i class="fas fa-check-circle rule-icon success"></i>
+                    Column names must be exact: <code>name</code>, <code>roll_number</code>, <code>class_name</code>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle rule-icon success"></i>
+                    <code>roll_number</code> = Shala Darpan NIC ID — यह यूनिक पहचान है
+                </li>
+                <li>
+                    <i class="fas fa-exclamation-circle rule-icon warning"></i>
+                    Duplicate roll numbers will be skipped automatically
+                </li>
+                <li>
+                    <i class="fas fa-exclamation-circle rule-icon warning"></i>
+                    एक ही विद्यार्थी को दो बार अपलोड न करें
+                </li>
+                <li>
+                    <i class="fas fa-lock rule-icon info"></i>
+                    Default password <code>1234</code> is set for all uploaded students
+                </li>
+                <li>
+                    <i class="fas fa-lock rule-icon info"></i>
+                    Students should change their password on first login
+                </li>
+            </ul>
+        </div>
     </div>
-
-<div class="alert alert-info">
-    <h5>Excel अपलोड के लिए निर्देश (Sample Format for Excel Upload)</h5>
-    <p>कृपया यह सुनिश्चित करें कि आपकी Excel शीट निम्न कॉलम के साथ सही तरीके से बनी हो:</p>
-    <ul>
-        <li><code>name</code> – विद्यार्थी का पूरा नाम</li>
-        <li><code>roll_number</code> – विद्यार्थी का शाला दर्पण NIC ID (यह यूनिक होना चाहिए)</li>
-        <li><code>class_name</code> – कक्षा (जैसे: 10, 9, 8)</li>
-    </ul>
-
-    <p><b>महत्वपूर्ण बिंदु:</b></p>
-    <ul>
-        <li>कॉलम के नाम बिल्कुल यही होने चाहिए: <code>name</code>, <code>roll_number</code>, <code>class_name</code></li>
-        <li><b>roll_number</b> में शाला दर्पण का NIC ID ही दर्ज करें – यह विद्यार्थी की यूनिक पहचान है।</li>
-        <li>एक ही विद्यार्थी को दो बार अपलोड न करें, अन्यथा डुप्लीकेट एंट्री की समस्या आ सकती है।</li>
-        <li>फ़ाइल को सेव करके फिर यहाँ से चुनें (Choose File) और "Upload" बटन दबाएँ।</li>
-    </ul>
-    <p>उदाहरण (Example):</p>
-    <pre>name           | roll_number     | class_name
-------------------------------------------------
-Sushil Agrawal | 202510123456    | 10
-Bhaskar Mishra | 202510123457    | 10
-    </pre>
 </div>
-    <a href="{% url 'student_list' %}" class="action-btn edit-btn" style="margin-left: 20px;">Back to Dashboard</a>
+
+<!-- Back Button -->
+<div class="dashboard-actions">
+    <a href="{% url 'student_list' %}" class="back-link">
+        <i class="fas fa-arrow-left me-2"></i> Back to Student List
+    </a>
+</div>
+
+<style>
+/* ── Drop Zone ── */
+.drop-zone {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg-light);
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: var(--accent-purple);
+    background: #f3f0ff;
+}
+.drop-icon {
+    font-size: 3rem;
+    color: var(--accent-green);
+    margin-bottom: 12px;
+    display: block;
+}
+.drop-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+.drop-sub {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+}
+.drop-badge {
+    display: inline-block;
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+/* ── File Preview ── */
+.file-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: var(--radius-sm);
+    margin-top: 14px;
+}
+.file-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.file-size {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+.file-remove {
+    background: none;
+    border: none;
+    color: var(--status-danger);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+.file-remove:hover { background: #fee2e2; }
+
+/* ── Alert Messages ── */
+.alert-msg {
+    padding: 14px 18px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 10px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+.alert-msg.alert-success { background: var(--status-success-bg); color: #155724; border-left: 4px solid var(--status-success); }
+.alert-msg.alert-error,
+.alert-msg.alert-danger  { background: var(--status-danger-bg);  color: #721c24; border-left: 4px solid var(--status-danger); }
+.alert-msg.alert-warning { background: var(--status-warning-bg); color: #856404; border-left: 4px solid var(--status-warning); }
+.alert-msg.alert-info    { background: #cff4fc; color: #055160; border-left: 4px solid #0dcaf0; }
+
+/* ── Rules List ── */
+.rules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.rules-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.93rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+.rule-icon { font-size: 1rem; margin-top: 2px; flex-shrink: 0; }
+.rule-icon.success { color: var(--status-success); }
+.rule-icon.warning { color: #d97706; }
+.rule-icon.info    { color: var(--accent-blue); }
+
+/* ── Sample link ── */
+.sample-link {
+    font-size: 0.88rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+.sample-link:hover { color: var(--accent-purple); }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    div[style*="grid-template-columns: 1fr 1fr"] {
+        display: block !important;
+    }
+    div[style*="grid-template-columns: 1fr 1fr"] > div:first-child {
+        margin-bottom: 20px;
+    }
+}
+</style>
+
+<script>
+const dropZone   = document.getElementById('dropZone');
+const fileInput  = document.querySelector('#uploadForm input[type="file"]');
+
+dropZone.addEventListener('click', () => fileInput.click());
+const filePreview = document.getElementById('filePreview');
+const fileName   = document.getElementById('fileName');
+const fileSize   = document.getElementById('fileSize');
+const uploadBtn  = document.getElementById('uploadBtn');
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function showPreview(file) {
+    if (!file) return;
+    fileName.textContent = file.name;
+    fileSize.textContent = formatBytes(file.size);
+    dropZone.style.display = 'none';
+    filePreview.style.display = 'flex';
+    uploadBtn.disabled = false;
+}
+
+function clearFile() {
+    fileInput.value = '';
+    dropZone.style.display = '';
+    filePreview.style.display = 'none';
+    uploadBtn.disabled = true;
+}
+
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) showPreview(fileInput.files[0]);
+});
+
+dropZone.addEventListener('dragover', e => {
+    e.preventDefault();
+    dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const dt = e.dataTransfer;
+    if (dt.files.length) {
+        fileInput.files = dt.files;
+        showPreview(dt.files[0]);
+    }
+});
+
+/* Show spinner on submit */
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Uploading…';
+    uploadBtn.disabled = true;
+});
+</script>
+
 {% endblock %}

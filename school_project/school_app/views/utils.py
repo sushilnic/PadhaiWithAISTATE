@@ -35,7 +35,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
+from django.core.cache import cache
+from functools import wraps
 
 from asgiref.sync import async_to_sync
 
@@ -51,6 +53,30 @@ from ..models import (
     ActivityLog, AcademicCalendarEvent,
 )
 from ..solution_formatter import SolutionFormatter
+
+def rate_limit(max_calls=10, period=60):
+    """Cache-based per-user rate limiter. Returns HTTP 429 when exceeded."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if request.user.is_authenticated:
+                key = f'rl:{view_func.__name__}:{request.user.id}'
+                count = cache.get(key, 0)
+                if count >= max_calls:
+                    logger.warning(
+                        'SECURITY: rate limit exceeded user=%s view=%s',
+                        request.user.email, view_func.__name__
+                    )
+                    return HttpResponse(
+                        'Too many requests. Please wait a minute and try again.',
+                        status=429,
+                        content_type='text/plain',
+                    )
+                cache.set(key, count + 1, period)
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
 
 # Constants for grade category thresholds
 CATEGORY_THRESHOLD_33 = 0.33

@@ -90,9 +90,11 @@
 
 </form>
 
+{{ paper_json|json_script:"paper-json-data" }}
+{{ saved_answers|json_script:"saved-answers-data" }}
 <script>
-const paperJSON   = {{ paper_json|safe }};
-const savedAnswers= {{ saved_answers|safe }};
+const paperJSON   = JSON.parse(document.getElementById('paper-json-data').textContent);
+const savedAnswers= JSON.parse(document.getElementById('saved-answers-data').textContent);
 const timeLimit   = {{ assignment.time_limit|default:"null" }};
 const csrfToken   = '{{ csrf_token }}';
 let totalQuestions = 0;

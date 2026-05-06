@@ -256,11 +256,12 @@
                                            class="marks-input">
                                 </td>
                                 <td>
-                                    <a href="{% url 'delete_marks' test.test_number record.student.id %}" 
-                                       class="btn-delete"
-                                       onclick="return confirm('Are you sure you want to delete this mark?');">
-                                        🗑️ Remove Marks
-                                    </a>
+                                    <form method="post" action="{% url 'delete_marks' test.test_number record.student.id %}"
+                                          style="display:inline;"
+                                          onsubmit="return confirm('Are you sure you want to delete this mark?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-delete">🗑️ Remove Marks</button>
+                                    </form>
                                 </td>
                             </tr>
                             {% endfor %}

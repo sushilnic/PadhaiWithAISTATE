@@ -7,11 +7,12 @@ from .hierarchy import get_user_hierarchy, get_user_schools
 
 
 @login_required
+@rate_limit(max_calls=15, period=60)
 def test_results_analysis(request):
-    # Use hierarchy-based filtering
+    from django.db.models import Count, Avg, Case, When, F, ExpressionWrapper, FloatField
+
     schools = get_user_schools(request.user)
 
-    # Optional: Filter by selected block
     selected_block_id = request.GET.get('block', None)
     if selected_block_id:
         try:
@@ -21,170 +22,154 @@ def test_results_analysis(request):
     if selected_block_id:
         schools = schools.filter(block_id=selected_block_id)
 
-    # Check if specific tests are selected, and filter accordingly
     selected_test_numbers = request.GET.getlist('test', [])
-    selected_test_numbers = [test for test in selected_test_numbers if test]
+    selected_test_numbers = [t for t in selected_test_numbers if t]
 
-    if not selected_test_numbers:
-        # If no tests are selected, show results for all tests
-        school_tests = Test.objects.filter(marks__student__school__in=schools).distinct().order_by('test_number')
-    else:
-        # If specific tests are selected, show results only for those tests
-        school_tests = Test.objects.filter(test_number__in=selected_test_numbers).distinct().order_by('test_number')
+    # ── Single aggregated query replaces thousands of individual queries ──
+    marks_qs = Marks.objects.filter(student__school__in=schools)
+    if selected_test_numbers:
+        marks_qs = marks_qs.filter(test__test_number__in=selected_test_numbers)
 
-    results = []
+    rows = marks_qs.values(
+        'student__school__id',
+        'student__school__name',
+        'student__school__block__name_english',
+        'test__test_name',
+        'test__test_number',
+        'test__max_marks',
+    ).annotate(
+        appeared=Count('id'),
+        avg_marks=Avg('marks'),
+        cat_0_33=Count(Case(When(marks__lt=F('test__max_marks') * 0.33, then=1))),
+        cat_33_60=Count(Case(When(
+            marks__gte=F('test__max_marks') * 0.33,
+            marks__lt=F('test__max_marks') * 0.60, then=1))),
+        cat_60_80=Count(Case(When(
+            marks__gte=F('test__max_marks') * 0.60,
+            marks__lt=F('test__max_marks') * 0.80, then=1))),
+        cat_80_90=Count(Case(When(
+            marks__gte=F('test__max_marks') * 0.80,
+            marks__lt=F('test__max_marks') * 0.90, then=1))),
+        cat_90_100=Count(Case(When(
+            marks__gte=F('test__max_marks') * 0.90,
+            marks__lt=F('test__max_marks'), then=1))),
+        cat_100=Count(Case(When(marks=F('test__max_marks'), then=1))),
+    ).order_by('student__school__name', 'test__test_number')
 
-    for school in schools:
-        school_data = {
-            'school_name': school.name,
-            'block_name': school.block.name_english if school.block else "N/A",
-            'tests': []
-        }
+    # Restructure flat rows into school → tests nested structure
+    def fmt(n, appeared):
+        return f"{n}/{appeared} ({n / appeared * 100:.1f}%)" if appeared > 0 else "N/A"
 
-        for test in school_tests:
-            # Fetch marks for this test and school
-            marks = Marks.objects.filter(test=test, student__school=school)
-            appeared = marks.count()  # Students who actually took the test
-            max_marks = test.max_marks
+    school_map = {}
+    for row in rows:
+        sid = row['student__school__id']
+        if sid not in school_map:
+            school_map[sid] = {
+                'school_name': row['student__school__name'],
+                'block_name': row['student__school__block__name_english'] or 'N/A',
+                'tests': [],
+            }
+        appeared = row['appeared']
+        max_marks = float(row['test__max_marks'] or 1)
+        avg_marks = float(row['avg_marks'] or 0)
+        avg_pct = round(avg_marks / max_marks * 100, 1) if max_marks > 0 else 0
+        school_map[sid]['tests'].append({
+            'test_name': row['test__test_name'],
+            'appeared': appeared,
+            'avg_percentage': avg_pct,
+            'category_0_33':   fmt(row['cat_0_33'],   appeared),
+            'category_33_60':  fmt(row['cat_33_60'],  appeared),
+            'category_60_80':  fmt(row['cat_60_80'],  appeared),
+            'category_80_90':  fmt(row['cat_80_90'],  appeared),
+            'category_90_100': fmt(row['cat_90_100'], appeared),
+            'category_100':    fmt(row['cat_100'],    appeared),
+        })
 
-            # Calculate the number of students in each percentage range
-            category_0_33 = marks.filter(marks__lt=(0.33 * max_marks)).count()
-            category_33_60 = marks.filter(marks__gte=(0.33 * max_marks), marks__lt=(0.60 * max_marks)).count()
-            category_60_80 = marks.filter(marks__gte=(0.60 * max_marks), marks__lt=(0.80 * max_marks)).count()
-            category_80_90 = marks.filter(marks__gte=(0.80 * max_marks), marks__lt=(0.90 * max_marks)).count()
-            category_90_100 = marks.filter(marks__gte=(0.90 * max_marks), marks__lt=max_marks).count()
-            category_100 = marks.filter(marks=max_marks).count()
+    results = list(school_map.values())
 
-            # Calculate average percentage
-            if appeared > 0 and max_marks > 0:
-                from django.db.models import Avg
-                avg_marks_val = marks.aggregate(avg=Avg('marks'))['avg'] or 0
-                avg_percentage = round(float(avg_marks_val) / float(max_marks) * 100, 1)
-            else:
-                avg_percentage = 0
+    # ── Block-wise summary: each student counted ONCE by their avg % across all tests ──
+    student_avg_rows = marks_qs.values(
+        'student__id',
+        'student__school__block__name_english',
+        'student__school__id',
+    ).annotate(
+        student_avg_pct=Avg(
+            ExpressionWrapper(
+                F('marks') * 100.0 / F('test__max_marks'),
+                output_field=FloatField()
+            )
+        )
+    )
 
-            if appeared > 0:
-                test_data = {
-                    'test_name': test.test_name,
-                    'appeared': appeared,
-                    'avg_percentage': avg_percentage,
-                    'category_0_33': f"{category_0_33}/{appeared} ({(category_0_33 / appeared * 100):.1f}%)",
-                    'category_33_60': f"{category_33_60}/{appeared} ({(category_33_60 / appeared * 100):.1f}%)",
-                    'category_60_80': f"{category_60_80}/{appeared} ({(category_60_80 / appeared * 100):.1f}%)",
-                    'category_80_90': f"{category_80_90}/{appeared} ({(category_80_90 / appeared * 100):.1f}%)",
-                    'category_90_100': f"{category_90_100}/{appeared} ({(category_90_100 / appeared * 100):.1f}%)",
-                    'category_100': f"{category_100}/{appeared} ({(category_100 / appeared * 100):.1f}%)",
-                }
-            else:
-                test_data = {
-                    'test_name': test.test_name,
-                    'appeared': 0,
-                    'avg_percentage': 0,
-                    'category_0_33': "N/A",
-                    'category_33_60': "N/A",
-                    'category_60_80': "N/A",
-                    'category_80_90': "N/A",
-                    'category_90_100': "N/A",
-                    'category_100': "N/A",
-                }
+    from collections import defaultdict
+    block_agg = defaultdict(lambda: {
+        'schools': set(), 'total': 0,
+        'excellence': 0, 'good': 0, 'average': 0, 'below': 0,
+    })
+    for row in student_avg_rows:
+        bname = row['student__school__block__name_english'] or 'N/A'
+        pct   = float(row['student_avg_pct'] or 0)
+        block_agg[bname]['schools'].add(row['student__school__id'])
+        block_agg[bname]['total'] += 1
+        if   pct >= 90: block_agg[bname]['excellence'] += 1
+        elif pct >= 80: block_agg[bname]['good']       += 1
+        elif pct >= 60: block_agg[bname]['average']    += 1
+        else:           block_agg[bname]['below']      += 1
 
-            school_data['tests'].append(test_data)
+    block_stats = []
+    for bname in sorted(block_agg):
+        d = block_agg[bname]
+        total = d['total']
+        block_stats.append({
+            'block_name':     bname,
+            'total_schools':  len(d['schools']),
+            'total_students': total,
+            'excellence':     d['excellence'],
+            'good':           d['good'],
+            'average':        d['average'],
+            'below_avg':      d['below'],
+            'excellence_pct': round(d['excellence'] / total * 100, 1) if total else 0,
+            'good_pct':       round(d['good']       / total * 100, 1) if total else 0,
+            'average_pct':    round(d['average']    / total * 100, 1) if total else 0,
+            'below_pct':      round(d['below']      / total * 100, 1) if total else 0,
+        })
 
-        results.append(school_data)
-
-    # Get blocks and tests scoped to user's hierarchy
     hierarchy = get_user_hierarchy(request.user)
     blocks = hierarchy.get('blocks', Block.objects.none())
-    tests = Test.objects.filter(marks__student__school__in=schools).distinct().order_by('test_number')
-    context = {
+    tests = Test.objects.filter(
+        marks__student__school__in=schools
+    ).distinct().order_by('test_number').only('test_number', 'test_name', 'subject_name')
+
+    return render(request, 'school_app/marks/test_results_analysis.html', {
         'results': results,
+        'block_stats': block_stats,
         'blocks': blocks,
-        'tests':tests,
+        'tests': tests,
         'selected_block_id': selected_block_id,
         'selected_test_numbers': selected_test_numbers,
-    }
-
-    return render(request, 'school_app/marks/test_results_analysis.html', context)
+    })
 
 
 @login_required
+@rate_limit(max_calls=15, period=60)
 def test_wise_average_marks(request):
     from django.db.models import Avg, F, ExpressionWrapper, FloatField
     from django.db.models import Count, Case, When, IntegerField
 
     if request.user.is_district_user:
-     district = get_object_or_404(District, admin=request.user)
-     data = (
-        Test.objects.filter(marks__student__school__block__district=district).annotate(
-            avg_marks=Avg('marks__marks'),
-            percentage=ExpressionWrapper(
-                F('avg_marks') * 100 / F('max_marks'),
-                output_field=FloatField()),
-            total_students=Count('marks', distinct=True),
-            category_0_and_less=Count(Case(When(marks__marks__lte=0, then=1), output_field=IntegerField())),
-            category_0_33=Count(Case(When(marks__marks__gte=F('max_marks') * 0.01,marks__marks__lt=F('max_marks') * 0.33, then=1), output_field=IntegerField())),
-            category_33_60=Count(Case(When(marks__marks__gte=F('max_marks') * 0.33, marks__marks__lt=F('max_marks') * 0.60, then=1), output_field=IntegerField())),
-            category_60_80=Count(Case(When(marks__marks__gte=F('max_marks') * 0.60, marks__marks__lt=F('max_marks') * 0.80, then=1), output_field=IntegerField())),
-            category_80_90=Count(Case(When(marks__marks__gte=F('max_marks') * 0.80, marks__marks__lt=F('max_marks') * 0.90, then=1), output_field=IntegerField())),
-            category_90_100=Count(Case(When(marks__marks__gte=F('max_marks') * 0.90, marks__marks__lt=F('max_marks'), then=1), output_field=IntegerField())),
-            category_100=Count(Case(When(marks__marks=F('max_marks') , then=1), output_field=IntegerField()))
-        )
-        .values('test_name', 'avg_marks', 'percentage', 'total_students', 'category_0_and_less',
-                'category_0_33', 'category_33_60', 'category_60_80', 'category_80_90', 'category_90_100', 'category_100')
-        .order_by('test_number')
-    )
+        district = get_object_or_404(District, admin=request.user)
+        qs = Test.objects.filter(marks__student__school__block__district=district)
     elif request.user.is_block_user:
-       block = get_object_or_404(Block, admin=request.user)
-       data = (
-        Test.objects.filter(marks__student__school__block_id=block.id).annotate(
-            avg_marks=Avg('marks__marks'),
-            percentage=ExpressionWrapper(
-                F('avg_marks') * 100 / F('max_marks'),
-                output_field=FloatField()),
-            # Count the total number of students for each test
-            total_students=Count('marks', distinct=True),  # Total number of students
-            # Count the number of students with marks less than 0 (invalid or missing)
-            category_0_and_less=Count(Case(When(marks__marks__lte=0, then=1), output_field=IntegerField())),
-            category_0_33=Count(Case(When(marks__marks__gte=F('max_marks') * 0.01,marks__marks__lt=F('max_marks') * 0.33, then=1), output_field=IntegerField())),
-            category_33_60=Count(Case(When(marks__marks__gte=F('max_marks') * 0.33, marks__marks__lt=F('max_marks') * 0.60, then=1), output_field=IntegerField())),
-            category_60_80=Count(Case(When(marks__marks__gte=F('max_marks') * 0.60, marks__marks__lt=F('max_marks') * 0.80, then=1), output_field=IntegerField())),
-            category_80_90=Count(Case(When(marks__marks__gte=F('max_marks') * 0.80, marks__marks__lt=F('max_marks') * 0.90, then=1), output_field=IntegerField())),
-            category_90_100=Count(Case(When(marks__marks__gte=F('max_marks') * 0.90, marks__marks__lt=F('max_marks'), then=1), output_field=IntegerField())),
-            category_100=Count(Case(When(marks__marks=F('max_marks') , then=1), output_field=IntegerField()))
-        )
-        .values('test_name', 'avg_marks', 'percentage', 'total_students', 'category_0_and_less',
-                'category_0_33', 'category_33_60', 'category_60_80', 'category_80_90', 'category_90_100', 'category_100')
-        .order_by('test_number')
-    )
-
+        block = get_object_or_404(Block, admin=request.user)
+        qs = Test.objects.filter(marks__student__school__block=block)
     elif request.user.is_school_user:
-     school = get_object_or_404(School, admin=request.user)
-     data = (
-        Test.objects.filter(marks__student__school=school).annotate(
-            avg_marks=Avg('marks__marks'),
-            percentage=ExpressionWrapper(
-                F('avg_marks') * 100 / F('max_marks'),
-                output_field=FloatField()),
-            # Count the total number of students for each test
-            total_students=Count('marks', distinct=True),  # Total number of students
-            # Count the number of students with marks less than 0 (invalid or missing)
-            category_0_and_less=Count(Case(When(marks__marks__lte=0, then=1), output_field=IntegerField())),
-            category_0_33=Count(Case(When(marks__marks__gte=F('max_marks') * 0.01,marks__marks__lt=F('max_marks') * 0.33, then=1), output_field=IntegerField())),
-            category_33_60=Count(Case(When(marks__marks__gte=F('max_marks') * 0.33, marks__marks__lt=F('max_marks') * 0.60, then=1), output_field=IntegerField())),
-            category_60_80=Count(Case(When(marks__marks__gte=F('max_marks') * 0.60, marks__marks__lt=F('max_marks') * 0.80, then=1), output_field=IntegerField())),
-            category_80_90=Count(Case(When(marks__marks__gte=F('max_marks') * 0.80, marks__marks__lt=F('max_marks') * 0.90, then=1), output_field=IntegerField())),
-            category_90_100=Count(Case(When(marks__marks__gte=F('max_marks') * 0.90, marks__marks__lt=F('max_marks'), then=1), output_field=IntegerField())),
-            category_100=Count(Case(When(marks__marks=F('max_marks') , then=1), output_field=IntegerField()))
-        )
-        .values('test_name', 'avg_marks', 'percentage', 'total_students', 'category_0_and_less',
-                'category_0_33', 'category_33_60', 'category_60_80', 'category_80_90', 'category_90_100', 'category_100')
-        .order_by('test_number')
-    )
-
+        school = get_object_or_404(School, admin=request.user)
+        qs = Test.objects.filter(marks__student__school=school)
     else:
-     # State users, system admins, or any other role — show all tests
-     data = (
-        Test.objects.annotate(
+        qs = Test.objects.all()
+
+    data = (
+        qs.annotate(
             avg_marks=Avg('marks__marks'),
             percentage=ExpressionWrapper(
                 F('avg_marks') * 100 / F('max_marks'),
@@ -292,65 +277,60 @@ def historical_analysis(request):
 
 
 @login_required
+@rate_limit(max_calls=15, period=60)
 def school_average_marks(request):
     """School average marks with hierarchy-based filtering."""
-    # Filter schools based on user hierarchy
     schools = get_user_schools(request.user)
-
-    results = []
     _district = _get_user_district(request)
     tests = (Test.objects.filter(district=_district) if _district else Test.objects.all()).order_by('test_number')
+    tests_list = list(tests)
+    n_tests = len(tests_list)
 
-    for school in schools:
-        school_data = {
-            'school_name': school.name,
-            'block_name': school.block.name_english if school.block else "N/A",
-            'test_averages': [],
-            'school_average': 0,
-            'school_percentage': 0  # Add field for cumulative percentage
-        }
+    # Single aggregated query — replaces N+1 (schools × tests individual queries)
+    rows = (
+        Marks.objects.filter(student__school__in=schools)
+        .values(
+            'student__school__id',
+            'student__school__name',
+            'student__school__block__name_english',
+            'test__test_number',
+            'test__subject_name',
+            'test__max_marks',
+        )
+        .annotate(avg_marks=Avg('marks'))
+        .order_by('student__school__name', 'test__test_number')
+    )
 
-        test_avg_list = []  # List to store test averages for cumulative calculation
-        total_max_marks = 0  # Variable to store the total max marks
-        total_avg_marks = 0  # Variable to store the total average marks for percentage calculation
+    school_map = {}
+    for row in rows:
+        sid = row['student__school__id']
+        if sid not in school_map:
+            school_map[sid] = {
+                'school_name': row['student__school__name'],
+                'block_name': row['student__school__block__name_english'] or 'N/A',
+                'test_averages': [],
+                'total_avg_marks': 0.0,
+                'total_max_marks': 0.0,
+            }
+        avg = float(row['avg_marks'] or 0)
+        max_m = float(row['test__max_marks'] or 100)
+        school_map[sid]['test_averages'].append({
+            'test_name': row['test__subject_name'],
+            'average_marks': avg,
+            'percentage': round((avg / max_m) * 100 if max_m else 0, 2),
+        })
+        school_map[sid]['total_avg_marks'] += avg
+        school_map[sid]['total_max_marks'] += max_m
 
-        for test in tests:
-            # Get max marks for the test
-            max_marks = test.max_marks if test.max_marks else 100  # Use 100 as default if max_marks not set
+    results = []
+    for sd in school_map.values():
+        sd['school_average'] = sd['total_avg_marks'] / n_tests if n_tests else 0
+        sd['school_percentage'] = (sd['total_avg_marks'] / sd['total_max_marks']) * 100 if sd['total_max_marks'] else 0
+        results.append(sd)
 
-            # Get the average marks for the test
-            avg_marks = Marks.objects.filter(test=test, student__school=school).aggregate(avg_marks=Avg('marks'))['avg_marks']
-            avg_marks = avg_marks if avg_marks is not None else 0  # Handle None values
-
-            # Calculate the percentage for the test (avg_marks / max_marks * 100)
-            #test_percentage = (avg_marks / max_marks) * 100 if max_marks > 0 else 0
-            test_percentage = (float(avg_marks) / float(max_marks)) * 100 if max_marks > 0 else 0
-            # Append the test details to school_data
-            school_data['test_averages'].append({
-                'test_name': test.subject_name,
-                'average_marks': avg_marks,
-                'percentage': round(test_percentage, 2)  # Round the percentage to 2 decimal places
-            })
-
-            # Add to the cumulative values
-            total_max_marks += max_marks
-            total_avg_marks += avg_marks
-
-        # Calculate cumulative percentage for the school
-        #school_data['school_percentage'] = (total_avg_marks / total_max_marks) * 100 if total_max_marks > 0 else 0
-        school_data['school_percentage'] = (float(total_avg_marks) / float(total_max_marks)) * 100 if total_max_marks > 0 else 0
-        # Calculate the cumulative average marks for the school
-        school_data['school_average'] = total_avg_marks / len(tests) if tests else 0
-
-        results.append(school_data)
-
-    # Sort schools by overall average marks (Descending Order)
     results.sort(key=lambda x: x['school_percentage'], reverse=True)
 
-    context = {
-        'results': results,
-        'tests': tests
-    }
+    context = {'results': results, 'tests': tests_list}
     log_activity(request, 'EDIT', f'Report accessed: School Average Marks ({len(results)} schools)')
     return render(request, 'school_app/reports/school_average.html', context)
 
@@ -362,11 +342,16 @@ def top_students(request):
     selected_test_numbers = request.GET.getlist('test', [])
     selected_test_numbers = [test for test in selected_test_numbers if test]
 
-    # Determine total available tests
-    total_tests_count = Test.objects.count() if not selected_test_numbers else len(selected_test_numbers)
-
     # Filter students based on user hierarchy
     schools = get_user_schools(request.user)
+
+    # Determine total available tests scoped to the user's accessible schools
+    if selected_test_numbers:
+        total_tests_count = len(selected_test_numbers)
+    else:
+        total_tests_count = Test.objects.filter(
+            marks__student__school__in=schools
+        ).values('test_number').distinct().count()
 
     # Base query (filtered by user hierarchy)
     queryset = Marks.objects.filter(student__school__in=schools)
@@ -422,11 +407,16 @@ def weakest_students(request):
     selected_test_numbers = request.GET.getlist('test', [])
     selected_test_numbers = [test for test in selected_test_numbers if test]
 
-    # Determine total available tests
-    total_tests_count = Test.objects.count() if not selected_test_numbers else len(selected_test_numbers)
-
     # Filter students based on user hierarchy
     schools = get_user_schools(request.user)
+
+    # Determine total available tests scoped to the user's accessible schools
+    if selected_test_numbers:
+        total_tests_count = len(selected_test_numbers)
+    else:
+        total_tests_count = Test.objects.filter(
+            marks__student__school__in=schools
+        ).values('test_number').distinct().count()
 
     # Base query (filtered by user hierarchy)
     queryset = Marks.objects.filter(student__school__in=schools)
@@ -482,7 +472,8 @@ def weakest_students(request):
 def schools_without_students(request):
     # Filter based on user role
     if request.user.is_district_user:
-        schools = School.objects.all()
+        district = get_object_or_404(District, admin=request.user)
+        schools = School.objects.filter(block__district=district)
     elif request.user.is_block_user:
         block = Block.objects.get(admin=request.user)
         schools = School.objects.filter(block=block)
@@ -558,7 +549,11 @@ def schools_with_test_counts(request):
             test_count=Count('students__marks_records', filter=Q(students__marks_records__test_id=selected_test), distinct=True),  # Count test attempts for selected test
         )
         # Get the name of the selected test
-        selected_test_name = Test.objects.get(test_number=selected_test).test_name
+        try:
+            selected_test_name = Test.objects.get(test_number=selected_test).test_name
+        except Test.DoesNotExist:
+            selected_test = None
+            selected_test_name = None
     else:
         # If no specific test is selected, calculate total test attempts across all tests
         schools = schools.annotate(
@@ -601,7 +596,8 @@ def schools_with_test_counts(request):
 def schools_without_tests(request):
     # Filter based on user role
     if request.user.is_district_user:
-        schools = School.objects.all()
+        district = get_object_or_404(District, admin=request.user)
+        schools = School.objects.filter(block__district=district)
     elif request.user.is_block_user:
         block = Block.objects.get(admin=request.user)
         schools = School.objects.filter(block=block)

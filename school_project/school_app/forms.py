@@ -78,7 +78,13 @@ class SchoolAdminRegistrationForm(forms.ModelForm):
 
 
 def validate_pdf(file):
-    """Validate that the uploaded file is a PDF."""
+    """Validate that the uploaded file is a real PDF by checking magic bytes, not just extension."""
+    # Read first 4 bytes — PDF files always start with %PDF
+    header = file.read(4)
+    file.seek(0)
+    if header != b'%PDF':
+        raise ValidationError("Only PDF files are allowed. The uploaded file does not appear to be a valid PDF.")
+    # Secondary check: extension/MIME should also be PDF
     mime_type, _ = mimetypes.guess_type(file.name)
     if mime_type != 'application/pdf':
         raise ValidationError("Only PDF files are allowed.")

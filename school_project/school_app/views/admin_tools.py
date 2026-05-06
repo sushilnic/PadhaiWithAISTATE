@@ -269,6 +269,28 @@ def update_block_name_from_excel(request):
 
 
 @login_required
+def download_sample_student_excel(request):
+    """Return a sample Excel file for bulk student upload."""
+    import io
+    sample_data = {
+        'name':        ['Sushil Agrawal',   'Bhaskar Mishra',   'Priya Sharma'],
+        'roll_number': ['202510123456',      '202510123457',      '202510123458'],
+        'class_name':  ['10',               '10',               '9'],
+    }
+    df = pd.DataFrame(sample_data)
+    buf = io.BytesIO()
+    with pd.ExcelWriter(buf, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Students')
+    buf.seek(0)
+    response = HttpResponse(
+        buf.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="sample_student_upload.xlsx"'
+    return response
+
+
+@login_required
 def download_sample_school_excel(request):
     """Return a sample Excel file for bulk school user upload."""
     import io

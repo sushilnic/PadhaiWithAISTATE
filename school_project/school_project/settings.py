@@ -143,11 +143,28 @@ def enable_wal_mode(sender, connection, **kwargs):
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-LOGGING = {  
-    "version": 1,  
-    "disable_existing_loggers": False,  
-    "handlers": {"console": {"class": "logging.StreamHandler"}},  
-    "loggers": {"": {"handlers": ["console"], "level": "DEBUG"}},  
+# HSTS — tells browsers to only connect via HTTPS for 1 year
+SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "standard": {"format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "standard"},
+    },
+    "loggers": {
+        # Root logger — WARNING only in production to avoid leaking PII via DEBUG SQL logs
+        "": {"handlers": ["console"], "level": "WARNING"},
+        # App logger — INFO for normal operational events
+        "school_app": {"handlers": ["console"], "level": "INFO", "propagate": False},
+        # Django security/request loggers
+        "django.security": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+    },
 }
 
 # Password validation

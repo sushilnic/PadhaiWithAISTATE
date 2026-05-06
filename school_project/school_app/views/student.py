@@ -5,6 +5,8 @@ from .utils import *
 from .utils import _get_user_district
 from .hierarchy import get_user_hierarchy, get_user_schools
 
+logger = logging.getLogger(__name__)
+
 
 @login_required
 def student_list(request):
@@ -48,21 +50,30 @@ def student_edit(request, student_id):
 
 @login_required
 def edit_student(request, student_id):
-
-    student = get_object_or_404(Student, id=student_id)
+    school = get_object_or_404(School, admin=request.user)
+    student = get_object_or_404(Student, id=student_id, school=school)
     if request.method == 'POST':
-        student.name = request.POST['name']
-        student.roll_number = request.POST['roll_number']
-        student.save()
-        log_activity(request, 'EDIT', f'Student edited: {student.name} ({student.roll_number})')
-        return redirect('dashboard')
+        name = request.POST.get('name', '').strip()
+        roll_number = request.POST.get('roll_number', '').strip()
+        if name and roll_number:
+            student.name = name
+            student.roll_number = roll_number
+            student.save()
+            log_activity(request, 'EDIT', f'Student edited: {student.name} ({student.roll_number})')
+            return redirect('dashboard')
     return render(request, 'school_app/students_mgmt/edit_student.html', {'student': student})
 
 
 @login_required
+@require_POST
 def delete_student(request, student_id):
-
-    student = get_object_or_404(Student, id=student_id)
+    school = get_object_or_404(School, admin=request.user)
+    if Student.objects.filter(id=student_id).exclude(school=school).exists():
+        logger.warning('SECURITY: IDOR delete_student user=%s student_id=%s',
+                       request.user.email, student_id)
+        log_activity(request, 'SECURITY', f'Unauthorized delete_student attempt: id={student_id}')
+        return HttpResponseForbidden()
+    student = get_object_or_404(Student, id=student_id, school=school)
     log_activity(request, 'DELETE', f'Student deleted: {student.name} ({student.roll_number})')
     student.delete()
     return redirect('dashboard')
@@ -187,7 +198,14 @@ def student_report(request):
 
 
 @login_required
+@require_POST
 def delete_student_mark(request, mark_id):
-    mark = get_object_or_404(Marks, id=mark_id)
+    school = get_object_or_404(School, admin=request.user)
+    if Marks.objects.filter(id=mark_id).exclude(student__school=school).exists():
+        logger.warning('SECURITY: IDOR delete_student_mark user=%s mark_id=%s',
+                       request.user.email, mark_id)
+        log_activity(request, 'SECURITY', f'Unauthorized delete_student_mark attempt: id={mark_id}')
+        return HttpResponseForbidden()
+    mark = get_object_or_404(Marks, id=mark_id, student__school=school)
     mark.delete()
     return redirect('add_marks')

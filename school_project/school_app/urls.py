@@ -76,6 +76,7 @@ urlpatterns = [
     path('upload-users/sample/', views.download_sample_school_excel, name='download_sample_school_excel'),
     path('user/change-password/', views.password_change, name='change_password'),
     path('upload-student-data/', views.upload_student_data, name='upload_student_data'),
+    path('upload-student-data/sample/', views.download_sample_student_excel, name='download_sample_student_excel'),
     #08/01/2025 Sushil Agrawal NIC TONK
     path('school/report/', views.school_report, name='school_report'),
 

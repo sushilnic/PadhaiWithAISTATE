@@ -436,8 +436,9 @@
         </div>
     </div>
 
+    {{ trend_data|json_script:"trend-data" }}
     <script>
-        var trendData = {{ trend_data|safe }};
+        var trendData = JSON.parse(document.getElementById('trend-data').textContent);
 
         if (trendData && trendData.length > 0) {
             var ctx = document.getElementById('trendChart').getContext('2d');

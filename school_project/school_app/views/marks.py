@@ -3,6 +3,8 @@ Marks management views.
 """
 from .utils import *
 
+logger = logging.getLogger(__name__)
+
 
 @login_required
 def marks_add(request):
@@ -49,67 +51,77 @@ def update_marks(request, mark_id):
     """Update marks for a specific student."""
     if request.method == 'POST':
         try:
+            school = get_object_or_404(School, admin=request.user)
             data = json.loads(request.body)
             new_marks = data.get('marks')
 
-            mark = Marks.objects.get(id=mark_id)
+            mark = get_object_or_404(Marks, id=mark_id, student__school=school)
+
+            if new_marks is None:
+                return JsonResponse({'success': False, 'message': 'Marks value is required'})
+            new_marks = float(new_marks)
+            if new_marks < 0 or new_marks > mark.test.max_marks:
+                return JsonResponse({'success': False, 'message': f'Marks must be between 0 and {mark.test.max_marks}'})
+
             mark.marks = new_marks
             mark.save()
 
             log_activity(request, 'MARKS_ENTRY', f'Marks updated for {mark.student.name}: {new_marks}')
             return JsonResponse({'success': True, 'message': 'Marks updated successfully'})
-        except Marks.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Mark record not found'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'message': 'Invalid marks value'})
+        except Exception:
+            return JsonResponse({'success': False, 'message': 'An error occurred. Please try again.'})
 
 
 @login_required
 def test_marks_entry(request, test_id):
     """Display and edit marks for a selected test."""
-    test = get_object_or_404(Test, test_number=test_id)
-    # Fetch the school associated with the logged-in user
-    school = School.objects.get(admin=request.user)
+    school = get_object_or_404(School, admin=request.user)
 
-    # Get all students from the logged-in user's school
+    # Verify the test belongs to this school's district — prevents cross-district data entry
+    district = school.block.district if school.block else None
+    if district:
+        test = get_object_or_404(Test, test_number=test_id, district=district)
+    else:
+        test = get_object_or_404(Test, test_number=test_id)
+
     students = Student.objects.filter(school=school)
 
     if request.method == 'POST':
-        # To store error messages
         error_messages = []
 
         for student in students:
             marks_value = request.POST.get(f'marks_{student.id}', '').strip()
 
-            if marks_value:  # If marks are provided
+            if marks_value:
                 try:
-                    # Validate numeric marks and convert them
                     marks_value = float(marks_value)
 
-                    # Try to get or create a Marks record for the student and test
+                    # Validate marks are within allowed range
+                    if marks_value < 0 or marks_value > test.max_marks:
+                        error_messages.append(
+                            f"Marks for {student.name} must be between 0 and {test.max_marks}."
+                        )
+                        continue
+
                     mark, created = Marks.objects.update_or_create(
                         student=student,
                         test=test,
                         defaults={'marks': marks_value}
                     )
-
-                    # Optionally, you can check if the record was updated
-                    if created:
-                        print(f"Created new marks record for {student.name}")
-                    else:
-                        print(f"Updated marks record for {student.name}")
+                    logger.debug('Marks %s: student_id=%s test_id=%s',
+                                 'created' if created else 'updated', student.id, test_id)
 
                 except InvalidOperation:
                     error_messages.append(f"Invalid marks entered for {student.name}. Please enter a valid number.")
                 except ValueError:
                     error_messages.append(f"Invalid marks entered for {student.name}. Please enter a valid number.")
-                except IntegrityError as e:
-                    # Log the error message for debugging
-                    print(f"IntegrityError for {student.name}: {e}")
+                except IntegrityError:
+                    logger.error('IntegrityError saving marks: student_id=%s test_id=%s', student.id, test_id)
                     error_messages.append(f"Failed to save marks for {student.name}. Please try again.")
-                except Exception as e:
-                    # Log any unexpected errors
-                    print(f"Unexpected error for {student.name}: {e}")
+                except Exception:
+                    logger.exception('Unexpected error saving marks: student_id=%s test_id=%s', student.id, test_id)
                     error_messages.append(f"An unexpected error occurred while saving marks for {student.name}. Please try again.")
 
         # If there are errors, return to the form with those errors
@@ -148,13 +160,15 @@ def test_marks_entry(request, test_id):
 
 
 @login_required
-# Delete Marks Entry
+@require_POST
 def delete_marks(request, student_id, test_id):
-    print(f"Attempting to delete marks for student_id={student_id}, test_id={test_id}")
-    try:
-        mark = get_object_or_404(Marks, student_id=student_id, test_id=test_id)
-        mark.delete()
-        return redirect('test_marks_entry', test_id=test_id)
-    except Marks.DoesNotExist:
-        print("No matching record found in Marks table.")
-        return redirect('test_marks_entry', test_id=test_id)
+    school = get_object_or_404(School, admin=request.user)
+    # Detect and log IDOR attempts before doing the actual delete
+    if Marks.objects.filter(student_id=student_id, test_id=test_id).exclude(student__school=school).exists():
+        logger.warning('SECURITY: IDOR delete_marks user=%s student_id=%s test_id=%s',
+                       request.user.email, student_id, test_id)
+        log_activity(request, 'SECURITY', f'Unauthorized delete_marks attempt: student_id={student_id}')
+        return HttpResponseForbidden()
+    mark = get_object_or_404(Marks, student_id=student_id, test_id=test_id, student__school=school)
+    mark.delete()
+    return redirect('test_marks_entry', test_id=test_id)

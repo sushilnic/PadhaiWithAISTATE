@@ -332,22 +332,81 @@
             <div class="stat-value" id="total-schools">{{ results|length }}</div>
         </div>
         <div class="stat-card" style="border-left-color: #10b981;">
-            <h3>Excellence (90-100%)</h3>
+            <h3>Excellence Schools (≥90%)</h3>
             <div class="stat-value" id="excellence-count" style="color: #10b981;">--</div>
         </div>
         <div class="stat-card" style="border-left-color: #0ea5e9;">
-            <h3>Good (80-90%)</h3>
+            <h3>Good Schools (80-90%)</h3>
             <div class="stat-value" id="good-count" style="color: #0ea5e9;">--</div>
         </div>
         <div class="stat-card" style="border-left-color: #f59e0b;">
-            <h3>Average (60-80%)</h3>
+            <h3>Average Schools (60-80%)</h3>
             <div class="stat-value" id="average-count" style="color: #f59e0b;">--</div>
         </div>
         <div class="stat-card" style="border-left-color: #ef4444;">
-            <h3>Below Average (&lt;60%)</h3>
+            <h3>Below Avg Schools (&lt;60%)</h3>
             <div class="stat-value" id="below-count" style="color: #ef4444;">--</div>
         </div>
     </div>
+
+    <!-- Block-wise Summary -->
+    {% if block_stats %}
+    <div class="table-section" style="margin-bottom:30px;">
+        <h3 style="cursor:pointer; display:flex; justify-content:space-between; align-items:center;"
+            onclick="toggleBlock()">
+            🏫 Block-wise Performance Summary
+            <span id="blockToggleIcon" style="font-size:1rem; color:#1e3c72;">▼ Hide</span>
+        </h3>
+        <div id="blockSummaryWrap">
+        <div class="table-responsive" style="margin-top:16px;">
+            <table class="table table-bordered table-striped" id="blockSummaryTable" style="font-size:0.9rem;">
+                <thead>
+                    <tr>
+                        <th>S.No</th>
+                        <th>Block Name</th>
+                        <th>Schools</th>
+                        <th>Students Appeared</th>
+                        <th style="background:#d4edda !important; color:#155724 !important;">Excellence<br><small>≥90%</small></th>
+                        <th style="background:#d1ecf1 !important; color:#0c5460 !important;">Good<br><small>80-90%</small></th>
+                        <th style="background:#fff3cd !important; color:#856404 !important;">Average<br><small>60-80%</small></th>
+                        <th style="background:#f8d7da !important; color:#721c24 !important;">Below Avg<br><small>&lt;60%</small></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in block_stats %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><strong>{{ b.block_name }}</strong></td>
+                        <td>{{ b.total_schools }}</td>
+                        <td>{{ b.total_students }}</td>
+                        <td>
+                            <span class="badge-category category-90-100">
+                                {{ b.excellence }} <small>({{ b.excellence_pct }}%)</small>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-category category-80-90">
+                                {{ b.good }} <small>({{ b.good_pct }}%)</small>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-category category-60-80">
+                                {{ b.average }} <small>({{ b.average_pct }}%)</small>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-category category-0-33">
+                                {{ b.below_avg }} <small>({{ b.below_pct }}%)</small>
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Filters Section -->
     <div class="filters-section">
@@ -492,39 +551,34 @@
 
 {% block extra_js %}
 <script>
-    // Calculate and display statistics
-    function calculateStats() {
-        const rows = document.querySelectorAll('#analysisTable tbody tr');
-        let excellenceCount = 0;
-        let goodCount = 0;
-        let averageCount = 0;
-        let belowCount = 0;
-
-        rows.forEach(row => {
-            // S.No(0), School(1), Block(2), Test(3), Appeared(4), Avg%(5),
-            // 0-33(6), 33-60(7), 60-80(8), 80-90(9), 90-100(10), 100%(11)
-            if (row.cells.length > 10) {
-                const cat0_33 = parseInt(row.cells[6].textContent) || 0;
-                const cat33_60 = parseInt(row.cells[7].textContent) || 0;
-                const cat60_80 = parseInt(row.cells[8].textContent) || 0;
-                const cat80_90 = parseInt(row.cells[9].textContent) || 0;
-                const cat90_100 = parseInt(row.cells[10].textContent) || 0;
-
-                excellenceCount += cat90_100;
-                goodCount += cat80_90;
-                averageCount += cat60_80;
-                belowCount += cat0_33 + cat33_60;
-            }
-        });
-
-        document.getElementById('excellence-count').textContent = excellenceCount;
-        document.getElementById('good-count').textContent = goodCount;
-        document.getElementById('average-count').textContent = averageCount;
-        document.getElementById('below-count').textContent = belowCount;
-    }
-
     // Initialize DataTable
     $(document).ready(function() {
+
+        // ── Stats: read ALL rows BEFORE DataTable removes them from the DOM ──
+        (function calculateStats() {
+            const rows = document.querySelectorAll('#analysisTable tbody tr');
+            const schoolAvg = {};
+            rows.forEach(row => {
+                if (row.cells.length < 6) return;
+                const school = row.cells[1].textContent.trim();
+                const pct = parseFloat(row.cells[5].textContent) || 0;
+                if (!schoolAvg[school]) schoolAvg[school] = [];
+                schoolAvg[school].push(pct);
+            });
+            let excellence = 0, good = 0, average = 0, below = 0;
+            Object.values(schoolAvg).forEach(pcts => {
+                const avg = pcts.reduce((a, b) => a + b, 0) / pcts.length;
+                if      (avg >= 90) excellence++;
+                else if (avg >= 80) good++;
+                else if (avg >= 60) average++;
+                else                below++;
+            });
+            document.getElementById('excellence-count').textContent = excellence;
+            document.getElementById('good-count').textContent = good;
+            document.getElementById('average-count').textContent = average;
+            document.getElementById('below-count').textContent = below;
+        })();
+
         var table = $('#analysisTable').DataTable({
             "paging": true,
             "searching": true,
@@ -558,9 +612,29 @@
             });
         });
 
-        // Initial numbering + stats
+        // Initial row numbering
         table.draw();
-        calculateStats();
+
+        // Block summary table
+        if (document.getElementById('blockSummaryTable')) {
+            $('#blockSummaryTable').DataTable({
+                paging: false, searching: false, ordering: true, info: false,
+                order: [[3, 'desc']],
+                columnDefs: [{ orderable: false, targets: 0 }],
+            });
+        }
     });
+
+    function toggleBlock() {
+        const wrap = document.getElementById('blockSummaryWrap');
+        const icon = document.getElementById('blockToggleIcon');
+        if (wrap.style.display === 'none') {
+            wrap.style.display = '';
+            icon.textContent = '▼ Hide';
+        } else {
+            wrap.style.display = 'none';
+            icon.textContent = '▶ Show';
+        }
+    }
 </script>
 {% endblock %}

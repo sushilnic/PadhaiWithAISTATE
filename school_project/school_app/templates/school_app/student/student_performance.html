@@ -382,9 +382,11 @@
         </a>
     </div>
 
+    {{ trend_data|json_script:"trend-data" }}
+    {{ grade_counts_json|json_script:"grade-data" }}
     <script>
         // Performance Trend Chart
-        var trendData = {{ trend_data|safe }};
+        var trendData = JSON.parse(document.getElementById('trend-data').textContent);
         if (trendData && trendData.length > 0) {
             var trendCtx = document.getElementById('trendChart').getContext('2d');
             new Chart(trendCtx, {
@@ -418,7 +420,7 @@
         }
 
         // Grade Distribution Chart
-        var gradeData = {{ grade_counts_json|safe }};
+        var gradeData = JSON.parse(document.getElementById('grade-data').textContent);
         var gradeTotal = gradeData.reduce((a, b) => a + b, 0);
         var gradeCtx = document.getElementById('gradeChart').getContext('2d');
 
