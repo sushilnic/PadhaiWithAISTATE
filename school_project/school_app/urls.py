@@ -108,8 +108,13 @@ urlpatterns = [
     path("ask-pai/", views.ask_pai, name="ask-pai"),
     path("chat/", views.chat_view, name="chat_page"),
     path("ai_sathi/", views.chat_smart_tutor, name="ai_sathi"),
+    path("ai_sathi/chat/", views.ai_sathi_chat_ajax, name="ai_sathi_chat_ajax"),
+    path("ai_sathi/clear/", views.ai_sathi_clear, name="ai_sathi_clear"),
+    path("ai_sathi/change-chapter/", views.ai_sathi_change_chapter, name="ai_sathi_change_chapter"),
+    path("ai_sathi/feedback/", views.ai_sathi_feedback, name="ai_sathi_feedback"),
     path("ai_sathi/api/subjects/", views.ai_sathi_subjects, name="ai_sathi_subjects"),
     path("ai_sathi/api/chapters/", views.ai_sathi_chapters, name="ai_sathi_chapters"),
+    path("ai_sathi/api/starters/", views.ai_sathi_starters, name="ai_sathi_starters"),
     path("presentation/", views.presentation, name="presentation"),
     path("user-manual/", views.user_manual, name="user_manual"),
 

@@ -525,6 +525,37 @@
             box-shadow: 0 0 0 2px var(--accent-soft);
         }
 
+        .suggest-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0; right: 0;
+            background: #fff;
+            border: 1px solid var(--border-strong);
+            border-radius: 12px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,.12);
+            max-height: 220px;
+            overflow-y: auto;
+            z-index: 200;
+            margin-bottom: 6px;
+            display: none;
+        }
+        .suggest-item {
+            padding: 10px 16px;
+            font-size: .88rem;
+            color: #1e293b;
+            cursor: pointer;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .suggest-item:last-child { border-bottom: none; }
+        .suggest-item:hover, .suggest-item.active {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+        .suggest-item .suggest-icon { opacity: .55; font-size: .8rem; }
+
         textarea#chatPrompt {
             background: transparent;
             border: none;
@@ -765,6 +796,38 @@
             .bubble-wrap { max-width: 90%; }
             .guardrail-row select { min-width: 100px; }
         }
+        @media (max-width: 480px) {
+            .guardrail-row { flex-direction: column; }
+            .guardrail-row select { width: 100%; min-width: unset; }
+        }
+        .feedback-btns {
+            display: flex; gap: 6px; margin: 4px 4px 0; flex-wrap: wrap;
+        }
+        .feedback-btn {
+            background: transparent; border: 1px solid var(--border-subtle);
+            color: var(--text-muted); font-size: 11px; padding: 3px 10px;
+            border-radius: 999px; cursor: pointer; transition: all 0.15s;
+        }
+        .feedback-btn.thumb-up:hover   { border-color: #10b981; color: #059669; }
+        .feedback-btn.thumb-down:hover { border-color: #ef4444; color: #dc2626; }
+        .feedback-btn.active-up   { border-color: #10b981; color: #059669; background: #d1fae5; }
+        .feedback-btn.active-down { border-color: #ef4444; color: #dc2626; background: #fee2e2; }
+        .img-attach-btn {
+            width: 38px; height: 38px; border-radius: 50%;
+            border: 1px solid var(--border-subtle); background: transparent;
+            color: var(--text-muted); display: inline-flex; align-items: center;
+            justify-content: center; cursor: pointer; flex-shrink: 0;
+            transition: all 0.2s; font-size: 17px;
+        }
+        .img-attach-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .img-attach-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .img-preview-bar {
+            display: flex; align-items: center; gap: 8px; padding: 4px 10px;
+            background: var(--bg-input); border-radius: 8px; margin: 0 0 6px;
+            font-size: 12px; color: var(--text-muted);
+        }
+        .img-preview-bar img { height: 36px; border-radius: 4px; object-fit: cover; }
+        .img-clear-btn { margin-left: auto; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; }
     </style>
 </head>
 <body>
@@ -854,7 +917,10 @@
                 </span>
                 {% endif %}
             </div>
-            <a href="?clear=1" class="btn-secondary">New Chat</a>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button type="button" class="btn-secondary" id="changeChapterBtn" onclick="changeChapter()">Change Chapter</button>
+                <button type="button" class="btn-secondary" id="newChatBtn" onclick="newChatAjax()">New Chat</button>
+            </div>
         </div>
 
         <!-- ===== STARTER CHIPS ===== -->
@@ -895,7 +961,11 @@
                                     <button type="button" onclick="speakText(this)">Listen</button>
                                     <button type="button" onclick="copyAnswer(this)">Copy</button>
                                     <button type="button" onclick="downloadPDF(this)">PDF</button>
-                                    <button type="button" onclick="regenerateSolution(this)">Regenerate</button>
+                                    <button type="button" onclick="regenerateAjax(this)">Regenerate</button>
+                                </div>
+                                <div class="feedback-btns">
+                                    <button type="button" class="feedback-btn thumb-up" onclick="sendFeedback(this,1)" title="Helpful">👍 Helpful</button>
+                                    <button type="button" class="feedback-btn thumb-down" onclick="sendFeedback(this,-1)" title="Not helpful">👎 Not helpful</button>
                                 </div>
                                 <div class="followup-btns">
                                     <button type="button" class="followup-btn simpler" onclick="sendFollowup(this,'simpler')">🟢 Explain simpler</button>
@@ -936,9 +1006,16 @@
             🚫 You've used all 20 questions for this session. Click <a href="?clear=1">New Chat</a> to start fresh.
         </div>
         {% endif %}
-        <form method="post" class="chat-input-area" id="chatForm">
+        <form method="post" class="chat-input-area" id="chatForm" enctype="multipart/form-data">
             {% csrf_token %}
-            <div class="input-row">
+            <div id="imgPreviewBar" class="img-preview-bar" style="display:none">
+                <img id="imgThumb" src="" alt="preview">
+                <span id="imgName"></span>
+                <button type="button" class="img-clear-btn" onclick="clearAttachedImage()" title="Remove image">✕</button>
+            </div>
+            <input type="file" id="imageAttachInput" accept="image/*" style="display:none">
+            <div class="input-row" style="position:relative;">
+            <div id="suggestDropdown" class="suggest-dropdown"></div>
                 <div class="input-wrapper">
                     <textarea name="prompt" id="chatPrompt" rows="1"
                         placeholder="{% if limit_reached %}Session limit reached — start a new chat…{% elif guardrail %}Ask your question…{% else %}Select Class, Subject & Chapter first…{% endif %}"
@@ -946,6 +1023,9 @@
                         maxlength="500"
                         required></textarea>
                 </div>
+                <button type="button" class="img-attach-btn" id="imgAttachBtn" title="Attach image"
+                    {% if not guardrail or limit_reached %}disabled{% endif %}
+                    onclick="document.getElementById('imageAttachInput').click()">📎</button>
                 <button type="button" class="mic-btn" id="micBtn" title="Voice input"
                     {% if not guardrail or limit_reached %}disabled style="opacity:.4;cursor:not-allowed"{% endif %}>
                     🎤
@@ -1012,11 +1092,196 @@
         }
     }
 
+    var _CHAT_URL    = "{% url 'ai_sathi_chat_ajax' %}";
+    var _CLEAR_URL   = "{% url 'ai_sathi_clear' %}";
+    var _CHANGE_URL  = "{% url 'ai_sathi_change_chapter' %}";
+    var _FEED_URL    = "{% url 'ai_sathi_feedback' %}";
+    var _START_URL   = "{% url 'ai_sathi_starters' %}";
+    var _PAI_LOGO    = "{% static 'school_app/images/pailogo.png' %}";
+    var _attachedImage = null;
+
     form.addEventListener('submit', function(e){
+        e.preventDefault();
         var val = textarea.value.trim();
-        if(!val){ e.preventDefault(); return; }
-        setLoading(true);
+        if(!val || sendBtn.disabled) return;
+        sendAjax(val);
     });
+
+    // Image attach handling
+    var imageInput = document.getElementById('imageAttachInput');
+    if(imageInput){
+        imageInput.addEventListener('change', function(){
+            if(this.files && this.files[0]){
+                _attachedImage = this.files[0];
+                var reader = new FileReader();
+                reader.onload = function(ev){
+                    var bar  = document.getElementById('imgPreviewBar');
+                    var thumb = document.getElementById('imgThumb');
+                    var name  = document.getElementById('imgName');
+                    if(bar){ bar.style.display = 'flex'; }
+                    if(thumb){ thumb.src = ev.target.result; }
+                    if(name){ name.textContent = _attachedImage.name; }
+                };
+                reader.readAsDataURL(_attachedImage);
+            }
+        });
+    }
+
+    function clearAttachedImage(){
+        _attachedImage = null;
+        var inp = document.getElementById('imageAttachInput');
+        if(inp) inp.value = '';
+        var bar = document.getElementById('imgPreviewBar');
+        if(bar) bar.style.display = 'none';
+    }
+    window.clearAttachedImage = clearAttachedImage;
+
+    function sendAjax(prompt){
+        var chips = document.getElementById('starterChips');
+        if(chips) chips.style.display = 'none';
+
+        var imageToSend = _attachedImage;  // capture before clearing
+
+        // Append user bubble immediately
+        appendUserBubble(prompt, imageToSend);
+        clearAttachedImage();
+
+        var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        var fd   = new FormData();
+        fd.append('csrfmiddlewaretoken', csrf);
+        fd.append('prompt',      prompt);
+        fd.append('class_level', document.getElementById('class_level').value);
+        fd.append('subject',     document.getElementById('subject').value);
+        fd.append('chapter',     document.getElementById('chapter').value);
+        fd.append('language',    document.getElementById('language').value);
+        if(imageToSend){ fd.append('image', imageToSend); }
+
+        textarea.value = '';
+        textarea.style.height = 'auto';
+        if(charCount) charCount.textContent = '0/500';
+        setLoading(true);
+
+        fetch(_CHAT_URL, {method:'POST', body: fd})
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                setLoading(false);
+                if(data.error === 'limit_reached'){
+                    var lb = document.createElement('div');
+                    lb.className = 'limit-banner';
+                    lb.innerHTML = '🚫 You\'ve used all questions for this session. <a href="?clear=1">New Chat</a> to continue.';
+                    form.parentNode.insertBefore(lb, form);
+                    textarea.disabled = true;
+                    sendBtn.disabled  = true;
+                    return;
+                }
+                if(data.error){
+                    appendErrorBubble(data.error);
+                    return;
+                }
+                appendAssistantBubble(data.reply, data.timestamp, data.msg_db_id);
+                updateUsage(data.msg_count, data.msgs_left, data.limit_reached);
+            })
+            .catch(function(){
+                setLoading(false);
+                appendErrorBubble('Network error — please try again.');
+            });
+    }
+    window.sendAjax = sendAjax;
+
+    function appendUserBubble(text, imgFile){
+        var now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+        var row = document.createElement('div');
+        row.className = 'msg-row user';
+        var imgHtml = '';
+        if(imgFile){
+            var url = URL.createObjectURL(imgFile);
+            imgHtml = '<br><img src="'+url+'" style="max-height:80px;border-radius:6px;margin-top:6px;" alt="attachment">';
+        }
+        row.innerHTML =
+            '<div class="bubble-wrap">'
+            +  '<div class="bubble-meta">You &middot; '+now+'</div>'
+            +  '<div class="bubble bubble-user">'+escHtml(text)+imgHtml+'</div>'
+            +'</div>'
+            +'<div class="avatar avatar-user">U</div>';
+        var indicator = document.getElementById('typingIndicator');
+        chatBody.insertBefore(row, indicator);
+        scrollToBottom();
+    }
+
+    function appendAssistantBubble(text, timestamp, msgDbId){
+        var row = document.createElement('div');
+        row.className = 'msg-row assistant';
+        if(msgDbId) row.dataset.msgDbId = msgDbId;
+        row.innerHTML =
+            '<div class="avatar avatar-assistant">'
+            +  '<img src="'+_PAI_LOGO+'" width="24" alt="AI">'
+            +'</div>'
+            +'<div class="bubble-wrap">'
+            +  '<div class="bubble-meta">AI Sathi &middot; '+(timestamp||'')+'</div>'
+            +  '<div class="bubble bubble-assistant solution-content">'
+            +    '<div class="pdf-watermark"><img src="'+_PAI_LOGO+'" width="250"><br>PadhaiWithAI</div>'
+            +    '<span class="md-content"></span>'
+            +  '</div>'
+            +  '<div class="action-buttons">'
+            +    '<button type="button" onclick="speakText(this)">Listen</button>'
+            +    '<button type="button" onclick="copyAnswer(this)">Copy</button>'
+            +    '<button type="button" onclick="downloadPDF(this)">PDF</button>'
+            +    '<button type="button" onclick="regenerateAjax(this)">Regenerate</button>'
+            +  '</div>'
+            +  '<div class="feedback-btns">'
+            +    '<button type="button" class="feedback-btn thumb-up" onclick="sendFeedback(this,1)">👍 Helpful</button>'
+            +    '<button type="button" class="feedback-btn thumb-down" onclick="sendFeedback(this,-1)">👎 Not helpful</button>'
+            +  '</div>'
+            +  '<div class="followup-btns">'
+            +    '<button type="button" class="followup-btn simpler" onclick="followupAjax(this,\'simpler\')">🟢 Explain simpler</button>'
+            +    '<button type="button" class="followup-btn deeper"  onclick="followupAjax(this,\'deeper\')">🟣 Go deeper</button>'
+            +  '</div>'
+            +'</div>';
+
+        var mdEl = row.querySelector('.md-content');
+        if(typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined'){
+            mdEl.innerHTML = DOMPurify.sanitize(marked.parse(text));
+        } else {
+            mdEl.textContent = text;
+        }
+        mdEl.dataset.rendered = '1';
+
+        var indicator = document.getElementById('typingIndicator');
+        chatBody.insertBefore(row, indicator);
+        scrollToBottom();
+
+        if(window.MathJax && window.MathJax.typesetPromise){
+            window.MathJax.typesetPromise([row]).catch(function(){});
+        }
+    }
+
+    function appendErrorBubble(msg){
+        var row = document.createElement('div');
+        row.className = 'msg-row assistant';
+        row.innerHTML =
+            '<div class="avatar avatar-assistant"><img src="'+_PAI_LOGO+'" width="24" alt="AI"></div>'
+            +'<div class="bubble-wrap"><div class="bubble bubble-assistant" style="background:#fee2e2;border-color:#fca5a5;color:#991b1b;">⚠️ '+escHtml(msg)+'</div></div>';
+        var indicator = document.getElementById('typingIndicator');
+        chatBody.insertBefore(row, indicator);
+        scrollToBottom();
+    }
+
+    function updateUsage(count, left, limitReached){
+        var badge = document.getElementById('usageBadge');
+        if(badge){
+            badge.textContent = '💬 '+count+'/{{ msg_limit }} questions';
+            badge.className = 'usage-badge' + (left <= 3 ? ' danger' : left <= 7 ? ' warn' : '');
+        }
+        if(limitReached){
+            textarea.disabled = true;
+            sendBtn.disabled  = true;
+        }
+    }
+
+    function escHtml(s){
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    window.escHtml = escHtml;
 
     // Single Enter handler
     textarea.addEventListener('keydown', function(e){
@@ -1045,7 +1310,103 @@
             charCount.textContent = len + '/500';
             charCount.className = 'char-count' + (len >= 500 ? ' over' : len >= 400 ? ' warn' : '');
         }
+        updateSuggestions(this.value);
     });
+
+    // ── Typing suggestions ─────────────────────────────────────────────────────
+    var _suggestStarters = [
+        "What is this chapter about?",
+        "Give me key formulas / definitions",
+        "Explain with a real-life example",
+        "What are common exam questions?",
+        "Quiz me on this chapter",
+        "Solve a practice problem step by step",
+        "What mistakes do students commonly make here?",
+        "How is this topic connected to real life?",
+        "Explain this like I'm a beginner",
+        "Give me a memory trick to remember this",
+        "What should I revise before this chapter?",
+        "Create a short summary I can use for revision",
+    ];
+    var _suggestActive = -1;
+    var suggestBox = document.getElementById('suggestDropdown');
+
+    function _esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+    function updateSuggestions(val){
+        if(!suggestBox) return;
+        val = val.trim().toLowerCase();
+        if(!val){ hideSuggestions(); return; }
+        var matches = _suggestStarters.filter(function(s){
+            return s.toLowerCase().indexOf(val) !== -1;
+        });
+        if(!matches.length){ hideSuggestions(); return; }
+        _suggestActive = -1;
+        suggestBox.innerHTML = matches.map(function(s, i){
+            var hl = _esc(s).replace(new RegExp('(' + _esc(val).replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'),
+                                     '<strong>$1</strong>');
+            return '<div class="suggest-item" data-idx="' + i + '" data-val="' + _esc(s) + '">'+
+                   '<span class="suggest-icon">💡</span>' + hl + '</div>';
+        }).join('');
+        suggestBox.querySelectorAll('.suggest-item').forEach(function(el){
+            el.addEventListener('mousedown', function(e){
+                e.preventDefault();
+                fillSuggestion(el.getAttribute('data-val'));
+            });
+        });
+        suggestBox.style.display = 'block';
+    }
+
+    function hideSuggestions(){
+        if(suggestBox){ suggestBox.style.display = 'none'; suggestBox.innerHTML = ''; }
+        _suggestActive = -1;
+    }
+
+    function fillSuggestion(text){
+        textarea.value = text;
+        textarea.dispatchEvent(new Event('input'));
+        hideSuggestions();
+        textarea.focus();
+    }
+
+    // Keyboard navigation inside dropdown
+    textarea.addEventListener('keydown', function(e){
+        if(suggestBox.style.display !== 'block') return;
+        var items = suggestBox.querySelectorAll('.suggest-item');
+        if(!items.length) return;
+        if(e.key === 'ArrowDown'){
+            e.preventDefault();
+            _suggestActive = Math.min(_suggestActive + 1, items.length - 1);
+        } else if(e.key === 'ArrowUp'){
+            e.preventDefault();
+            _suggestActive = Math.max(_suggestActive - 1, -1);
+        } else if(e.key === 'Tab' || e.key === 'Enter'){
+            if(_suggestActive >= 0 && items[_suggestActive]){
+                e.preventDefault();
+                fillSuggestion(items[_suggestActive].getAttribute('data-val'));
+                return;
+            }
+            hideSuggestions();
+            return;
+        } else if(e.key === 'Escape'){
+            hideSuggestions(); return;
+        } else { return; }
+        items.forEach(function(el, i){
+            el.classList.toggle('active', i === _suggestActive);
+        });
+        if(_suggestActive >= 0) items[_suggestActive].scrollIntoView({block:'nearest'});
+    });
+
+    document.addEventListener('click', function(e){
+        if(suggestBox && !suggestBox.contains(e.target) && e.target !== textarea){
+            hideSuggestions();
+        }
+    });
+
+    // Refresh starters list when chapter changes (populated by ch.onchange AJAX)
+    window._updateSuggestStarters = function(newList){
+        if(newList && newList.length) _suggestStarters = newList;
+    };
 
     // Scroll on load
     scrollToBottom();
@@ -1116,44 +1477,29 @@
     {% endif %}
 })();
 
-// --- Starter chips: fill textarea and submit ---
+// --- Starter chips ---
 function sendStarter(btn) {
-    var chips = document.getElementById('starterChips');
-    if (chips) chips.style.display = 'none';
+    var text = btn.textContent.trim();
     var ta = document.getElementById('chatPrompt');
-    var form = document.getElementById('chatForm');
-    if (!ta || !form) return;
-    ta.value = btn.textContent.trim();
-    form.submit();
+    if(ta && window.sendAjax){ ta.value = ''; window.sendAjax(text); }
 }
 
-// --- Simpler / Deeper follow-up ---
-function sendFollowup(btn, type) {
+// --- Simpler / Deeper follow-up (AJAX) ---
+function followupAjax(btn, type) {
     var wrap = btn.closest('.bubble-wrap');
-    var prev = wrap ? wrap.closest('.msg-row') : null;
-    // find the preceding user question
-    var userRow = prev ? prev.previousElementSibling : null;
-    while (userRow && !userRow.classList.contains('user')) {
-        userRow = userRow.previousElementSibling;
-    }
+    var row  = wrap ? wrap.closest('.msg-row') : null;
+    var prev = row ? row.previousElementSibling : null;
+    while(prev && !prev.classList.contains('user')) prev = prev.previousElementSibling;
     var question = '';
-    if (userRow) {
-        var ub = userRow.querySelector('.bubble-user');
-        if (ub) question = ub.innerText.trim();
-    }
+    if(prev){ var ub = prev.querySelector('.bubble-user'); if(ub) question = ub.innerText.trim(); }
     var prompt = type === 'simpler'
         ? 'Please explain this in simpler words, as if I am a beginner: ' + question
         : 'Give a deeper, more detailed explanation with advanced concepts: ' + question;
-
-    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    var f = document.createElement('form');
-    f.method = 'POST';
-    f.action = '';
-    f.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrf + '">'
-        + '<input type="hidden" name="prompt" value="' + prompt.replace(/"/g, '&quot;') + '">';
-    document.body.appendChild(f);
-    f.submit();
+    if(window.sendAjax) window.sendAjax(prompt);
 }
+
+// keep old name as alias for server-rendered messages
+function sendFollowup(btn, type){ followupAjax(btn, type); }
 
 // --- Voice input (mic) ---
 (function(){
@@ -1365,30 +1711,58 @@ function downloadPDF(btn){
     });
 }
 
-// --- Regenerate ---
-function regenerateSolution(btn){
-    // Walk backward from this assistant message to find the preceding user message
+// --- Regenerate (AJAX) ---
+function regenerateAjax(btn){
     var row = btn.closest('.msg-row');
     if(!row) return;
-
     var prev = row.previousElementSibling;
-    while(prev && !prev.classList.contains('user')){
-        prev = prev.previousElementSibling;
-    }
+    while(prev && !prev.classList.contains('user')) prev = prev.previousElementSibling;
     if(!prev) return;
+    var ub = prev.querySelector('.bubble-user');
+    if(!ub) return;
+    var prompt = 'Explain again with different steps: ' + ub.innerText.trim();
+    if(window.sendAjax) window.sendAjax(prompt);
+}
+function regenerateSolution(btn){ regenerateAjax(btn); }
 
-    var userBubble = prev.querySelector('.bubble-user');
-    if(!userBubble) return;
-    var userText = userBubble.innerText.trim();
-
+// --- Feedback (👍/👎) ---
+function sendFeedback(btn, rating){
+    var row = btn.closest('.msg-row');
+    var msgDbId = row ? row.dataset.msgDbId : null;
+    if(!msgDbId){ btn.textContent = rating===1?'👍 Thanks!':'👎 Noted'; return; }
     var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    var f = document.createElement('form');
-    f.method = 'POST';
-    f.action = '';
-    f.innerHTML = '<input type="hidden" name="csrfmiddlewaretoken" value="' + csrf + '">'
-        + '<input type="hidden" name="prompt" value="Explain again with different steps: ' + userText.replace(/"/g, '&quot;') + '">';
-    document.body.appendChild(f);
-    f.submit();
+    var fd   = new FormData();
+    fd.append('csrfmiddlewaretoken', csrf);
+    fd.append('msg_id', msgDbId);
+    fd.append('rating', rating);
+    fetch("{% url 'ai_sathi_feedback' %}", {method:'POST', body:fd})
+        .then(function(){ })
+        .catch(function(){});
+    // Update UI
+    var btns = btn.closest('.feedback-btns').querySelectorAll('.feedback-btn');
+    btns.forEach(function(b){ b.classList.remove('active-up','active-down'); });
+    btn.classList.add(rating===1?'active-up':'active-down');
+    btn.textContent = rating===1?'👍 Thanks!':'👎 Noted';
+}
+
+// --- Change Chapter (AJAX) ---
+function changeChapter(){
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var fd   = new FormData();
+    fd.append('csrfmiddlewaretoken', csrf);
+    fetch("{% url 'ai_sathi_change_chapter' %}", {method:'POST', body:fd})
+        .then(function(){ location.reload(); })
+        .catch(function(){ location.reload(); });
+}
+
+// --- New Chat (AJAX) ---
+function newChatAjax(){
+    var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    var fd   = new FormData();
+    fd.append('csrfmiddlewaretoken', csrf);
+    fetch("{% url 'ai_sathi_clear' %}", {method:'POST', body:fd})
+        .then(function(){ location.reload(); })
+        .catch(function(){ location.reload(); });
 }
 </script>
 
@@ -1402,6 +1776,7 @@ function regenerateSolution(btn){
 */
 var _SUBJECTS_URL = "{% url 'ai_sathi_subjects' %}";
 var _CHAPTERS_URL = "{% url 'ai_sathi_chapters' %}";
+var _START_URL    = "{% url 'ai_sathi_starters' %}";
 
 // ---- placeholder so the rest of the block uses the same structure ----
 // (no inline chapters object needed)
@@ -1474,7 +1849,32 @@ var chapters = {};  // kept for compatibility — not used for data
             });
     };
 
-    ch.onchange = function () { btn.disabled = !ch.value; };
+    ch.onchange = function () {
+        btn.disabled = !ch.value;
+        if(!ch.value) return;
+        // Fetch dynamic starters for this chapter
+        fetch(_START_URL
+            + '?class='   + encodeURIComponent(cls.value)
+            + '&subject=' + encodeURIComponent(sub.value)
+            + '&chapter=' + encodeURIComponent(ch.value))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var chips = document.getElementById('starterChips');
+            if(!chips || !data.starters || !data.starters.length) return;
+            chips.innerHTML = '';
+            data.starters.forEach(function(q){
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'starter-chip';
+                b.textContent = q;
+                b.onclick = function(){ sendStarter(b); };
+                chips.appendChild(b);
+            });
+            // Keep suggestion list in sync with chapter starters
+            if(window._updateSuggestStarters) window._updateSuggestStarters(data.starters);
+        })
+        .catch(function(){});
+    };
 
     btn.onclick = function () {
         document.getElementById('guardrailPanel').style.display = 'none';
@@ -1485,6 +1885,8 @@ var chapters = {};  // kept for compatibility — not used for data
         sendBtn.disabled = false;
         var mb = document.getElementById('micBtn');
         if (mb) { mb.disabled = false; mb.style.opacity = ''; mb.style.cursor = ''; }
+        var ab = document.getElementById('imgAttachBtn');
+        if (ab) { ab.disabled = false; }
 
         // Set hidden fields
         document.getElementById('class_level').value = cls.value;
@@ -1502,11 +1904,11 @@ var chapters = {};  // kept for compatibility — not used for data
         document.getElementById('ctxLanguage').textContent = langSel.value;
         document.getElementById('contextBar').style.display = 'flex';
 
-        // Hide empty state, show starter chips
+        // Hide empty state, show starter chips (already populated by ch.onchange fetch)
         var es = document.getElementById('emptyState');
         if (es) es.style.display = 'none';
         var sc = document.getElementById('starterChips');
-        if (sc) sc.style.display = 'flex';
+        if (sc && sc.children.length > 0) sc.style.display = 'flex';
 
         prompt.focus();
     };

@@ -647,6 +647,8 @@ class AISathiChapter(models.Model):
     name = models.CharField(max_length=300)
     order = models.PositiveSmallIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    description = models.TextField(blank=True, default='', help_text='Brief chapter topics/objectives for AI context')
+    starter_questions = models.JSONField(blank=True, default=list, help_text='Suggested starter questions list')
 
     class Meta:
         verbose_name = 'AI Sathi Chapter'
@@ -655,3 +657,44 @@ class AISathiChapter(models.Model):
 
     def __str__(self):
         return f"{self.subject} → {self.name}"
+
+
+class AISathiChatSession(models.Model):
+    """Persists each AI Sathi conversation to DB for analytics."""
+    session_key = models.CharField(max_length=100, db_index=True)
+    class_level = models.CharField(max_length=10, blank=True)
+    subject = models.CharField(max_length=100, blank=True)
+    chapter = models.CharField(max_length=300, blank=True)
+    language = models.CharField(max_length=50, default='Hindi')
+    started_at = models.DateTimeField(auto_now_add=True)
+    student = models.ForeignKey(
+        'Student', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='ai_sathi_sessions'
+    )
+
+    class Meta:
+        verbose_name = 'AI Sathi Chat Session'
+        verbose_name_plural = 'AI Sathi Chat Sessions'
+        ordering = ['-started_at']
+
+    def __str__(self):
+        return f"Session {self.session_key[:8]} | Class {self.class_level} {self.subject}"
+
+
+class AISathiMessage(models.Model):
+    """Stores individual messages for analytics and feedback."""
+    session = models.ForeignKey(
+        AISathiChatSession, on_delete=models.CASCADE, related_name='messages'
+    )
+    role = models.CharField(max_length=20)
+    content = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+    rating = models.SmallIntegerField(null=True, blank=True)  # 1=👍  -1=👎
+
+    class Meta:
+        verbose_name = 'AI Sathi Message'
+        verbose_name_plural = 'AI Sathi Messages'
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.role} | {self.content[:60]}"

@@ -261,3 +261,7 @@ PASSWORD_EXPIRY_DAYS = 90
 # Max file upload size (5 MB)
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+# AI Sathi limits (overridable via env)
+AI_SATHI_MSG_LIMIT = env.int("AI_SATHI_MSG_LIMIT", default=20)
+AI_SATHI_SESSION_MINS = env.int("AI_SATHI_SESSION_MINS", default=30)
