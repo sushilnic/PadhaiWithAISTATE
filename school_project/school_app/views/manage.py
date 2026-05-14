@@ -435,6 +435,7 @@ def manage_schools(request):
             'admin_email': s.admin.email if s.admin else '—',
             'is_active': s.is_active,
             'created_at': s.created_at,
+            'nic_code': s.nic_code or '—',
         })
     return render(request, 'school_app/manage/manage_list.html', {
         'title': 'Manage Schools',

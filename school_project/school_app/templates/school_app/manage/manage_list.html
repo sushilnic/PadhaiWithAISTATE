@@ -236,6 +236,7 @@
             <tr>
                 <th>S.No</th>
                 <th>Name</th>
+                {% if entity_type == 'School' %}<th>NIC Code</th>{% endif %}
                 <th>Admin Email</th>
                 <th>Status</th>
                 <th>Created</th>
@@ -250,6 +251,7 @@
                     <strong>{{ item.name }}</strong>
                     {% if item.name_hindi %}<br><small style="color: var(--text-secondary);">{{ item.name_hindi }}</small>{% endif %}
                 </td>
+                {% if entity_type == 'School' %}<td data-label="NIC Code">{{ item.nic_code }}</td>{% endif %}
                 <td data-label="Email">
                     {{ item.admin_email }}
                     {% if item.is_locked %}<span class="badge-locked"><i class="fas fa-lock"></i> Locked</span>{% endif %}
@@ -309,14 +311,79 @@
 </div>
 {% endif %}
 
+<div id="paginationControls" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;">
+    <div id="pageInfo" style="font-size:.9rem;color:#64748b;font-weight:500;"></div>
+    <div id="pageButtons" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+</div>
+
 <script>
-function filterTable() {
-    var input = document.getElementById('searchInput').value.toLowerCase();
-    var rows = document.querySelectorAll('#manageTable tbody tr');
-    rows.forEach(function(row) {
-        var text = row.textContent.toLowerCase();
-        row.style.display = text.indexOf(input) > -1 ? '' : 'none';
+var PAGE_SIZE = 25;
+var currentPage = 1;
+var filteredRows = [];
+
+function getAllRows() {
+    return Array.from(document.querySelectorAll('#manageTable tbody tr'));
+}
+
+function applyFilter() {
+    var q = document.getElementById('searchInput').value.toLowerCase();
+    filteredRows = getAllRows().filter(function(row) {
+        return row.textContent.toLowerCase().indexOf(q) > -1;
     });
+    currentPage = 1;
+    renderPage();
+}
+
+function renderPage() {
+    var allRows = getAllRows();
+    var start = (currentPage - 1) * PAGE_SIZE;
+    var end   = start + PAGE_SIZE;
+
+    allRows.forEach(function(row) { row.style.display = 'none'; });
+    filteredRows.slice(start, end).forEach(function(row) { row.style.display = ''; });
+
+    var total = filteredRows.length;
+    var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    var showing_from = total === 0 ? 0 : start + 1;
+    var showing_to   = Math.min(end, total);
+    document.getElementById('pageInfo').textContent =
+        'Showing ' + showing_from + '–' + showing_to + ' of ' + total + ' records';
+
+    var btns = document.getElementById('pageButtons');
+    btns.innerHTML = '';
+    function mkBtn(label, page, active, disabled) {
+        var b = document.createElement('button');
+        b.textContent = label;
+        b.disabled = disabled;
+        b.style.cssText = 'padding:5px 12px;border-radius:6px;border:1.5px solid ' +
+            (active ? '#1e3c72' : '#d1d5db') + ';background:' +
+            (active ? '#1e3c72' : 'white') + ';color:' +
+            (active ? 'white' : '#374151') + ';font-weight:' +
+            (active ? '700' : '500') + ';font-size:.85rem;cursor:' +
+            (disabled ? 'default' : 'pointer') + ';opacity:' + (disabled ? '.45' : '1') + ';';
+        if (!disabled) b.onclick = function() { currentPage = page; renderPage(); };
+        return b;
+    }
+    btns.appendChild(mkBtn('« Prev', currentPage - 1, false, currentPage === 1));
+    var start_p = Math.max(1, currentPage - 2);
+    var end_p   = Math.min(totalPages, start_p + 4);
+    for (var p = start_p; p <= end_p; p++) {
+        btns.appendChild(mkBtn(p, p, p === currentPage, false));
+    }
+    btns.appendChild(mkBtn('Next »', currentPage + 1, false, currentPage === totalPages));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filteredRows = getAllRows();
+    renderPage();
+});
+
+// wire search box
+var searchInput = document.getElementById('searchInput');
+if (searchInput) {
+    searchInput.removeAttribute('onkeyup');
+    searchInput.addEventListener('input', applyFilter);
 }
 </script>
 

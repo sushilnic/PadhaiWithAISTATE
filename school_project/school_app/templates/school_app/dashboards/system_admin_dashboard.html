@@ -241,30 +241,31 @@
 	/* Container for the grid layout */
 	.chart-container {
 		display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 20px;
-		padding: 20px;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+		padding: 14px;
 		border: none;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
 	}
 
 	/* Individual chart container */
 	.chart-box {
-		padding: 20px;
+		padding: 14px;
 		border: 1px solid var(--border);
-		border-radius: 12px;
+		border-radius: 10px;
 		background-color: var(--surface);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
         transition: all 0.3s ease;
 	}
     .chart-box:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
     }
     .chart-box h6 {
         color: var(--primary);
         font-weight: 600;
-        margin-bottom: 15px;
+        font-size: 0.82rem;
+        margin-bottom: 10px;
     }
 
 	/* Chart canvas wrapper */
@@ -327,16 +328,22 @@
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: true,
                         plugins: {
                             legend: {
-                                position: 'top',
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 10,
+                                    font: { size: 10 },
+                                    padding: 6
+                                }
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(tooltipItem) {
                                         var category = tooltipItem.label;
-                                        var count = tooltipItem.raw;										
-                                        var percentage = ((count / totalStudents) * 100).toFixed(2);  // Calculate percentage
+                                        var count = tooltipItem.raw;
+                                        var percentage = ((count / totalStudents) * 100).toFixed(2);
                                         return category + ': ' + count + ' students (' + percentage + '%)';
                                     }
                                 }
@@ -352,7 +359,7 @@
 
 {% if labels and labels|length > 0 %}
 <h4 class="section-title-admin">📈 School Performance: Test Categories and Average Marks</h4>
-<div class="chart-box" style="margin-bottom: 30px; height: 450px; width: 100%;">
+<div class="chart-box" style="margin-bottom: 20px; height: 300px; width: 100%;">
 <canvas id="performanceChart"></canvas>
     
 <script>
