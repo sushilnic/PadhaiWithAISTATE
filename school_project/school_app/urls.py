@@ -47,6 +47,10 @@ urlpatterns = [
     # State Dashboard
     path('state-dashboard/', views.state_dashboard, name='state_dashboard'),
 
+    # State Content Management (Subjects & Chapters)
+    path('state/manage-subjects/', views.manage_subjects, name='manage_subjects'),
+    path('state/manage-chapters/', views.manage_chapters, name='manage_chapters'),
+
     # Collector's Dashboard
     path('collector-dashboard/', views.collector_dashboard, name='collector_dashboard'),
     path('add-test/', views.add_test, name='add_test'),
@@ -180,6 +184,12 @@ urlpatterns = [
     path('student/test/<int:pk>/take/', views.take_paper, name='take_paper'),
     path('student/test/<int:pk>/submit/', views.submit_paper, name='submit_paper'),
     path('student/test/<int:pk>/result/', views.paper_result, name='paper_result'),
+
+    # OMR upload
+    path('assignment/<int:pk>/omr/sheets/', views.download_omr_sheets, name='download_omr_sheets'),
+    path('assignment/<int:pk>/omr/upload/', views.omr_upload_view,     name='omr_upload'),
+    path('assignment/<int:pk>/omr/process/', views.omr_process_ajax,   name='omr_process_ajax'),
+    path('assignment/<int:pk>/omr/confirm/', views.omr_confirm_ajax,   name='omr_confirm_ajax'),
 
     # Academic Calendar
     path('academic-calendar/', views.academic_calendar_view, name='academic_calendar'),

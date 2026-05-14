@@ -145,6 +145,28 @@ def generate_question_paper_ai(request):
         if not subject or not chapter:
             return JsonResponse({'error': 'Subject and chapter are required.'}, status=400)
 
+        # ── Validate counts ────────────────────────────────────────────────
+        for name, val in [('MCQ', mcq_count), ('True/False', tf_count),
+                          ('Fill-in-blank', fib_count), ('Short answer', short_count),
+                          ('Long answer', long_count)]:
+            if val < 0:
+                return JsonResponse({'error': f'{name} count cannot be negative.'}, status=400)
+        for name, val in [('MCQ marks', mcq_marks), ('True/False marks', tf_marks),
+                          ('Fill-in-blank marks', fib_marks), ('Short answer marks', short_marks),
+                          ('Long answer marks', long_marks)]:
+            if val < 1:
+                return JsonResponse({'error': f'{name} must be at least 1.'}, status=400)
+        if mcq_count + tf_count + fib_count + short_count + long_count == 0:
+            return JsonResponse({'error': 'At least one section must have questions.'}, status=400)
+        if total_marks < 1:
+            return JsonResponse({'error': 'Total marks must be at least 1.'}, status=400)
+        try:
+            cn = int(class_name)
+            if not (1 <= cn <= 12):
+                raise ValueError
+        except ValueError:
+            return JsonResponse({'error': 'Class must be between 1 and 12.'}, status=400)
+
         difficulty_hindi = {'Easy': 'सरल', 'Medium': 'मध्यम', 'Hard': 'कठिन', 'Mixed': 'मिश्रित'}.get(difficulty, 'मध्यम')
 
         if language == 'Hindi':
@@ -155,7 +177,11 @@ def generate_question_paper_ai(request):
         client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
 
         def _repair_json(text):
-            """Close any unclosed brackets/braces caused by token-limit truncation."""
+            """Fix common AI JSON issues: trailing commas, unclosed brackets."""
+            import re
+            # 1. Remove trailing commas before } or ]
+            text = re.sub(r',\s*([\}\]])', r'\1', text)
+            # 2. Close unclosed brackets/braces caused by token-limit truncation
             stack = []
             in_string = False
             escape = False
@@ -174,182 +200,139 @@ def generate_question_paper_ai(request):
                     stack.pop()
             return text + ''.join(reversed(stack))
 
-        def call_ai(user_prompt):
+        def _extract_json(raw_text):
+            """Strip AI preamble/postamble and return the JSON string."""
+            text = _strip_think(raw_text)
+            if not text:
+                return ''
+            if '```' in text:
+                for part in text.split('```'):
+                    p = part.strip()
+                    if p.startswith('json'):
+                        text = p[4:].strip(); break
+                    elif '{' in p:
+                        text = p; break
+            s, e = text.find('{'), text.rfind('}')
+            if s != -1 and e != -1:
+                text = text[s:e + 1]
+            return text
+
+        def call_ai(user_prompt, max_tok=2000):
             """Call Sarvam and return parsed JSON dict, or raise json.JSONDecodeError."""
             resp = client.chat.completions(
-                #model="sarvam-105b",
                 messages=[
                     {"role": "system", "content": system_msg},
                     {"role": "user",   "content": user_prompt},
                 ],
                 temperature=0.3,
-                max_tokens=2048,
+                max_tokens=max_tok,
                 top_p=0.9,
             )
             msg = resp.choices[0].message
             raw = msg.content or msg.reasoning_content
             if not raw:
                 raise json.JSONDecodeError("Empty AI response", "", 0)
-            text = _strip_think(raw)
+            text = _extract_json(raw)
             if not text:
                 raise json.JSONDecodeError("Empty AI response after stripping", "", 0)
-            if '```' in text:
-                for part in text.split('```'):
-                    if part.startswith('json'):
-                        text = part[4:].strip(); break
-                    elif '{' in part:
-                        text = part.strip(); break
-            s, e = text.find('{'), text.rfind('}')
-            if s != -1 and e != -1:
-                text = text[s:e + 1]
-            logger.warning("Sarvam text before json.loads: %r", text)
+            logger.warning("Sarvam raw JSON: %r", text[:300])
             try:
                 return json.loads(text)
             except json.JSONDecodeError:
-                # Response was truncated — try closing open structures
                 repaired = _repair_json(text)
-                logger.warning("Repaired truncated JSON, retrying parse")
+                logger.warning("Repaired JSON, retrying parse")
                 return json.loads(repaired)
+
+        def call_ai_robust(user_prompt, section_label, max_tok=2000):
+            """call_ai with one automatic retry; returns None on persistent failure."""
+            for attempt in range(2):
+                try:
+                    return call_ai(user_prompt, max_tok)
+                except json.JSONDecodeError:
+                    if attempt == 0:
+                        logger.warning("JSON parse failed for %s, retrying…", section_label)
+                        continue
+                    logger.error("Both attempts failed for %s", section_label)
+                    return None
+                except Exception as exc:
+                    logger.error("AI call error for %s: %s", section_label, exc)
+                    return None
 
         # ── Call 1: header + Section A (MCQ) ──────────────────────────
         # ── Call 2: Section B (True/False) + Section C (FIB) ──────────
         # ── Call 3: Section D (Short Answer) + Section E (Long Answer) ─
+        NO_DOTS = "CRITICAL: Write real exam content. Do NOT output dots, ellipsis, or placeholder text in any field."
+        NO_DOTS_HI = "महत्वपूर्ण: प्रत्येक प्रश्न और उत्तर वास्तविक परीक्षा सामग्री होनी चाहिए। कोई भी फ़ील्ड में '...' या खाली प्लेसहोल्डर मत लिखें।"
+
         if language == 'Hindi':
-            prompt1 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
-कठिनाई: {difficulty_hindi}
+            prompt1 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}", कठिनाई: {difficulty_hindi}।
+खंड A के लिए {mcq_count} बहुविकल्पीय प्रश्न बनाएं।
 
-केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
-{{
-  "paper_title": "...",
-  "subject": "{subject}",
-  "class": "{class_name}",
-  "chapter": "{chapter}",
-  "total_marks": {total_marks},
-  "time_allowed": "3 घंटे",
-  "sections": [
-    {{
-      "section": "A", "section_title": "बहुविकल्पीय प्रश्न", "marks_each": {mcq_marks},
-      "questions": [{{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]
-    }}
-  ]
-}}
-खंड A में {mcq_count} प्रश्न दें। सभी हिंदी में।"""
+केवल यह JSON लौटाएं:
+{{"paper_title":"{subject} प्रश्न पत्र","subject":"{subject}","class":"{class_name}","chapter":"{chapter}","total_marks":{total_marks},"time_allowed":"3 घंटे","sections":[{{"section":"A","section_title":"बहुविकल्पीय प्रश्न","marks_each":{mcq_marks},"questions":[{{"q_no":1,"question":"अध्याय से संबंधित वास्तविक प्रश्न","options":["A. पहला विकल्प","B. दूसरा विकल्प","C. तीसरा विकल्प","D. चौथा विकल्प"],"answer":"A. सही विकल्प"}}]}}]}}
 
-            prompt2 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
-कठिनाई: {difficulty_hindi}
+नियम: {mcq_count} प्रश्न दें। प्रत्येक प्रश्न में 4 अलग-अलग विकल्प हों। सही उत्तर केवल एक विकल्प में हो। {NO_DOTS_HI}"""
 
-केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
-{{
-  "sections": [
-    {{
-      "section": "B", "section_title": "सही / गलत", "marks_each": {tf_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "सही"}}]
-    }},
-    {{
-      "section": "C", "section_title": "रिक्त स्थान भरो", "marks_each": {fib_marks},
-      "questions": [{{"q_no": 1, "question": "_______ का मान π होता है।", "answer": "..."}}]
-    }}
-  ]
-}}
-खंड B में {tf_count} प्रश्न और खंड C में {fib_count} प्रश्न दें। सभी हिंदी में।"""
+            prompt2 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}", कठिनाई: {difficulty_hindi}।
+खंड B में {tf_count} सही/गलत प्रश्न और खंड C में {fib_count} रिक्त स्थान प्रश्न बनाएं।
 
-            prompt3 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
-कठिनाई: {difficulty_hindi}
+केवल यह JSON लौटाएं:
+{{"sections":[{{"section":"B","section_title":"सही / गलत","marks_each":{tf_marks},"questions":[{{"q_no":1,"question":"अध्याय से संबंधित कथन लिखें।","answer":"सही"}}]}},{{"section":"C","section_title":"रिक्त स्थान भरो","marks_each":{fib_marks},"questions":[{{"q_no":1,"question":"_______ अध्याय की परिभाषा है।","answer":"सही शब्द"}}]}}]}}
 
-केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
-{{
-  "sections": [
-    {{
-      "section": "D", "section_title": "लघु उत्तरीय प्रश्न", "marks_each": {short_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
-    }}
-  ]
-}}
-खंड D में {short_count} प्रश्न दें। सभी हिंदी में।"""
+नियम: खंड B में {tf_count} और खंड C में {fib_count} प्रश्न दें। {NO_DOTS_HI}"""
 
-            prompt4 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}" के लिए।
-कठिनाई: {difficulty_hindi}
+            prompt3 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}", कठिनाई: {difficulty_hindi}।
+खंड D के लिए {short_count} लघु उत्तरीय प्रश्न बनाएं।
 
-केवल निम्न JSON लौटाएं (कोई अतिरिक्त टेक्स्ट नहीं):
-{{
-  "sections": [
-    {{
-      "section": "E", "section_title": "दीर्घ उत्तरीय प्रश्न", "marks_each": {long_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
-    }}
-  ]
-}}
-खंड E में {long_count} प्रश्न दें। सभी हिंदी में।"""
+केवल यह JSON लौटाएं:
+{{"sections":[{{"section":"D","section_title":"लघु उत्तरीय प्रश्न","marks_each":{short_marks},"questions":[{{"q_no":1,"question":"अध्याय से संबंधित लघु प्रश्न लिखें।","answer":"2-3 वाक्यों में उत्तर लिखें।"}}]}}]}}
+
+नियम: {short_count} प्रश्न दें। प्रत्येक उत्तर 2-3 वाक्यों में हो। {NO_DOTS_HI}"""
+
+            prompt4 = f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}", कठिनाई: {difficulty_hindi}।
+खंड E के लिए {long_count} दीर्घ उत्तरीय प्रश्न बनाएं।
+
+केवल यह JSON लौटाएं:
+{{"sections":[{{"section":"E","section_title":"दीर्घ उत्तरीय प्रश्न","marks_each":{long_marks},"questions":[{{"q_no":1,"question":"अध्याय से संबंधित विस्तृत प्रश्न लिखें।","answer":"4-5 वाक्यों में विस्तृत उत्तर लिखें।"}}]}}]}}
+
+नियम: {long_count} प्रश्न दें। प्रत्येक उत्तर कम से कम 4-5 वाक्यों में हो। {NO_DOTS_HI}"""
         else:
-            prompt1 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+            prompt1 = f"""Class {class_name}, Subject "{subject}", Chapter "{chapter}", Difficulty: {difficulty}.
+Generate {mcq_count} Multiple Choice Questions for Section A.
 
-Return ONLY this JSON (no extra text):
-{{
-  "paper_title": "...",
-  "subject": "{subject}",
-  "class": "{class_name}",
-  "chapter": "{chapter}",
-  "total_marks": {total_marks},
-  "time_allowed": "3 Hours",
-  "sections": [
-    {{
-      "section": "A", "section_title": "Multiple Choice Questions", "marks_each": {mcq_marks},
-      "questions": [{{"q_no": 1, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]
-    }}
-  ]
-}}
-Section A: {mcq_count} questions."""
+Return ONLY this JSON:
+{{"paper_title":"{subject} Question Paper","subject":"{subject}","class":"{class_name}","chapter":"{chapter}","total_marks":{total_marks},"time_allowed":"3 Hours","sections":[{{"section":"A","section_title":"Multiple Choice Questions","marks_each":{mcq_marks},"questions":[{{"q_no":1,"question":"Write an actual exam question about the chapter topic","options":["A. first option text","B. second option text","C. third option text","D. fourth option text"],"answer":"A. correct option text"}}]}}]}}
 
-            prompt2 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+Rules: Generate {mcq_count} questions. Each question needs exactly 4 distinct options. The answer must match one option exactly. No two options may have the same text. {NO_DOTS}"""
 
-Return ONLY this JSON (no extra text):
-{{
-  "sections": [
-    {{
-      "section": "B", "section_title": "True / False", "marks_each": {tf_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "True"}}]
-    }},
-    {{
-      "section": "C", "section_title": "Fill in the Blanks", "marks_each": {fib_marks},
-      "questions": [{{"q_no": 1, "question": "The value of pi is ___.", "answer": "3.14"}}]
-    }}
-  ]
-}}
-Section B: {tf_count} questions, Section C: {fib_count} questions."""
+            prompt2 = f"""Class {class_name}, Subject "{subject}", Chapter "{chapter}", Difficulty: {difficulty}.
+Generate {tf_count} True/False questions (Section B) and {fib_count} Fill-in-the-Blank questions (Section C).
 
-            prompt3 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+Return ONLY this JSON:
+{{"sections":[{{"section":"B","section_title":"True / False","marks_each":{tf_marks},"questions":[{{"q_no":1,"question":"Write a factual statement about the chapter.","answer":"True"}}]}},{{"section":"C","section_title":"Fill in the Blanks","marks_each":{fib_marks},"questions":[{{"q_no":1,"question":"The ___ is the key concept of this chapter.","answer":"correct word or phrase"}}]}}]}}
 
-Return ONLY this JSON (no extra text):
-{{
-  "sections": [
-    {{
-      "section": "D", "section_title": "Short Answer Questions", "marks_each": {short_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
-    }}
-  ]
-}}
-Section D: {short_count} questions."""
+Rules: Section B needs {tf_count} questions (answer True or False). Section C needs {fib_count} questions with ___ for the blank. {NO_DOTS}"""
 
-            prompt4 = f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
+            prompt3 = f"""Class {class_name}, Subject "{subject}", Chapter "{chapter}", Difficulty: {difficulty}.
+Generate {short_count} Short Answer Questions for Section D.
 
-Return ONLY this JSON (no extra text):
-{{
-  "sections": [
-    {{
-      "section": "E", "section_title": "Long Answer Questions", "marks_each": {long_marks},
-      "questions": [{{"q_no": 1, "question": "...", "answer": "..."}}]
-    }}
-  ]
-}}
-Section E: {long_count} questions."""
+Return ONLY this JSON:
+{{"sections":[{{"section":"D","section_title":"Short Answer Questions","marks_each":{short_marks},"questions":[{{"q_no":1,"question":"Write an actual short-answer question about the chapter.","answer":"Write a concise 2-3 sentence model answer."}}]}}]}}
 
-        part1 = call_ai(prompt1)
-        part2 = call_ai(prompt2)
-        part3 = call_ai(prompt3)
-        part4 = call_ai(prompt4)
+Rules: Generate {short_count} questions. Each answer should be 2-3 sentences. {NO_DOTS}"""
 
-        # ── Validate counts and fill any missing questions ──────────────
+            prompt4 = f"""Class {class_name}, Subject "{subject}", Chapter "{chapter}", Difficulty: {difficulty}.
+Generate {long_count} Long Answer Questions for Section E.
+
+Return ONLY this JSON:
+{{"sections":[{{"section":"E","section_title":"Long Answer Questions","marks_each":{long_marks},"questions":[{{"q_no":1,"question":"Write an actual detailed question about the chapter.","answer":"Write a comprehensive 4-5 sentence model answer."}}]}}]}}
+
+Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentences. {NO_DOTS}"""
+
+        # ── Make only the API calls needed (skip sections with 0 questions) ──
         def get_sec(data, letter):
+            if not data:
+                return None
             for s in data.get('sections', []):
                 if s.get('section') == letter:
                     return s
@@ -357,7 +340,7 @@ Section E: {long_count} questions."""
 
         def fill_missing(sec, expected, make_prompt):
             """One retry: ask AI only for the missing questions."""
-            if not sec:
+            if not sec or expected == 0:
                 return
             qs = sec.get('questions', [])
             have = len(qs)
@@ -377,6 +360,11 @@ Section E: {long_count} questions."""
             except Exception:
                 pass  # keep whatever was generated
 
+        part1 = call_ai_robust(prompt1, 'Section A (MCQ)')           if mcq_count > 0 else None
+        part2 = call_ai_robust(prompt2, 'Section B+C (TF+FIB)')     if (tf_count > 0 or fib_count > 0) else None
+        part3 = call_ai_robust(prompt3, 'Section D (Short Answer)')  if short_count > 0 else None
+        part4 = call_ai_robust(prompt4, 'Section E (Long Answer)')   if long_count > 0 else None
+
         sec_a = get_sec(part1, 'A')
         sec_b = get_sec(part2, 'B')
         sec_c = get_sec(part2, 'C')
@@ -384,61 +372,63 @@ Section E: {long_count} questions."""
         sec_e = get_sec(part4, 'E')
 
         if language == 'Hindi':
-            fill_missing(sec_a, mcq_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। कठिनाई: {difficulty_hindi}
-केवल प्रश्न {s} से {s+n-1} तक बहुविकल्पीय प्रश्न दें। केवल JSON लौटाएं:
-{{"sections": [{{"section": "A", "section_title": "बहुविकल्पीय प्रश्न", "marks_each": {mcq_marks}, "questions": [{{"q_no": {s}, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]}}]}}
-{n} प्रश्न दें। सभी हिंदी में।""")
+            fill_missing(sec_a, mcq_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। {n} बहुविकल्पीय प्रश्न {s} से {s+n-1} तक बनाएं। केवल JSON:
+{{"sections":[{{"section":"A","section_title":"बहुविकल्पीय प्रश्न","marks_each":{mcq_marks},"questions":[{{"q_no":{s},"question":"अध्याय से वास्तविक प्रश्न","options":["A. पहला विकल्प","B. दूसरा विकल्प","C. तीसरा विकल्प","D. चौथा विकल्प"],"answer":"A. सही विकल्प"}}]}}]}}
+{NO_DOTS_HI}""")
 
-            fill_missing(sec_b, tf_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। कठिनाई: {difficulty_hindi}
-केवल प्रश्न {s} से {s+n-1} तक सही/गलत प्रश्न दें। केवल JSON लौटाएं:
-{{"sections": [{{"section": "B", "section_title": "सही / गलत", "marks_each": {tf_marks}, "questions": [{{"q_no": {s}, "question": "...", "answer": "सही"}}]}}]}}
-{n} प्रश्न दें। सभी हिंदी में।""")
+            fill_missing(sec_b, tf_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। {n} सही/गलत प्रश्न {s} से {s+n-1} तक बनाएं। केवल JSON:
+{{"sections":[{{"section":"B","section_title":"सही / गलत","marks_each":{tf_marks},"questions":[{{"q_no":{s},"question":"अध्याय से वास्तविक कथन","answer":"सही"}}]}}]}}
+{NO_DOTS_HI}""")
 
-            fill_missing(sec_c, fib_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। कठिनाई: {difficulty_hindi}
-केवल प्रश्न {s} से {s+n-1} तक रिक्त स्थान भरो प्रश्न दें। केवल JSON लौटाएं:
-{{"sections": [{{"section": "C", "section_title": "रिक्त स्थान भरो", "marks_each": {fib_marks}, "questions": [{{"q_no": {s}, "question": "_______ ...", "answer": "..."}}]}}]}}
-{n} प्रश्न दें। सभी हिंदी में।""")
+            fill_missing(sec_c, fib_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। {n} रिक्त स्थान प्रश्न {s} से {s+n-1} तक बनाएं। केवल JSON:
+{{"sections":[{{"section":"C","section_title":"रिक्त स्थान भरो","marks_each":{fib_marks},"questions":[{{"q_no":{s},"question":"अध्याय से ___ वाक्य","answer":"सही शब्द"}}]}}]}}
+{NO_DOTS_HI}""")
 
-            fill_missing(sec_d, short_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। कठिनाई: {difficulty_hindi}
-केवल प्रश्न {s} से {s+n-1} तक लघु उत्तरीय प्रश्न दें। केवल JSON लौटाएं:
-{{"sections": [{{"section": "D", "section_title": "लघु उत्तरीय प्रश्न", "marks_each": {short_marks}, "questions": [{{"q_no": {s}, "question": "...", "answer": "..."}}]}}]}}
-{n} प्रश्न दें। सभी हिंदी में।""")
+            fill_missing(sec_d, short_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। {n} लघु उत्तरीय प्रश्न {s} से {s+n-1} तक बनाएं। केवल JSON:
+{{"sections":[{{"section":"D","section_title":"लघु उत्तरीय प्रश्न","marks_each":{short_marks},"questions":[{{"q_no":{s},"question":"अध्याय से वास्तविक प्रश्न","answer":"2-3 वाक्यों में उत्तर"}}]}}]}}
+{NO_DOTS_HI}""")
 
-            fill_missing(sec_e, long_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। कठिनाई: {difficulty_hindi}
-केवल प्रश्न {s} से {s+n-1} तक दीर्घ उत्तरीय प्रश्न दें। केवल JSON लौटाएं:
-{{"sections": [{{"section": "E", "section_title": "दीर्घ उत्तरीय प्रश्न", "marks_each": {long_marks}, "questions": [{{"q_no": {s}, "question": "...", "answer": "..."}}]}}]}}
-{n} प्रश्न दें। सभी हिंदी में।""")
+            fill_missing(sec_e, long_count, lambda s, n: f"""कक्षा {class_name}, विषय "{subject}", अध्याय "{chapter}"। {n} दीर्घ उत्तरीय प्रश्न {s} से {s+n-1} तक बनाएं। केवल JSON:
+{{"sections":[{{"section":"E","section_title":"दीर्घ उत्तरीय प्रश्न","marks_each":{long_marks},"questions":[{{"q_no":{s},"question":"अध्याय से विस्तृत प्रश्न","answer":"4-5 वाक्यों में विस्तृत उत्तर"}}]}}]}}
+{NO_DOTS_HI}""")
         else:
-            fill_missing(sec_a, mcq_count, lambda s, n: f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
-Generate ONLY questions {s} to {s+n-1} as MCQ. Return ONLY JSON:
-{{"sections": [{{"section": "A", "section_title": "Multiple Choice Questions", "marks_each": {mcq_marks}, "questions": [{{"q_no": {s}, "question": "...", "options": ["A. ...", "B. ...", "C. ...", "D. ..."], "answer": "..."}}]}}]}}
-Provide exactly {n} questions.""")
+            fill_missing(sec_a, mcq_count, lambda s, n: f"""Class {class_name}, "{subject}", "{chapter}". Generate {n} MCQ questions numbered {s} to {s+n-1}. Return ONLY JSON:
+{{"sections":[{{"section":"A","section_title":"Multiple Choice Questions","marks_each":{mcq_marks},"questions":[{{"q_no":{s},"question":"actual exam question text","options":["A. first option","B. second option","C. third option","D. fourth option"],"answer":"A. correct option"}}]}}]}}
+{NO_DOTS}""")
 
-            fill_missing(sec_b, tf_count, lambda s, n: f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
-Generate ONLY questions {s} to {s+n-1} as True/False. Return ONLY JSON:
-{{"sections": [{{"section": "B", "section_title": "True / False", "marks_each": {tf_marks}, "questions": [{{"q_no": {s}, "question": "...", "answer": "True"}}]}}]}}
-Provide exactly {n} questions.""")
+            fill_missing(sec_b, tf_count, lambda s, n: f"""Class {class_name}, "{subject}", "{chapter}". Generate {n} True/False questions numbered {s} to {s+n-1}. Return ONLY JSON:
+{{"sections":[{{"section":"B","section_title":"True / False","marks_each":{tf_marks},"questions":[{{"q_no":{s},"question":"factual statement about the topic","answer":"True"}}]}}]}}
+{NO_DOTS}""")
 
-            fill_missing(sec_c, fib_count, lambda s, n: f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
-Generate ONLY questions {s} to {s+n-1} as Fill in the Blanks. Return ONLY JSON:
-{{"sections": [{{"section": "C", "section_title": "Fill in the Blanks", "marks_each": {fib_marks}, "questions": [{{"q_no": {s}, "question": "The ___ is ...", "answer": "..."}}]}}]}}
-Provide exactly {n} questions.""")
+            fill_missing(sec_c, fib_count, lambda s, n: f"""Class {class_name}, "{subject}", "{chapter}". Generate {n} Fill-in-the-Blank questions numbered {s} to {s+n-1}. Return ONLY JSON:
+{{"sections":[{{"section":"C","section_title":"Fill in the Blanks","marks_each":{fib_marks},"questions":[{{"q_no":{s},"question":"The ___ is the key term.","answer":"correct word"}}]}}]}}
+{NO_DOTS}""")
 
-            fill_missing(sec_d, short_count, lambda s, n: f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
-Generate ONLY questions {s} to {s+n-1} as Short Answer. Return ONLY JSON:
-{{"sections": [{{"section": "D", "section_title": "Short Answer Questions", "marks_each": {short_marks}, "questions": [{{"q_no": {s}, "question": "...", "answer": "..."}}]}}]}}
-Provide exactly {n} questions.""")
+            fill_missing(sec_d, short_count, lambda s, n: f"""Class {class_name}, "{subject}", "{chapter}". Generate {n} Short Answer questions numbered {s} to {s+n-1}. Return ONLY JSON:
+{{"sections":[{{"section":"D","section_title":"Short Answer Questions","marks_each":{short_marks},"questions":[{{"q_no":{s},"question":"actual short-answer question","answer":"concise 2-3 sentence answer"}}]}}]}}
+{NO_DOTS}""")
 
-            fill_missing(sec_e, long_count, lambda s, n: f"""Class {class_name}, subject "{subject}", chapter "{chapter}". Difficulty: {difficulty}.
-Generate ONLY questions {s} to {s+n-1} as Long Answer. Return ONLY JSON:
-{{"sections": [{{"section": "E", "section_title": "Long Answer Questions", "marks_each": {long_marks}, "questions": [{{"q_no": {s}, "question": "...", "answer": "..."}}]}}]}}
-Provide exactly {n} questions.""")
+            fill_missing(sec_e, long_count, lambda s, n: f"""Class {class_name}, "{subject}", "{chapter}". Generate {n} Long Answer questions numbered {s} to {s+n-1}. Return ONLY JSON:
+{{"sections":[{{"section":"E","section_title":"Long Answer Questions","marks_each":{long_marks},"questions":[{{"q_no":{s},"question":"actual detailed question","answer":"comprehensive 4-5 sentence answer"}}]}}]}}
+{NO_DOTS}""")
 
-        # Merge: use part1 as the base, append sections from parts 2, 3, 4
-        paper_data = part1
-        paper_data['sections'].extend(part2.get('sections', []))
-        paper_data['sections'].extend(part3.get('sections', []))
-        paper_data['sections'].extend(part4.get('sections', []))
+        # Merge: build header from input data; collect only non-empty sections
+        paper_data = {
+            'paper_title': (part1 or {}).get('paper_title',
+                            f'{subject} — {chapter}'),
+            'subject':      subject,
+            'class':        class_name,
+            'chapter':      chapter,
+            'total_marks':  total_marks,
+            'time_allowed': '3 Hours' if language != 'Hindi' else '3 घंटे',
+            'sections': [],
+        }
+        for sec in [sec_a, sec_b, sec_c, sec_d, sec_e]:
+            if sec:
+                paper_data['sections'].append(sec)
+
+        if not paper_data['sections']:
+            return JsonResponse({'error': 'AI could not generate any questions. Please try again.'}, status=500)
 
         paper_data = json.loads(json.dumps(paper_data))  # validate round-trip
 
@@ -457,8 +447,6 @@ Provide exactly {n} questions.""")
 
         return JsonResponse({'success': True, 'paper': paper_data, 'paper_id': history.pk})
 
-    except json.JSONDecodeError:
-        return JsonResponse({'error': 'AI returned invalid data. Please try again.'}, status=500)
     except Exception as e:
         logger.exception("generate_question_paper_ai error")
         return JsonResponse({'error': str(e)}, status=500)

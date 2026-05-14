@@ -1747,12 +1747,57 @@ function sendFeedback(btn, rating){
 
 // --- Change Chapter (AJAX) ---
 function changeChapter(){
+    // Read current context values before clearing
+    var curClass   = (document.getElementById('ctxClass')   || {}).textContent || '';
+    var curSubject = (document.getElementById('ctxSubject') || {}).textContent || '';
+    var curChapter = (document.getElementById('ctxChapter') || {}).textContent || '';
+
+    // Tell server to clear guardrail session
     var csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
     var fd   = new FormData();
     fd.append('csrfmiddlewaretoken', csrf);
     fetch("{% url 'ai_sathi_change_chapter' %}", {method:'POST', body:fd})
-        .then(function(){ location.reload(); })
-        .catch(function(){ location.reload(); });
+    .then(function(){
+        // Hide context bar, show guardrail panel
+        document.getElementById('contextBar').style.display = 'none';
+        document.getElementById('guardrailPanel').style.display = '';
+
+        var cls = document.getElementById('classSelect');
+        var sub = document.getElementById('subjectSelect');
+        var ch  = document.getElementById('chapterSelect');
+
+        // Pre-select current class
+        if(curClass){
+            cls.value = curClass;
+            cls.dispatchEvent(new Event('change')); // load subjects
+
+            // After subjects load, pre-select subject then chapters
+            var tryPreselectSub = function(attempts){
+                if(!attempts) return;
+                setTimeout(function(){
+                    var found = Array.from(sub.options).some(function(o){ return o.value === curSubject; });
+                    if(found){
+                        sub.value = curSubject;
+                        sub.dispatchEvent(new Event('change')); // load chapters
+
+                        var tryPreselectCh = function(attempts2){
+                            if(!attempts2) return;
+                            setTimeout(function(){
+                                var found2 = Array.from(ch.options).some(function(o){ return o.value === curChapter; });
+                                if(found2){ ch.value = curChapter; ch.dispatchEvent(new Event('change')); }
+                                else tryPreselectCh(attempts2 - 1);
+                            }, 300);
+                        };
+                        tryPreselectCh(5);
+                    } else {
+                        tryPreselectSub(attempts - 1);
+                    }
+                }, 300);
+            };
+            tryPreselectSub(5);
+        }
+    })
+    .catch(function(){ location.reload(); });
 }
 
 // --- New Chat (AJAX) ---

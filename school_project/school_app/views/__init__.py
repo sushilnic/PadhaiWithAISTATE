@@ -19,3 +19,5 @@ from .admin_tools import *
 from .analysis import *
 from .calendar import *
 from .assigned_paper import *
+from .omr import *
+from .content_admin import *

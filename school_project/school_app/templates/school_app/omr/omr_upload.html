@@ -1,0 +1,408 @@
+{% extends 'school_app/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    :root{--pri:#1e3c72;--pri2:#2a5298;--surf:#fff;--bdr:#e2e8f0;}
+    .omr-header{background:linear-gradient(135deg,var(--pri),var(--pri2));border-radius:12px;padding:20px 28px;margin-bottom:20px;color:#fff;}
+    .omr-header h1{font-size:1.25rem;font-weight:700;margin:0 0 4px;}
+    .omr-header .sub{font-size:.85rem;opacity:.9;}
+    .alert-pkg{background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.85rem;color:#92400e;}
+    .card{background:var(--surf);border:1px solid var(--bdr);border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.06);margin-bottom:20px;}
+    .card-hd{padding:14px 20px;border-bottom:1px solid var(--bdr);font-weight:700;color:var(--pri);font-size:.95rem;}
+    .card-bd{padding:20px;}
+    /* Drop zone */
+    .drop-zone{border:2.5px dashed #94a3b8;border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#f8fafc;}
+    .drop-zone.dragover{border-color:var(--pri);background:#eef2ff;}
+    .drop-zone .dz-icon{font-size:2.5rem;margin-bottom:8px;}
+    .drop-zone p{color:#64748b;font-size:.9rem;margin:0;}
+    .drop-zone strong{color:var(--pri);}
+    /* Results table */
+    .rtable{width:100%;border-collapse:collapse;font-size:.82rem;}
+    .rtable th{padding:9px 12px;background:#f1f5f9;color:#475569;font-weight:700;text-align:left;white-space:nowrap;}
+    .rtable td{padding:8px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+    .rtable tr:hover td{background:#f8fafc;}
+    .thumb{width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid var(--bdr);}
+    .conf-bar{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;}
+    .conf-fill{height:7px;border-radius:4px;background:linear-gradient(90deg,#059669,#10b981);}
+    .conf-low .conf-fill{background:linear-gradient(90deg,#dc2626,#ef4444);}
+    .conf-mid .conf-fill{background:linear-gradient(90deg,#d97706,#f59e0b);}
+    /* Answer chips */
+    .ans-grid{display:flex;flex-wrap:wrap;gap:3px;max-width:380px;}
+    .ans-chip{display:inline-flex;flex-direction:column;align-items:center;cursor:pointer;
+              border:1.5px solid #cbd5e1;border-radius:6px;padding:2px 5px;min-width:32px;
+              background:#f8fafc;transition:all .15s;user-select:none;}
+    .ans-chip .qn{font-size:.65rem;color:#94a3b8;line-height:1;}
+    .ans-chip .opt{font-size:.8rem;font-weight:700;color:#334155;line-height:1.3;}
+    .ans-chip.filled{background:#dbeafe;border-color:#3b82f6;}
+    .ans-chip.filled .opt{color:#1d4ed8;}
+    .ans-chip.none .opt{color:#cbd5e1;}
+    /* Student select */
+    .stu-sel{font-size:.82rem;padding:4px 8px;border:1px solid var(--bdr);border-radius:6px;max-width:180px;}
+    .badge-auto{background:#d1fae5;color:#065f46;font-size:.72rem;padding:2px 8px;border-radius:10px;font-weight:700;}
+    .badge-manual{background:#fef3c7;color:#92400e;font-size:.72rem;padding:2px 8px;border-radius:10px;font-weight:700;}
+    .badge-err{background:#fee2e2;color:#991b1b;font-size:.72rem;padding:2px 8px;border-radius:10px;font-weight:700;}
+    .processing{opacity:.6;font-style:italic;font-size:.8rem;}
+    /* Buttons */
+    .btn-pri{background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;
+             padding:9px 22px;border-radius:8px;font-size:.88rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
+    .btn-ghost{background:none;border:1.5px solid var(--bdr);color:#475569;padding:8px 18px;
+               border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block;}
+    .btn-grn{background:linear-gradient(135deg,#059669,#10b981);color:#fff;border:none;
+             padding:9px 22px;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;}
+    .btn-grn:disabled{opacity:.5;cursor:not-allowed;}
+    #emptyMsg{color:#94a3b8;text-align:center;padding:30px;font-size:.9rem;}
+</style>
+
+<div class="omr-header">
+    <h1>📄 OMR Sheet Upload — {{ assignment.question_paper.subject }}</h1>
+    <div class="sub">
+        Class {{ assignment.class_name }} &nbsp;·&nbsp;
+        {{ assignment.question_paper.chapter }} &nbsp;·&nbsp;
+        {{ assignment.question_paper.total_marks }} marks &nbsp;·&nbsp;
+        {{ q_count }} MCQ question{{ q_count|pluralize }}
+    </div>
+</div>
+
+{% if not has_cv2 or not has_reportlab or not has_qrcode %}
+<div class="alert-pkg">
+    ⚠️ <strong>Missing packages.</strong>
+    Run: <code>pip install{% if not has_cv2 %} opencv-python{% endif %}{% if not has_reportlab %} reportlab{% endif %}{% if not has_qrcode %} qrcode[pil]{% endif %}</code>
+    then restart the server.
+    {% if not has_cv2 %} Bubble detection unavailable (will use GPT-4V fallback).{% endif %}
+    {% if not has_reportlab or not has_qrcode %} PDF sheet download unavailable.{% endif %}
+</div>
+{% endif %}
+
+<!-- Action bar -->
+<div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;">
+    {% if has_reportlab and has_qrcode %}
+    <a href="{% url 'download_omr_sheets' assignment.pk %}" class="btn-pri">⬇ Download OMR Sheets (PDF)</a>
+    {% endif %}
+    <a href="{% url 'assignment_report' assignment.pk %}" class="btn-ghost">← Back to Report</a>
+    <div style="flex:1;"></div>
+    <span style="font-size:.8rem;color:#64748b;">Upload phone photos of filled OMR sheets</span>
+</div>
+
+<!-- Upload card -->
+<div class="card">
+    <div class="card-hd">📤 Upload Answer Sheets</div>
+    <div class="card-bd">
+        <div class="drop-zone" id="dropZone">
+            <div class="dz-icon">📸</div>
+            <p><strong>Drag & drop photos here</strong></p>
+            <p>or <strong style="color:var(--pri);cursor:pointer;" onclick="document.getElementById('fileInput').click()">click to browse</strong></p>
+            <p style="margin-top:8px;font-size:.78rem;color:#94a3b8;">Accepts JPG, PNG, HEIC · Multiple files · Max 20 MB each</p>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+        <div style="margin-top:12px;font-size:.82rem;color:#64748b;" id="uploadStatus"></div>
+    </div>
+</div>
+
+<!-- Results card -->
+<div class="card" id="resultsCard" style="display:none;">
+    <div class="card-hd" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>📋 Detected Results</span>
+        <span id="resultSummary" style="font-size:.8rem;color:#64748b;font-weight:400;"></span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table class="rtable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Preview</th>
+                    <th>Student</th>
+                    <th>Confidence</th>
+                    <th>Answers <span style="font-weight:400;font-size:.75rem;color:#94a3b8;">(click to change)</span></th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="resultsTbody">
+                <tr><td colspan="6" id="emptyMsg">No sheets processed yet.</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div style="padding:16px 20px;border-top:1px solid var(--bdr);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-grn" id="confirmBtn" disabled onclick="confirmAll()">
+            ✅ Save All Results
+        </button>
+        <button class="btn-ghost" onclick="clearAll()">🗑 Clear All</button>
+        <span id="confirmStatus" style="font-size:.83rem;color:#64748b;"></span>
+    </div>
+</div>
+
+<script>
+(function(){
+    var PROCESS_URL = "{% url 'omr_process_ajax' assignment.pk %}";
+    var CONFIRM_URL = "{% url 'omr_confirm_ajax' assignment.pk %}";
+    var CSRF        = "{{ csrf_token }}";
+    var STUDENTS    = {{ students_json|safe }};
+    var Q_LIST      = {{ q_list_json|safe }};
+    var OPTS_MCQ    = ['A','B','C','D'];
+    var OPTS_TF     = ['T','F'];
+
+    var rows        = [];   // [{student_id, answers:{idx: opt}, file, imgDataUrl, confidence, manual, rowEl}]
+    var rowCounter  = 0;
+
+    // ── Drop zone ──────────────────────────────────────────────────────────
+    var dz = document.getElementById('dropZone');
+    var fi = document.getElementById('fileInput');
+
+    dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', function(){ dz.classList.remove('dragover'); });
+    dz.addEventListener('drop', function(e){
+        e.preventDefault(); dz.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    fi.addEventListener('change', function(){ handleFiles(this.files); this.value = ''; });
+
+    function handleFiles(files){
+        Array.from(files).forEach(function(f){
+            if(!f.type.startsWith('image/') && !f.name.match(/\.(heic|heif)$/i)){ return; }
+            var rdr = new FileReader();
+            rdr.onload = function(ev){ processFile(f, ev.target.result); };
+            rdr.readAsDataURL(f);
+        });
+    }
+
+    // ── Process one file ───────────────────────────────────────────────────
+    function processFile(file, dataUrl){
+        document.getElementById('resultsCard').style.display = '';
+        var idx = rowCounter++;
+        var row = {
+            idx: idx, student_id: null, student_name: null,
+            answers: {}, confidence: 0, manual: true,
+            dataUrl: dataUrl, rowEl: null,
+        };
+        rows.push(row);
+
+        var tbody = document.getElementById('resultsTbody');
+        var emptyMsg = document.getElementById('emptyMsg');
+        if(emptyMsg) emptyMsg.remove();
+
+        var tr = document.createElement('tr');
+        tr.id = 'row-' + idx;
+        tr.innerHTML = buildRowHtml(row, true);
+        tbody.appendChild(tr);
+        row.rowEl = tr;
+        updateSummary();
+
+        // Send to server
+        var fd = new FormData();
+        fd.append('csrfmiddlewaretoken', CSRF);
+        fd.append('image', file);
+
+        fetch(PROCESS_URL, {method:'POST', body:fd})
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            row.student_id   = data.student_id;
+            row.student_name = data.student_name;
+            row.answers      = data.answers || {};
+            row.confidence   = data.confidence || 0;
+            row.manual       = data.manual_needed;
+            row.warning      = data.warning;
+            row.qr_status    = data.qr_status || 'not_detected';
+            row.roll_number  = data.roll_number || null;
+            row.rowEl.innerHTML = buildRowHtml(row, false);
+            bindRowEvents(row);
+            updateSummary();
+            updateConfirmBtn();
+        })
+        .catch(function(e){
+            row.error = 'Network error: ' + e;
+            row.rowEl.innerHTML = buildRowHtml(row, false);
+            updateSummary();
+        });
+    }
+
+    // ── Row HTML ───────────────────────────────────────────────────────────
+    function buildRowHtml(row, loading){
+        var num = row.idx + 1;
+
+        var thumbHtml = '<img class="thumb" src="' + row.dataUrl + '" alt="sheet">';
+
+        if(loading){
+            return '<td>'+ num +'</td><td>'+ thumbHtml +'</td>'
+                 + '<td colspan="4" class="processing">⏳ Processing…</td>';
+        }
+
+        if(row.error){
+            return '<td>'+ num +'</td><td>'+ thumbHtml +'</td>'
+                 + '<td colspan="3"><span class="badge-err">⚠ ' + esc(row.error) + '</span></td>'
+                 + '<td><button class="btn-ghost" style="font-size:.75rem;padding:4px 10px;" onclick="removeRow('+ row.idx +')">Remove</button></td>';
+        }
+
+        // Student cell
+        var stuHtml;
+        var qrBadge;
+        var qs = row.qr_status || 'not_detected';
+        if (qs === 'matched') {
+            qrBadge = '<span class="badge-auto">🔍 QR matched</span>';
+        } else if (qs === 'detected') {
+            qrBadge = '<span class="badge-manual">⚠ QR read but roll not found</span>';
+        } else if (qs && qs.startsWith('no_student_roll=')) {
+            var detectedRoll = qs.split('=')[1];
+            qrBadge = '<span class="badge-manual" title="Roll in QR: ' + esc(detectedRoll) + '">⚠ QR: roll=' + esc(detectedRoll) + ' not found</span>';
+        } else {
+            qrBadge = '<span class="badge-err">✗ QR not detected</span>';
+        }
+        if(!row.manual && row.student_name){
+            stuHtml = '<div style="font-weight:700;font-size:.85rem;">' + esc(row.student_name) + '</div>'
+                    + qrBadge;
+        } else {
+            var opts = STUDENTS.map(function(s){
+                var sel = (s.id == row.student_id) ? 'selected' : '';
+                return '<option value="'+ s.id +'" '+ sel +'>'+ esc(s.name) +' ('+esc(s.roll_number)+')</option>';
+            }).join('');
+            stuHtml = '<select class="stu-sel" onchange="setStudent('+ row.idx +', this.value, this.options[this.selectedIndex].text)">'
+                    + '<option value="">— Select Student —</option>' + opts + '</select>'
+                    + '<br>' + qrBadge;
+        }
+
+        // Confidence
+        var pct    = Math.round((row.confidence || 0) * 100);
+        var cls    = pct >= 70 ? '' : pct >= 50 ? 'conf-mid' : 'conf-low';
+        var confHtml = '<div class="conf-bar '+ cls +'"><div class="conf-fill" style="width:'+ pct +'px;max-width:100px;"></div>'
+                     + '<span>'+ pct +'%</span></div>'
+                     + (row.warning ? '<div style="font-size:.72rem;color:#d97706;margin-top:2px;">⚠ '+ esc(row.warning) +'</div>' : '');
+
+        // Answers grid
+        var ansHtml = '<div class="ans-grid" id="ans-'+ row.idx +'">' + buildAnsChips(row) + '</div>';
+
+        return '<td>'+ num +'</td><td>'+ thumbHtml +'</td><td>'+ stuHtml +'</td>'
+             + '<td>'+ confHtml +'</td><td>'+ ansHtml +'</td>'
+             + '<td><button class="btn-ghost" style="font-size:.75rem;padding:4px 10px;" onclick="removeRow('+ row.idx +')">Remove</button></td>';
+    }
+
+    function buildAnsChips(row){
+        return Q_LIST.map(function(q){
+            var opt = row.answers[String(q.idx)] || '';
+            var opts = q.is_tf ? OPTS_TF : OPTS_MCQ;
+            var filled = opt ? 'filled' : 'none';
+            return '<div class="ans-chip '+ filled +'" data-row="'+ row.idx +'" data-qidx="'+ q.idx
+                 + '" data-opts="'+ opts.join(',') +'" title="Q'+(q.idx+1)+' ('+(q.is_tf?'T/F':'A-D')+') — click to change">'
+                 + '<span class="qn">Q'+(q.idx+1)+'</span>'
+                 + '<span class="opt">'+ (opt || '—') +'</span>'
+                 + '</div>';
+        }).join('');
+    }
+
+    function bindRowEvents(row){
+        if(!row.rowEl) return;
+        // Student select (manual mode)
+        var sel = row.rowEl.querySelector('.stu-sel');
+        if(sel){
+            sel.addEventListener('change', function(){
+                setStudent(row.idx, this.value,
+                    this.options[this.selectedIndex] ? this.options[this.selectedIndex].text : '');
+            });
+        }
+        // Answer chip clicks
+        var chips = row.rowEl.querySelectorAll('.ans-chip');
+        chips.forEach(function(chip){ chip.addEventListener('click', cycleAnswer); });
+    }
+
+    function cycleAnswer(){
+        var rowIdx = parseInt(this.dataset.row);
+        var qIdx   = String(this.dataset.qidx);
+        var opts   = this.dataset.opts.split(',');
+        var row    = rows.find(function(r){ return r.idx === rowIdx; });
+        if(!row) return;
+        var cur = row.answers[qIdx] || '';
+        var pos = opts.indexOf(cur);
+        row.answers[qIdx] = opts[(pos + 1) % (opts.length + 1)] || '';   // cycle through opts + empty
+        if(pos + 1 >= opts.length) row.answers[qIdx] = '';
+        // Refresh chips
+        var grid = document.getElementById('ans-' + rowIdx);
+        if(grid) grid.innerHTML = buildAnsChips(row);
+        var newChips = grid ? grid.querySelectorAll('.ans-chip') : [];
+        newChips.forEach(function(c){ c.addEventListener('click', cycleAnswer); });
+        updateConfirmBtn();
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    window.setStudent = function(rowIdx, sid, name){
+        var row = rows.find(function(r){ return r.idx === rowIdx; });
+        if(!row) return;
+        row.student_id   = sid ? parseInt(sid) : null;
+        row.student_name = name || null;
+        updateConfirmBtn();
+    };
+
+    window.removeRow = function(rowIdx){
+        rows = rows.filter(function(r){ return r.idx !== rowIdx; });
+        var tr = document.getElementById('row-' + rowIdx);
+        if(tr) tr.remove();
+        updateSummary();
+        updateConfirmBtn();
+        if(rows.length === 0){
+            document.getElementById('resultsCard').style.display = 'none';
+        }
+    };
+
+    window.clearAll = function(){
+        rows = [];
+        document.getElementById('resultsTbody').innerHTML =
+            '<tr><td colspan="6" id="emptyMsg">No sheets processed yet.</td></tr>';
+        document.getElementById('resultsCard').style.display = 'none';
+        updateConfirmBtn();
+    };
+
+    function updateSummary(){
+        var processed = rows.filter(function(r){ return !r.error && !r.loading; }).length;
+        var total     = rows.length;
+        document.getElementById('resultSummary').textContent =
+            processed + ' of ' + total + ' sheet' + (total===1?'':'s') + ' processed';
+    }
+
+    function updateConfirmBtn(){
+        var ready = rows.filter(function(r){ return !r.error && r.student_id && Object.keys(r.answers).length > 0; });
+        var btn   = document.getElementById('confirmBtn');
+        btn.disabled = ready.length === 0;
+        btn.textContent = '✅ Save ' + ready.length + ' Result' + (ready.length===1?'':'s');
+    }
+
+    // ── Confirm & save ─────────────────────────────────────────────────────
+    window.confirmAll = function(){
+        var payload = rows
+            .filter(function(r){ return !r.error && r.student_id && Object.keys(r.answers).length > 0; })
+            .map(function(r){ return {student_id: r.student_id, answers: r.answers}; });
+
+        if(!payload.length){ return; }
+
+        var btn = document.getElementById('confirmBtn');
+        btn.disabled = true;
+        btn.textContent = '⏳ Saving…';
+        document.getElementById('confirmStatus').textContent = '';
+
+        fetch(CONFIRM_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+            body: JSON.stringify(payload),
+        })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            var msg = '✅ Saved ' + data.saved + ' result' + (data.saved===1?'':'s');
+            if(data.skipped) msg += ' · ' + data.skipped + ' skipped (already submitted)';
+            if(data.errors && data.errors.length) msg += ' · Errors: ' + data.errors.join(', ');
+            document.getElementById('confirmStatus').textContent = msg;
+            btn.textContent = '✅ Saved!';
+            // Redirect to report after 2 seconds
+            setTimeout(function(){
+                window.location.href = "{% url 'assignment_report' assignment.pk %}";
+            }, 2000);
+        })
+        .catch(function(e){
+            document.getElementById('confirmStatus').textContent = '⚠ Error: ' + e;
+            btn.disabled = false;
+            btn.textContent = '✅ Save Results';
+        });
+    };
+
+    function esc(s){
+        return String(s)
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+            .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+})();
+</script>
+{% endblock %}

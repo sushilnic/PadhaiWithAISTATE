@@ -1,0 +1,203 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+<style>
+    .cm-header {
+        background: linear-gradient(135deg,#1e3c72,#2a5298);
+        border-radius:12px; padding:22px 28px; margin-bottom:24px;
+        color:white; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    }
+    .cm-header h1 { font-size:1.4rem; font-weight:700; margin:0; }
+    .cm-card { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,0.08); border:1px solid #e2e8f0; margin-bottom:24px; overflow:hidden; }
+    .cm-card-header { background:linear-gradient(135deg,#1e3c72,#2a5298); color:white; padding:13px 20px; font-weight:700; font-size:1rem; }
+    .cm-card-body { padding:20px; }
+    .filter-row { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:0; }
+    .form-label { font-weight:600; font-size:.85rem; color:#374151; margin-bottom:4px; display:block; }
+    .form-control, .form-select { border:1.5px solid #d1d5db; border-radius:8px; padding:8px 12px; font-size:.9rem; }
+    .form-control:focus, .form-select:focus { border-color:#1e3c72; box-shadow:0 0 0 3px rgba(30,60,114,.1); outline:none; }
+    .btn-primary-cm  { background:linear-gradient(135deg,#1e3c72,#2a5298); color:white; border:none; padding:8px 20px; border-radius:8px; font-weight:600; cursor:pointer; }
+    .btn-success-cm  { background:linear-gradient(135deg,#059669,#10b981); color:white; border:none; padding:6px 14px; border-radius:6px; font-size:.82rem; font-weight:600; cursor:pointer; }
+    .btn-warning-cm  { background:linear-gradient(135deg,#d97706,#f59e0b); color:white; border:none; padding:6px 14px; border-radius:6px; font-size:.82rem; font-weight:600; cursor:pointer; }
+    .btn-danger-cm   { background:linear-gradient(135deg,#dc2626,#ef4444); color:white; border:none; padding:6px 14px; border-radius:6px; font-size:.82rem; font-weight:600; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; }
+    thead th { background:linear-gradient(135deg,#1e3c72,#2a5298); color:white; padding:11px 14px; font-size:.85rem; font-weight:600; }
+    tbody tr:nth-child(even) { background:#f8fafc; }
+    tbody td { padding:10px 14px; font-size:.88rem; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
+    .badge-active   { background:#d1fae5; color:#065f46; padding:2px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .badge-inactive { background:#fee2e2; color:#991b1b; padding:2px 10px; border-radius:20px; font-size:.75rem; font-weight:700; }
+    .alert-msg { padding:10px 16px; border-radius:8px; margin-bottom:16px; font-size:.9rem; font-weight:600; }
+    .alert-success { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; }
+    /* Edit modal */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9000; align-items:center; justify-content:center; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:white; border-radius:14px; padding:28px; width:100%; max-width:460px; box-shadow:0 10px 40px rgba(0,0,0,0.2); }
+    .modal-box h5 { font-size:1.1rem; font-weight:700; color:#1e3c72; margin-bottom:18px; }
+    .modal-footer { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+</style>
+
+<div class="cm-header">
+    <div>
+        <h1><i class="fas fa-book me-2"></i> Manage Subjects</h1>
+        <p style="margin:4px 0 0;opacity:.85;font-size:.9rem;">Add, edit or remove AI Sathi subjects by class</p>
+    </div>
+    <a href="{% url 'state_dashboard' %}" class="btn btn-light btn-sm fw-600">← Back to Dashboard</a>
+</div>
+
+{% if msg %}<div class="alert-msg alert-success">{{ msg }}</div>{% endif %}
+
+<!-- Filter -->
+<div class="cm-card">
+    <div class="cm-card-header">🔍 Filter by Class</div>
+    <div class="cm-card-body">
+        <form method="get" class="filter-row">
+            <div>
+                <label class="form-label">Class</label>
+                <select name="class_id" class="form-select" style="min-width:150px;" onchange="this.form.submit()">
+                    <option value="">All Classes</option>
+                    {% for cls in classes %}
+                    <option value="{{ cls.pk }}" {% if sel_class == cls.pk|stringformat:"s" %}selected{% endif %}>Class {{ cls.number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary-cm">Filter</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add Subject -->
+<div class="cm-card">
+    <div class="cm-card-header">➕ Add New Subject</div>
+    <div class="cm-card-body">
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end;">
+                <div>
+                    <label class="form-label">Class *</label>
+                    <select name="class_id" class="form-select" required style="min-width:130px;">
+                        <option value="">Select Class</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.pk }}" {% if sel_class == cls.pk|stringformat:"s" %}selected{% endif %}>Class {{ cls.number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Subject Name *</label>
+                    <input type="text" name="name" class="form-control" placeholder="e.g. Mathematics" maxlength="100" required style="min-width:200px;">
+                </div>
+                <div>
+                    <label class="form-label">Order</label>
+                    <input type="number" name="order" class="form-control" value="0" min="0" max="999" style="width:80px;">
+                </div>
+                <button type="submit" class="btn-success-cm" style="padding:9px 22px;">Add Subject</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Subjects Table -->
+<div class="cm-card">
+    <div class="cm-card-header">📋 Subject List ({{ subjects|length }} subjects)</div>
+    <div class="cm-card-body" style="padding:0;">
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Class</th>
+                        <th>Subject Name</th>
+                        <th>Order</th>
+                        <th>Status</th>
+                        <th>Chapters</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subj in subjects %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><strong>Class {{ subj.class_ref.number }}</strong></td>
+                        <td>{{ subj.name }}</td>
+                        <td>{{ subj.order }}</td>
+                        <td>
+                            {% if subj.is_active %}
+                            <span class="badge-active">Active</span>
+                            {% else %}
+                            <span class="badge-inactive">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'manage_chapters' %}?class_id={{ subj.class_ref.pk }}&subj_id={{ subj.pk }}" style="color:#1e3c72;font-weight:600;">
+                                {{ subj.chapters.count }} chapter(s)
+                            </a>
+                        </td>
+                        <td style="white-space:nowrap;">
+                            <button class="btn-warning-cm"
+                                onclick="openEdit('{{ subj.pk }}','{{ subj.name|escapejs }}','{{ subj.order }}','{{ subj.is_active|yesno:"1,0" }}')">
+                                ✏️ Edit
+                            </button>
+                            <form method="post" style="display:inline;" onsubmit="return confirm('Delete subject \'{{ subj.name|escapejs }}\' and all its chapters?');">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="subj_id" value="{{ subj.pk }}">
+                                <button type="submit" class="btn-danger-cm">🗑 Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" style="text-align:center;color:#6b7280;padding:24px;">No subjects found. Add one above.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <h5>✏️ Edit Subject</h5>
+        <form method="post" id="editForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="subj_id" id="editSubjId">
+            <div style="margin-bottom:14px;">
+                <label class="form-label">Subject Name *</label>
+                <input type="text" name="name" id="editName" class="form-control" maxlength="100" required>
+            </div>
+            <div style="display:flex;gap:14px;">
+                <div style="flex:1;">
+                    <label class="form-label">Order</label>
+                    <input type="number" name="order" id="editOrder" class="form-control" min="0" max="999">
+                </div>
+                <div style="flex:1;">
+                    <label class="form-label">Status</label>
+                    <select name="is_active" id="editActive" class="form-select">
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-danger-cm" onclick="closeEdit()">Cancel</button>
+                <button type="submit" class="btn-success-cm" style="padding:8px 22px;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEdit(id, name, order, active) {
+    document.getElementById('editSubjId').value = id;
+    document.getElementById('editName').value   = name;
+    document.getElementById('editOrder').value  = order;
+    document.getElementById('editActive').value = active;
+    document.getElementById('editModal').classList.add('open');
+}
+function closeEdit() {
+    document.getElementById('editModal').classList.remove('open');
+}
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeEdit();
+});
+</script>
+{% endblock %}
