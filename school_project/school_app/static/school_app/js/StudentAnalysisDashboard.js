@@ -91,7 +91,39 @@ document.addEventListener('DOMContentLoaded', function() {
                   </div>
               </div>
           </div>
-
+        <div class="card">
+              <div class="card-header">
+                  <h3>📝 Test Performance Details</h3>
+              </div>
+              <div class="card-body" style="padding: 0;">
+                  <div class="table-responsive">
+                      <table class="table table-striped">
+                          <thead>
+                              <tr>
+                                  <th>#</th>
+                                  <th>Test Name</th>
+                                  <th>Subject</th>
+                                  <th>Date</th>
+                                  <th>Marks</th>
+                                  <th>Class Average</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              ${data.test_performance.map((test, i) => `
+                                  <tr>
+                                      <td>${i + 1}</td>
+                                      <td>${test.test_name}</td>
+                                      <td>${test.subject}</td>
+                                      <td>${test.date || 'N/A'}</td>
+                                      <td><strong>${test.marks}</strong></td>
+                                      <td>${test.class_average || 'N/A'}</td>
+                                  </tr>
+                              `).join('')}
+                          </tbody>
+                      </table>
+                  </div>
+              </div>
+          </div>
           <div class="card">
               <div class="card-header">
                   <h3>📈 Performance Statistics</h3>
@@ -118,47 +150,17 @@ document.addEventListener('DOMContentLoaded', function() {
                   <div class="row mt-4">
                       <div class="col-12 mb-4">
                           <h5 style="color:#1e3c72;">Marks Trend</h5>
-                          <canvas id="marksTrendChart" height="80"></canvas>
+                          <canvas id="marksTrendChart" height="50"></canvas>
                       </div>
                       <div class="col-12">
                           <h5 style="color:#1e3c72;">Subject-wise Performance</h5>
-                          <canvas id="subjectPerformanceChart" height="80"></canvas>
+                          <canvas id="subjectPerformanceChart" height="50"></canvas>
                       </div>
                   </div>
               </div>
           </div>
 
-          <div class="card">
-              <div class="card-header">
-                  <h3>📝 Test Performance Details</h3>
-              </div>
-              <div class="card-body" style="padding: 0;">
-                  <div class="table-responsive">
-                      <table class="table table-striped">
-                          <thead>
-                              <tr>
-                                  <th>Test Name</th>
-                                  <th>Subject</th>
-                                  <th>Date</th>
-                                  <th>Marks</th>
-                                  <th>Class Average</th>
-                              </tr>
-                          </thead>
-                          <tbody>
-                              ${data.test_performance.map(test => `
-                                  <tr>
-                                      <td>${test.test_name}</td>
-                                      <td>${test.subject}</td>
-                                      <td>${test.date || 'N/A'}</td>
-                                      <td><strong>${test.marks}</strong></td>
-                                      <td>${test.class_average || 'N/A'}</td>
-                                  </tr>
-                              `).join('')}
-                          </tbody>
-                      </table>
-                  </div>
-              </div>
-          </div>
+          
       `;
 
       // Update the analysis content
