@@ -178,7 +178,7 @@ def generate_question_paper_ai(request):
         sarvam_model = os.getenv("SARVAM_MODEL", "sarvam-m")
         
         sarvam_max_tokens = int(os.getenv("SARVAM_MAX_TOKENS", "4000"))
-        sarvam_max_tokens=1000
+        
         def _repair_json(text):
             """Fix common AI JSON issues: trailing commas, unclosed brackets."""
             import re
