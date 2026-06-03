@@ -175,7 +175,10 @@ def generate_question_paper_ai(request):
             system_msg = "You are an experienced teacher. Always respond with valid compact JSON only. No extra whitespace, newlines, or indentation."
 
         client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
-
+        sarvam_model = os.getenv("SARVAM_MODEL", "sarvam-m")
+        
+        sarvam_max_tokens = int(os.getenv("SARVAM_MAX_TOKENS", "4000"))
+        sarvam_max_tokens=1000
         def _repair_json(text):
             """Fix common AI JSON issues: trailing commas, unclosed brackets."""
             import re
@@ -217,9 +220,10 @@ def generate_question_paper_ai(request):
                 text = text[s:e + 1]
             return text
 
-        def call_ai(user_prompt, max_tok=2000):
+        def call_ai(user_prompt, max_tok=sarvam_max_tokens):
             """Call Sarvam and return parsed JSON dict, or raise json.JSONDecodeError."""
             resp = client.chat.completions(
+                model=sarvam_model,
                 messages=[
                     {"role": "system", "content": system_msg},
                     {"role": "user",   "content": user_prompt},
@@ -243,7 +247,7 @@ def generate_question_paper_ai(request):
                 logger.warning("Repaired JSON, retrying parse")
                 return json.loads(repaired)
 
-        def call_ai_robust(user_prompt, section_label, max_tok=2000):
+        def call_ai_robust(user_prompt, section_label, max_tok=sarvam_max_tokens):
             """call_ai with one automatic retry; returns None on persistent failure."""
             for attempt in range(2):
                 try:

@@ -18,6 +18,7 @@ load_dotenv()
 # API Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 SARVAM_API_KEY = os.getenv("SARVAM_API_KEY")
+SARVAM_MAX_TOKENS = int(os.getenv("SARVAM_MAX_TOKENS", "4000"))
 
 # Initialize async OpenAI client
 async_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
@@ -174,16 +175,19 @@ async def async_generate_similar_questions(
     else:  # Default to Sarvam AI
         client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
         response = client.chat.completions(
+            model=os.getenv("SARVAM_MODEL", "sarvam-m"),
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt},
             ],
-            temperature=temperature,            
+            temperature=temperature,
             top_p=top_p,
-            max_tokens=2000,
+            max_tokens=SARVAM_MAX_TOKENS,
         )
 
-    return _strip_think(response.choices[0].message.content)
+    msg = response.choices[0].message
+    raw = msg.content or getattr(msg, 'reasoning_content', None) or ''
+    return _strip_think(raw)
 
 
 def encode_image(image_path: str) -> str:
@@ -287,12 +291,15 @@ async def async_solve_math_problem(
         elif model_type == "sarvam":
             client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
             response = client.chat.completions(
+                model=os.getenv("SARVAM_MODEL", "sarvam-m"),
                 messages=messages,
-                temperature=temperature,                
+                temperature=temperature,
                 top_p=top_p,
-                max_tokens=2000,
+                max_tokens=SARVAM_MAX_TOKENS,
             )
-            return _strip_think(response.choices[0].message.content.strip())
+            msg = response.choices[0].message
+            raw = msg.content or getattr(msg, 'reasoning_content', None) or ''
+            return _strip_think(raw.strip())
         else:
             return "Error: Invalid model type. Status=400"
 

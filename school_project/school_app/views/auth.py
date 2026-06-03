@@ -322,13 +322,17 @@ def login_chat_api(request):
 
         for attempt in range(3):
             try:
-                response = client.chat.completions(                    
+                response = client.chat.completions(
+                    model=os.getenv("SARVAM_MODEL", "sarvam-m"),
                     messages=messages_list,
                     temperature=0.3,
                     top_p=0.9,
+                    max_tokens=int(os.getenv("SARVAM_MAX_TOKENS", "4000")),
                 )
 
-                reply = _strip_think(response.choices[0].message.content.strip())
+                _msg = response.choices[0].message
+                _raw = _msg.content or getattr(_msg, 'reasoning_content', None) or ''
+                reply = _strip_think(_raw.strip())
 
                 return JsonResponse({"reply": reply})
 

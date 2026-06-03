@@ -22,6 +22,8 @@ _SESSION_MINS = getattr(settings, 'AI_SATHI_SESSION_MINS', 30)
 
 # ── Singleton Sarvam client ───────────────────────────────────────────────────
 _sarvam_key = os.getenv("SARVAM_API_KEY")
+SARVAM_MODEL = os.getenv("SARVAM_MODEL", "sarvam-m")
+SARVAM_MAX_TOKENS = int(os.getenv("SARVAM_MAX_TOKENS", "4000"))
 if _sarvam_key:
     _sarvam_client = SarvamAI(api_subscription_key=_sarvam_key)
 else:
@@ -84,9 +86,11 @@ def _call_sarvam(api_messages, b64_image=None):
 
     try:
         response = _get_client().chat.completions(
-            messages=api_messages, temperature=0.2, max_tokens=2000, top_p=0.5,
+            model=SARVAM_MODEL, messages=api_messages, temperature=0.2, max_tokens=SARVAM_MAX_TOKENS, top_p=0.5,
         )
-        return _strip_think(response.choices[0].message.content), None
+        _m = response.choices[0].message
+        _r = _m.content or getattr(_m, 'reasoning_content', None) or ''
+        return _strip_think(_r), None
     except Exception as e:
         return None, str(e)
 
@@ -109,7 +113,7 @@ def _call_openai_vision(api_messages, b64_image):
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_image}"}},
             ]
         resp = oai_client.chat.completions.create(
-            model="gpt-4o-mini", messages=messages_copy, temperature=0.2, max_tokens=2000,
+            model="gpt-4o-mini", messages=messages_copy, temperature=0.2, max_tokens=4096,
         )
         return resp.choices[0].message.content, None
     except Exception as e:
@@ -172,9 +176,11 @@ def chat_view(request):
             history.append({"role": "user", "content": user_prompt})
             try:
                 response = _get_client().chat.completions(
-                    messages=history, temperature=0.3, max_tokens=2000, top_p=0.9,
+                    model=SARVAM_MODEL, messages=history, temperature=0.3, max_tokens=SARVAM_MAX_TOKENS, top_p=0.9,
                 )
-                assistant_reply = _strip_think(response.choices[0].message.content)
+                _m = response.choices[0].message
+                _r = _m.content or getattr(_m, 'reasoning_content', None) or ''
+                assistant_reply = _strip_think(_r)
             except Exception:
                 logger.exception("chat_view: Sarvam AI call failed")
                 assistant_reply = "Sorry, something went wrong. Please try again."
@@ -434,8 +440,10 @@ def ask_pai(request):
         ]
 
         try:
-            response = _get_client().chat.completions(messages=messages, temperature=0.2, max_tokens=2000, top_p=0.5,)
-            answer = _strip_think(response.choices[0].message.content)
+            response = _get_client().chat.completions(model=SARVAM_MODEL, messages=messages, temperature=0.2, max_tokens=SARVAM_MAX_TOKENS, top_p=0.5,)
+            _m = response.choices[0].message
+            _r = _m.content or getattr(_m, 'reasoning_content', None) or ''
+            answer = _strip_think(_r)
         except ApiError as e:
             logger.error("ask_pai: Sarvam API error status=%s body=%s", e.status_code, e.body)
             answer = "AI service returned an error. Please try again."
@@ -511,7 +519,7 @@ def student_doubt_solver(request):
                             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
                         ]},
                     ],
-                    "temperature": 0.3, "max_tokens": 2000, "top_p": 0.9,
+                    "temperature": 0.3, "max_tokens": SARVAM_MAX_TOKENS, "top_p": 0.9,
                 }
                 resp = http_requests.post(
                     "https://api.sarvam.ai/v1/chat/completions",
@@ -524,13 +532,16 @@ def student_doubt_solver(request):
                     sarvam_error = f"Sarvam {resp.status_code}: {resp.text[:200]}"
             else:
                 response = _get_client().chat.completions(
+                    model=SARVAM_MODEL,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user",   "content": question_text},
                     ],
-                    temperature=0.3, max_tokens=2000, top_p=0.9,
+                    temperature=0.3, max_tokens=SARVAM_MAX_TOKENS, top_p=0.9,
                 )
-                sarvam_answer = _strip_think(response.choices[0].message.content)
+                _m = response.choices[0].message
+                _r = _m.content or getattr(_m, 'reasoning_content', None) or ''
+                sarvam_answer = _strip_think(_r)
         except Exception as e:
             sarvam_error = str(e)
 
