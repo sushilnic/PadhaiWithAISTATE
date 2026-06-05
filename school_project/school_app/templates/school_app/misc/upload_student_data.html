@@ -45,8 +45,8 @@
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
             <i class="fas fa-columns" style="font-size:1.8rem; color:var(--accent-purple);"></i>
             <div>
-                <div class="stat-label">Required Columns</div>
-                <div style="font-weight:700; color:var(--text-primary);">3 columns</div>
+                <div class="stat-label">Columns</div>
+                <div style="font-weight:700; color:var(--text-primary);">3 required + 1 optional</div>
             </div>
         </div>
     </div>
@@ -137,10 +137,15 @@
                         <td style="padding:10px 12px; color:var(--text-secondary);">Shala Darpan NIC ID (unique)</td>
                         <td style="padding:10px 12px; text-align:center;"><span class="status-badge success">Yes</span></td>
                     </tr>
-                    <tr>
+                    <tr style="border-bottom:1px solid var(--border-light);">
                         <td style="padding:10px 12px;"><code>class_name</code></td>
                         <td style="padding:10px 12px; color:var(--text-secondary);">Class (e.g. 8, 9, 10)</td>
                         <td style="padding:10px 12px; text-align:center;"><span class="status-badge success">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 12px;"><code>gender</code></td>
+                        <td style="padding:10px 12px; color:var(--text-secondary);">M = Male, F = Female, O = Other</td>
+                        <td style="padding:10px 12px; text-align:center;"><span class="status-badge info">Optional</span></td>
                     </tr>
                 </tbody>
             </table>
@@ -153,16 +158,19 @@
                         <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">name</th>
                         <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">roll_number</th>
                         <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">class_name</th>
+                        <th style="padding:4px 10px; text-align:left; color:var(--primary-color);">gender</th>
                     </tr>
                     <tr>
                         <td style="padding:4px 10px;">Sushil Agrawal</td>
                         <td style="padding:4px 10px;">202510123456</td>
                         <td style="padding:4px 10px;">10</td>
+                        <td style="padding:4px 10px;">M</td>
                     </tr>
                     <tr>
-                        <td style="padding:4px 10px;">Bhaskar Mishra</td>
+                        <td style="padding:4px 10px;">Priya Sharma</td>
                         <td style="padding:4px 10px;">202510123457</td>
                         <td style="padding:4px 10px;">10</td>
+                        <td style="padding:4px 10px;">F</td>
                     </tr>
                 </table>
             </div>
@@ -176,7 +184,11 @@
             <ul class="rules-list">
                 <li>
                     <i class="fas fa-check-circle rule-icon success"></i>
-                    Column names must be exact: <code>name</code>, <code>roll_number</code>, <code>class_name</code>
+                    Required columns: <code>name</code>, <code>roll_number</code>, <code>class_name</code>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle rule-icon success"></i>
+                    Optional column: <code>gender</code> — use <code>M</code> (Male), <code>F</code> (Female), or <code>O</code> (Other)
                 </li>
                 <li>
                     <i class="fas fa-check-circle rule-icon success"></i>

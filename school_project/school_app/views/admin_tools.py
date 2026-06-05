@@ -90,6 +90,9 @@ def upload_student_data(request):
                 name = row['name']
                 roll_number = row['roll_number']
                 class_name = row['class_name']
+                gender = str(row.get('gender', '')).strip().upper()
+                if gender not in ('M', 'F', 'O'):
+                    gender = ''
                 #school_name = row['school_name']
                 school_name =""
                 # Check if roll_number is unique
@@ -107,6 +110,7 @@ def upload_student_data(request):
                         name=name,
                         roll_number=roll_number,
                         class_name=class_name,
+                        gender=gender,
                         password=make_password('1234')
                     )
                     successfully_created += 1
@@ -276,6 +280,7 @@ def download_sample_student_excel(request):
         'name':        ['Sushil Agrawal',   'Bhaskar Mishra',   'Priya Sharma'],
         'roll_number': ['202510123456',      '202510123457',      '202510123458'],
         'class_name':  ['10',               '10',               '9'],
+        'gender':      ['M',                'M',                'F'],
     }
     df = pd.DataFrame(sample_data)
     buf = io.BytesIO()

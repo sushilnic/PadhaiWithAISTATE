@@ -42,6 +42,7 @@
                 <th>Student Name</th>
                 <th>Roll Number</th>
                 <th>Class</th>
+                <th>Gender</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -54,6 +55,7 @@
                 <td>
                     <span class="status-badge success">Class {{ student.class_name }}</span>
                 </td>
+                <td>{{ student.get_gender_display|default:"—" }}</td>
                 <td>
                     <a href="{% url 'edit_student' student.id %}" class="btn btn-info btn-sm">
                         <i class="fas fa-edit"></i> Edit

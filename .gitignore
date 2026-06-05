@@ -60,6 +60,8 @@ cover/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
 
 # Flask stuff:
 instance/
@@ -167,3 +169,13 @@ staticfiles/
 school_project/media
 #school_project/school_project/settings.py
 backup.dump
+
+# Database dumps / backup files
+*.sql
+*.dump
+backups/
+
+# Misc dev/test files
+iis_test.txt
+requirements1.txt
+school_project/cleanup.py

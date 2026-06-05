@@ -55,9 +55,13 @@ def edit_student(request, student_id):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
         roll_number = request.POST.get('roll_number', '').strip()
+        gender = request.POST.get('gender', '').strip().upper()
+        if gender not in ('M', 'F', 'O'):
+            gender = ''
         if name and roll_number:
             student.name = name
             student.roll_number = roll_number
+            student.gender = gender
             student.save()
             log_activity(request, 'EDIT', f'Student edited: {student.name} ({student.roll_number})')
             return redirect('dashboard')

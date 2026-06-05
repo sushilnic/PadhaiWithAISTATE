@@ -43,6 +43,7 @@
                             <th>#</th>
                             <th>Roll No.</th>
                             <th>Student Name</th>
+                            <th>Gender</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -51,6 +52,7 @@
                             <td>{{ forloop.counter }}</td>
                             <td><strong style="color: var(--primary-color);">{{ student.roll_number }}</strong></td>
                             <td>{{ student.name }}</td>
+                            <td>{{ student.get_gender_display|default:"—" }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

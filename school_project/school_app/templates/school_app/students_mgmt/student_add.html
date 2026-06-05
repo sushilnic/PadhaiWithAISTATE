@@ -104,6 +104,29 @@
                 {% endif %}
             </div>
 
+            <!-- Gender -->
+            <div class="form-group-custom">
+                <label class="field-label" for="id_gender">
+                    <i class="fas fa-venus-mars me-1" style="color:var(--accent-purple);"></i>
+                    Gender
+                </label>
+                <select id="id_gender"
+                        name="gender"
+                        class="field-input {% if form.gender.errors %}field-error{% endif %}">
+                    <option value="">-- Select --</option>
+                    {% for val, label in form.fields.gender.choices %}{% if val %}
+                    <option value="{{ val }}" {% if form.gender.value == val %}selected{% endif %}>{{ label }}</option>
+                    {% endif %}{% endfor %}
+                </select>
+                {% if form.gender.errors %}
+                    <div class="field-hint error">
+                        <i class="fas fa-exclamation-circle me-1"></i>{{ form.gender.errors.0 }}
+                    </div>
+                {% else %}
+                    <div class="field-hint">Optional — used for boys/girls reports</div>
+                {% endif %}
+            </div>
+
             <!-- Actions -->
             <div style="display:flex; gap:12px; margin-top:28px; flex-wrap:wrap;">
                 <button type="submit" class="btn-primary-custom" id="submitBtn"

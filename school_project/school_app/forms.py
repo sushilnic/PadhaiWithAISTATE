@@ -34,7 +34,7 @@ class StudentForm(forms.ModelForm):
     """Form for creating and editing student records."""
     class Meta:
         model = Student
-        fields = ['name', 'roll_number', 'class_name']
+        fields = ['name', 'roll_number', 'class_name', 'gender']
 
 
 class MarksForm(forms.ModelForm):

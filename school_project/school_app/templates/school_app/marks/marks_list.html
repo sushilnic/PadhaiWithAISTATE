@@ -222,6 +222,44 @@
         font-weight: 600;
         font-size: 0.85rem;
     }
+    .filter-input {
+        border: 1.5px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        background: white;
+    }
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+    }
+    .stat-mini {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 14px;
+        text-align: center;
+    }
+    .stat-mini .v { font-size: 1.15rem; font-weight: 700; color: var(--primary); }
+    .stat-mini .l { font-size: .75rem; color: var(--text-secondary); margin-top: 2px; }
+    .page-btn {
+        padding: 5px 12px;
+        border-radius: 6px;
+        border: 1.5px solid #d1d5db;
+        background: white;
+        color: #374151;
+        font-weight: 500;
+        font-size: .85rem;
+        cursor: pointer;
+    }
+    .page-btn.active {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: white;
+        font-weight: 700;
+    }
+    .page-btn:disabled { opacity: .45; cursor: default; }
 </style>
 
 <div class="marks-container">
@@ -235,33 +273,79 @@
         </a>
     </div>
 
+    <!-- Filter Bar -->
+    <div class="card">
+        <div class="card-body" style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+            <div>
+                <label style="font-size:.82rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Test</label>
+                <select id="filterTest" class="filter-input" style="min-width:220px;">
+                    <option value="">All Tests</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:.82rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Subject</label>
+                <select id="filterSubject" class="filter-input" style="min-width:160px;">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+            <div>
+                <label style="font-size:.82rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Class</label>
+                <select id="filterClass" class="filter-input" style="min-width:120px;">
+                    <option value="">All Classes</option>
+                </select>
+            </div>
+            <div style="flex:1;min-width:220px;">
+                <label style="font-size:.82rem;font-weight:600;color:#374151;display:block;margin-bottom:4px;">Search Student / Roll</label>
+                <input type="text" id="filterSearch" class="filter-input" placeholder="Type name or roll number…" style="width:100%;">
+            </div>
+            <button type="button" id="clearFilters" class="btn-edit" style="padding:9px 16px;">Clear</button>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div id="summaryStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;"></div>
+
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="marks-table">
+                <table class="marks-table" id="marksTable">
                     <thead>
                         <tr>
+                            <th>#</th>
                             <th>Roll No.</th>
                             <th>Student</th>
+                            <th>Class</th>
                             <th>Test Name</th>
                             <th>Subject</th>
                             <th>Marks</th>
-                            <th>Date</th>
+                            <th>Max</th>
+                            <th>%</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for mark in marks %}
-                        <tr id="row-{{ mark.id }}">
+                        <tr id="row-{{ mark.id }}"
+                            data-test="{{ mark.test.test_name|escape }}"
+                            data-subject="{{ mark.test.subject_name|escape }}"
+                            data-class="{{ mark.student.class_name|escape }}"
+                            data-search="{{ mark.student.name|lower|escape }} {{ mark.student.roll_number|escape }}"
+                            data-marks="{{ mark.marks }}"
+                            data-max="{{ mark.test.max_marks }}">
+                            <td class="row-sno"></td>
                             <td><span class="roll-number">{{ mark.student.roll_number }}</span></td>
                             <td><span class="student-name">{{ mark.student.name }}</span></td>
+                            <td>{{ mark.student.class_name }}</td>
                             <td><span class="test-name">{{ mark.test.test_name }}</span></td>
                             <td><span class="subject-badge">{{ mark.test.subject_name }}</span></td>
                             <td>
                                 <span id="marks-display-{{ mark.id }}" class="marks-display">{{ mark.marks }}</span>
                                 <input type="number" id="marks-input-{{ mark.id }}" value="{{ mark.marks }}" class="marks-input d-none">
                             </td>
-                            <td><span class="date-text">{{ mark.date }}</span></td>
+                            <td>{{ mark.test.max_marks }}</td>
+                            <td>
+                                {% widthratio mark.marks mark.test.max_marks 100 %}%
+                            </td>
                             <td>
                                 <div class="action-buttons">
                                     <button class="btn-edit" onclick="editMark({{ mark.id }})" id="edit-btn-{{ mark.id }}">✏️ Edit</button>
@@ -270,14 +354,20 @@
                             </td>
                         </tr>
                         {% empty %}
-                        <tr>
-                            <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <tr id="emptyRow">
+                            <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-secondary);">
                                 No marks records found. Click "Add Marks" to get started.
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Pagination -->
+            <div id="paginationBar" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px;">
+                <div id="pageInfo" style="font-size:.88rem;color:#64748b;font-weight:500;"></div>
+                <div id="pageButtons" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
             </div>
         </div>
     </div>
@@ -290,6 +380,137 @@
 </div>
 
 <script>
+    // ── Filter / Search / Pagination state ────────────────────────────────
+    const PAGE_SIZE = 25;
+    let currentPage = 1;
+    let filteredRows = [];
+
+    function getAllDataRows() {
+        return Array.from(document.querySelectorAll('#marksTable tbody tr[id^="row-"]'));
+    }
+
+    function populateFilterOptions() {
+        const tests = new Set(), subjects = new Set(), classes = new Set();
+        getAllDataRows().forEach(r => {
+            tests.add(r.dataset.test);
+            subjects.add(r.dataset.subject);
+            classes.add(r.dataset.class);
+        });
+        function fill(selId, values) {
+            const sel = document.getElementById(selId);
+            Array.from(values).filter(v => v).sort().forEach(v => {
+                const o = document.createElement('option');
+                o.value = v; o.textContent = v;
+                sel.appendChild(o);
+            });
+        }
+        fill('filterTest', tests);
+        fill('filterSubject', subjects);
+        fill('filterClass', classes);
+    }
+
+    function applyFilters() {
+        const t = document.getElementById('filterTest').value;
+        const sub = document.getElementById('filterSubject').value;
+        const cls = document.getElementById('filterClass').value;
+        const q = document.getElementById('filterSearch').value.trim().toLowerCase();
+
+        filteredRows = getAllDataRows().filter(r => {
+            if (t && r.dataset.test !== t) return false;
+            if (sub && r.dataset.subject !== sub) return false;
+            if (cls && r.dataset.class !== cls) return false;
+            if (q && r.dataset.search.indexOf(q) === -1) return false;
+            return true;
+        });
+        currentPage = 1;
+        renderSummary();
+        renderPage();
+    }
+
+    function renderSummary() {
+        const total = filteredRows.length;
+        let sum = 0, hi = -Infinity, lo = Infinity, sumPct = 0, withMax = 0;
+        filteredRows.forEach(r => {
+            const m = parseFloat(r.dataset.marks);
+            const mx = parseFloat(r.dataset.max);
+            if (!isNaN(m)) {
+                sum += m;
+                if (m > hi) hi = m;
+                if (m < lo) lo = m;
+                if (!isNaN(mx) && mx > 0) { sumPct += (m / mx) * 100; withMax++; }
+            }
+        });
+        const avg = total ? (sum / total).toFixed(2) : '—';
+        const avgPct = withMax ? (sumPct / withMax).toFixed(1) + '%' : '—';
+        document.getElementById('summaryStats').innerHTML =
+            '<div class="stat-mini"><div class="v">' + total + '</div><div class="l">Records</div></div>' +
+            '<div class="stat-mini"><div class="v">' + avg + '</div><div class="l">Avg Marks</div></div>' +
+            '<div class="stat-mini"><div class="v">' + avgPct + '</div><div class="l">Avg %</div></div>' +
+            '<div class="stat-mini"><div class="v" style="color:#10b981;">' + (total ? hi : '—') + '</div><div class="l">Highest</div></div>' +
+            '<div class="stat-mini"><div class="v" style="color:#ef4444;">' + (total ? lo : '—') + '</div><div class="l">Lowest</div></div>';
+    }
+
+    function renderPage() {
+        const all = getAllDataRows();
+        all.forEach(r => r.style.display = 'none');
+
+        const start = (currentPage - 1) * PAGE_SIZE;
+        const end   = start + PAGE_SIZE;
+        const visible = filteredRows.slice(start, end);
+        visible.forEach((r, i) => {
+            r.style.display = '';
+            const sno = r.querySelector('.row-sno');
+            if (sno) sno.textContent = start + i + 1;
+        });
+
+        const total = filteredRows.length;
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        const from = total === 0 ? 0 : start + 1;
+        const to   = Math.min(end, total);
+        document.getElementById('pageInfo').textContent =
+            'Showing ' + from + '–' + to + ' of ' + total + ' records';
+
+        const btns = document.getElementById('pageButtons');
+        btns.innerHTML = '';
+        function mkBtn(label, page, active, disabled) {
+            const b = document.createElement('button');
+            b.className = 'page-btn' + (active ? ' active' : '');
+            b.textContent = label;
+            b.disabled = disabled;
+            if (!disabled) b.onclick = () => { currentPage = page; renderPage(); };
+            btns.appendChild(b);
+        }
+        mkBtn('« Prev', currentPage - 1, false, currentPage === 1);
+        const startP = Math.max(1, currentPage - 2);
+        const endP   = Math.min(totalPages, startP + 4);
+        for (let p = startP; p <= endP; p++) {
+            mkBtn(p, p, p === currentPage, false);
+        }
+        mkBtn('Next »', currentPage + 1, false, currentPage === totalPages);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasData = getAllDataRows().length > 0;
+        if (!hasData) {
+            document.getElementById('paginationBar').style.display = 'none';
+            document.getElementById('summaryStats').style.display = 'none';
+            return;
+        }
+        populateFilterOptions();
+        filteredRows = getAllDataRows();
+        renderSummary();
+        renderPage();
+
+        ['filterTest','filterSubject','filterClass'].forEach(id =>
+            document.getElementById(id).addEventListener('change', applyFilters));
+        document.getElementById('filterSearch').addEventListener('input', applyFilters);
+        document.getElementById('clearFilters').addEventListener('click', () => {
+            ['filterTest','filterSubject','filterClass'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('filterSearch').value = '';
+            applyFilters();
+        });
+    });
+
     function editMark(id) {
         // Toggle display and input fields
         document.getElementById(`marks-display-${id}`).classList.add('d-none');

@@ -222,6 +222,11 @@ class Student(models.Model):
         ('11', 'Class 11'),
         ('12', 'Class 12'),
     ]
+    GENDER_CHOICES = [
+        ('M', 'Male'),
+        ('F', 'Female'),
+        ('O', 'Other'),
+    ]
 
     school = models.ForeignKey(School, on_delete=models.CASCADE, related_name='students')
     name = models.CharField(max_length=100)
@@ -230,6 +235,13 @@ class Student(models.Model):
         max_length=2,
         choices=CLASS_CHOICES,
         verbose_name='Class'
+    )
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        blank=True,
+        default='',
+        verbose_name='Gender'
     )
     # Student login credentials
     password = models.CharField(max_length=128, null=True, blank=True, help_text="Student login password")

@@ -14,6 +14,15 @@
         <label for="roll_number" class="form-label">Roll Number</label>
         <input type="text" class="form-control" id="roll_number" name="roll_number" value="{{ student.roll_number }}" required>
     </div>
+    <div class="col-md-6">
+        <label for="gender" class="form-label">Gender</label>
+        <select class="form-control" id="gender" name="gender">
+            <option value="">-- Select --</option>
+            <option value="M" {% if student.gender == 'M' %}selected{% endif %}>Male</option>
+            <option value="F" {% if student.gender == 'F' %}selected{% endif %}>Female</option>
+            <option value="O" {% if student.gender == 'O' %}selected{% endif %}>Other</option>
+        </select>
+    </div>
     <div class="col-12">
         <button type="submit" class="btn btn-primary">Update Student</button>
         <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
