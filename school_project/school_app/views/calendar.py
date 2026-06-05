@@ -74,8 +74,9 @@ def academic_calendar_add(request):
                 'type': event.event_type, 'color': color_map.get(event.event_type, '#1e3c72'),
             }
         })
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception:
+        logger.exception('academic_calendar_add failed')
+        return JsonResponse({'error': 'Could not save event.'}, status=500)
 
 
 @login_required
@@ -89,5 +90,6 @@ def academic_calendar_delete(request, event_id):
         event = get_object_or_404(AcademicCalendarEvent, id=event_id, district=district)
         event.delete()
         return JsonResponse({'success': True})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception:
+        logger.exception('academic_calendar_delete failed event_id=%s', event_id)
+        return JsonResponse({'error': 'Could not delete event.'}, status=500)

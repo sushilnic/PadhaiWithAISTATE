@@ -390,8 +390,11 @@ def _detect_with_opencv(image_bytes, paper_json):
     if not _HAS_CV2:
         return None, {}, 0.0, 'opencv-python not installed — run: pip install opencv-python'
 
-    # ── Load + EXIF-rotate + downscale ──
-    pil = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+    # ── Load + EXIF-rotate + downscale (decompression-bomb safe) ──
+    try:
+        pil = open_image_safely(image_bytes, mode='RGB')
+    except ValueError as e:
+        return None, {}, 0.0, str(e)
     pil = _fix_exif_rotation(pil)
     w, h = pil.size
     if max(w, h) > 2800:

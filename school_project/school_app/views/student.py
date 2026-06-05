@@ -23,6 +23,7 @@ def student_add(request):
             student = form.save(commit=False)
             student.school = School.objects.get(admin=request.user)
             student.password = make_password('1234')
+            student.must_change_password = True
             student.save()
             log_activity(request, 'CREATE', f'Student added: {student.name} ({student.roll_number})')
             return redirect('student_list')

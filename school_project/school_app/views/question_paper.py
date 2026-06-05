@@ -1,8 +1,27 @@
 """
 Question paper generator views and helpers.
 """
+import re
 from .utils import *
 from .utils import _strip_think
+
+# Content directory inputs (book_id, chapter_id) come from POST data, so they
+# MUST be validated before being used in os.path.join() — otherwise path
+# traversal (e.g. book_id='../../../etc') could read arbitrary files.
+_BOOK_ID_RE    = re.compile(r'^[A-Za-z0-9_\-]+$')
+_CHAPTER_ID_RE = re.compile(r'^[A-Za-z0-9_\-]+$')
+
+
+def _safe_book_dir(book_id):
+    """Return absolute path to a book's content directory, or None if invalid."""
+    if not book_id or not isinstance(book_id, str) or not _BOOK_ID_RE.match(book_id):
+        return None
+    base = os.path.realpath(os.path.join(settings.BASE_DIR, 'school_app', 'content'))
+    target = os.path.realpath(os.path.join(base, book_id))
+    # Defence in depth: ensure resolved path stays inside content/
+    if not target.startswith(base + os.sep):
+        return None
+    return target
 
 
 def get_available_books():
@@ -26,72 +45,68 @@ def get_available_books():
                         'language': book_info['language'],
                         'class': book_info['class']
                     })
-    except Exception as e:
-        print(f"Error loading books: {e}")
+    except Exception:
+        logger.exception('get_available_books: failed to scan content directory')
 
     return books
 
 
 def load_chapter_content(book_id, chapter_id):
-    """Load the content of a specific chapter from a book"""
+    """Load the content of a specific chapter from a book.
+    Returns None if book_id or chapter_id is invalid (path-traversal protection).
+    """
+    book_dir = _safe_book_dir(book_id)
+    if not book_dir:
+        logger.warning('load_chapter_content: invalid book_id=%r', book_id)
+        return None
+    if not _CHAPTER_ID_RE.match(str(chapter_id)):
+        logger.warning('load_chapter_content: invalid chapter_id=%r', chapter_id)
+        return None
     try:
-        chapter_file = os.path.join(
-            settings.BASE_DIR,
-            'school_app',
-            'content',
-            book_id,
-            f'chapter{chapter_id}.json'
-        )
-
+        chapter_file = os.path.join(book_dir, f'chapter{chapter_id}.json')
         with open(chapter_file, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except Exception as e:
-        print(f"Error loading chapter content: {e}")
+    except FileNotFoundError:
+        return None
+    except Exception:
+        logger.exception('load_chapter_content: read failed for %r/%r', book_id, chapter_id)
         return None
 
 
 def get_book_chapters(book_id):
-    """Return a list of chapters for a given book ID"""
+    """Return a list of chapters for a given book ID."""
+    book_dir = _safe_book_dir(book_id)
+    if not book_dir:
+        logger.warning('get_book_chapters: invalid book_id=%r', book_id)
+        return []
     try:
-        content_file = os.path.join(
-            settings.BASE_DIR,
-            'school_app',
-            'content',
-            book_id,
-            'content.json'
-        )
-
+        content_file = os.path.join(book_dir, 'content.json')
         if os.path.exists(content_file):
             with open(content_file, 'r', encoding='utf-8') as f:
                 book_info = json.load(f)
                 return book_info.get('chapters', [])
         return []
-
-    except Exception as e:
-        print(f"Error loading chapters for book {book_id}: {e}")
+    except Exception:
+        logger.exception('get_book_chapters: read failed for %r', book_id)
         return []
 
 
 def get_book_language(book_id):
-    """Determine the language of a book based on its content.json file"""
+    """Determine the language of a book based on its content.json file."""
+    book_dir = _safe_book_dir(book_id)
+    if not book_dir:
+        logger.warning('get_book_language: invalid book_id=%r', book_id)
+        return 'English'
     try:
-        content_file = os.path.join(
-            settings.BASE_DIR,
-            'school_app',
-            'content',
-            book_id,
-            'content.json'
-        )
-
+        content_file = os.path.join(book_dir, 'content.json')
         if os.path.exists(content_file):
             with open(content_file, 'r', encoding='utf-8') as f:
                 book_info = json.load(f)
-                return book_info.get('language', 'English')  # Default to English if not specified
-        return 'English'  # Default to English if file doesn't exist
-
-    except Exception as e:
-        print(f"Error determining book language for {book_id}: {e}")
-        return 'English'  # Default to English on error
+                return book_info.get('language', 'English')
+        return 'English'
+    except Exception:
+        logger.exception('get_book_language: read failed for %r', book_id)
+        return 'English'
 
 
 @login_or_student_required
@@ -99,8 +114,9 @@ def get_chapters(request, book_id):
     try:
         chapters = get_book_chapters(book_id)
         return JsonResponse({'chapters': chapters})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+    except Exception:
+        logger.exception('get_chapters failed for book_id=%r', book_id)
+        return JsonResponse({'error': 'Could not load chapters.'}, status=400)
 
 
 @login_required
@@ -451,9 +467,9 @@ Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentenc
 
         return JsonResponse({'success': True, 'paper': paper_data, 'paper_id': history.pk})
 
-    except Exception as e:
+    except Exception:
         logger.exception("generate_question_paper_ai error")
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': 'Could not generate the paper. Please try again.'}, status=500)
 
 
 @login_required

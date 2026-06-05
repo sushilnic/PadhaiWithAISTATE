@@ -2,6 +2,7 @@
 Analysis dashboard and math tools views.
 """
 from .utils import *
+from .hierarchy import get_user_hierarchy
 from .question_paper import get_available_books, get_book_chapters, get_book_language, load_chapter_content
 
 
@@ -13,45 +14,32 @@ def analysis_dashboard(request):
 
 @login_required
 def get_students(request):
-    """API endpoint to get list of students"""
+    """API endpoint to get list of students scoped to the user's hierarchy."""
     try:
-        # If user is a school admin, get only their school's students
-        if hasattr(request.user, 'administered_school'):
-            school = School.objects.get(admin=request.user)
-            students = Student.objects.filter(school=school)
-            print(f"Found {students.count()} students for school {school.name}")  # Debug print
-        else:
-            # For system admin or collector, get all students
-            students = Student.objects.all()
-            print(f"Found {students.count()} students total")  # Debug print
+        hierarchy = get_user_hierarchy(request.user)
+        if hierarchy['role'] == 'unknown':
+            return JsonResponse({'error': 'Not authorized.'}, status=403)
 
-        students_data = []
-        for student in students:
-            students_data.append({
-                'id': student.id,
-                'name': student.name,
-                'roll_number': student.roll_number,
-                'class_name': student.class_name
-            })
-
-        print("Students data:", students_data)  # Debug print
-        return JsonResponse({'students': students_data})
-    except Exception as e:
-        print(f"Error in get_students: {str(e)}")  # Debug print
-        return JsonResponse({'error': str(e)}, status=500)
+        students = hierarchy['students'].values('id', 'name', 'roll_number', 'class_name')
+        return JsonResponse({'students': list(students)})
+    except Exception:
+        logger.exception('get_students failed')
+        return JsonResponse({'error': 'An error occurred.'}, status=500)
 
 
 @login_required
 def get_student_analysis(request, student_id):
-    """API endpoint to get detailed analysis for a specific student."""
+    """API endpoint to get detailed analysis for a specific student.
+    Scoped to the requesting user's hierarchy so admins can only see students
+    inside their own state / district / block / school.
+    """
     try:
-        # Get the student
-        if hasattr(request.user, 'administered_school'):
-            # School admin can only see their school's students
-            student = get_object_or_404(Student, id=student_id, school=request.user.administered_school)
-        else:
-            # System admin or collector can see all students
-            student = get_object_or_404(Student, id=student_id)
+        hierarchy = get_user_hierarchy(request.user)
+        if hierarchy['role'] == 'unknown':
+            return JsonResponse({'error': 'Not authorized.'}, status=403)
+
+        # Scope the lookup to the student set this user is allowed to see
+        student = get_object_or_404(hierarchy['students'], id=student_id)
 
         # Get all marks for the student
         marks = Marks.objects.filter(student=student).select_related('test')
@@ -99,9 +87,9 @@ def get_student_analysis(request, student_id):
 
         return JsonResponse(response_data)
 
-    except Exception as e:
-        print(f"Error in get_student_analysis: {str(e)}")  # Debug print
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception:
+        logger.exception('get_student_analysis failed')
+        return JsonResponse({'error': 'An error occurred while loading the analysis.'}, status=500)
 
 
 @login_or_student_required
@@ -278,11 +266,13 @@ def solve_math(request):
             return render(request, 'school_app/math/solutions.html', context)
 
         except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")  # Debug print
+            #print(f"JSON decode error: {e}")  # Debug print
+            logger.exception(f"JSON decode error: {e}")
             error_msg = 'Invalid question data received' if language == 'English' else 'अमान्य प्रश्न डेटा प्राप्त हुआ'
             messages.error(request, error_msg)
         except Exception as e:
-            print(f"Error processing request: {e}")  # Debug print
+            #print(f"Error processing request: {e}")  # Debug print
+            logger.exception(f"Error processing request: {e}")
             error_msg = f'Error solving questions: {str(e)}' if language == 'English' else f'प्रश्नों को हल करने में त्रुटि: {str(e)}'
             messages.error(request, error_msg)
 
@@ -418,7 +408,8 @@ def generate_math(request):
                     all_generated_questions.append(generated_content)
 
                 except Exception as e:
-                    print(f"Error generating questions: {e}")
+                    #print(f"Error generating questions: {e}")
+                    logger.exception(f"Error generating questions: {e}")
                     messages.error(request, f"Error generating questions: {str(e)}")
                     return redirect('login')
 
@@ -459,7 +450,7 @@ def generate_math(request):
     except json.JSONDecodeError:
         messages.error(request, error_messages[language]['invalid_data'])
     except Exception as e:
-        print(f"Unexpected error: {e}")
+        logger.exception(f"Unexpected error: {e}")
         messages.error(request, f"An unexpected error occurred: {str(e)}")
         return redirect('login')
 

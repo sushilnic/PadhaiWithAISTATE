@@ -11,6 +11,13 @@ def is_system_admin(user):
 
 def login_view(request):
     if request.method == 'POST':
+        # IP-level brute-force guard (defeats email-rotation attacks)
+        blocked, retry_mins = login_ip_blocked(request, kind='admin_login')
+        if blocked:
+            form = LoginForm()
+            messages.error(request, f'Too many failed attempts from this network. Try again in {retry_mins} minutes.')
+            return render(request, 'school_app/login.html', {'form': form})
+
         form = LoginForm(request.POST)
         if form.is_valid():
             email = form.cleaned_data['email']
@@ -34,9 +41,10 @@ def login_view(request):
 
             user = authenticate(request, email=email, password=password)
             if user is not None:
-                # Reset failed attempts on success
+                # Reset per-account and per-IP failure counters
                 user.failed_login_attempts = 0
                 user.locked_until = None
+                login_ip_reset(request, kind='admin_login')
                 # Concurrent session control: invalidate old session
                 if user.current_session_key:
                     try:
@@ -62,7 +70,8 @@ def login_view(request):
                 else:
                     return redirect('school_add')
             else:
-                # Failed login — increment counter and possibly lock
+                # Failed login — increment per-IP counter (works even when email doesn't exist)
+                login_ip_register_failure(request, kind='admin_login')
                 log_activity(request, 'LOGIN', f'Failed login attempt: {email}')
                 if target_user:
                     from django.conf import settings as django_settings
@@ -84,8 +93,25 @@ def login_view(request):
 
 @require_http_methods(["POST"])
 def logout_view(request):
+    """Admin logout — invalidates all tracked sessions for this user."""
     if request.user.is_authenticated:
         log_activity(request, 'LOGOUT', f'User logged out: {request.user.email}')
+        user = request.user
+        # Invalidate the tracked session (defeats hijacked parallel sessions)
+        if user.current_session_key:
+            try:
+                Session.objects.filter(session_key=user.current_session_key).delete()
+            except Exception:
+                logger.exception('logout_view: failed to delete tracked session')
+        # Also delete current session in case it differs from the tracked one
+        current_key = request.session.session_key
+        if current_key and current_key != user.current_session_key:
+            try:
+                Session.objects.filter(session_key=current_key).delete()
+            except Exception:
+                pass
+        user.current_session_key = None
+        user.save(update_fields=['current_session_key'])
     logout(request)
     return redirect('login')
 
@@ -114,6 +140,13 @@ def password_change(request):
 def student_login(request):
     """Handle student login using roll number and password."""
     if request.method == 'POST':
+        # IP-level brute-force guard (defeats roll-number rotation attacks)
+        blocked, retry_mins = login_ip_blocked(request, kind='student_login')
+        if blocked:
+            captcha_question = _generate_math_captcha(request)
+            messages.error(request, f'Too many failed attempts from this network. Try again in {retry_mins} minutes.')
+            return render(request, 'school_app/student/student_login.html', {'captcha_question': captcha_question})
+
         roll_number = request.POST.get('roll_number', '').strip()
         password = request.POST.get('password', '').strip()
         captcha_input = request.POST.get('captcha', '').strip()
@@ -124,18 +157,22 @@ def student_login(request):
         captcha_question = _generate_math_captcha(request)  # fresh question for next attempt
 
         if not captcha_input or expected is None:
+            login_ip_register_failure(request, kind='student_login')
             messages.error(request, 'Please solve the math question.')
             return render(request, 'school_app/student/student_login.html', {'captcha_question': captcha_question})
 
         try:
             if int(captcha_input) != int(expected):
+                login_ip_register_failure(request, kind='student_login')
                 messages.error(request, 'Wrong answer to the math question. Please try again.')
                 return render(request, 'school_app/student/student_login.html', {'captcha_question': captcha_question})
         except (ValueError, TypeError):
+            login_ip_register_failure(request, kind='student_login')
             messages.error(request, 'Please enter a valid number for the math question.')
             return render(request, 'school_app/student/student_login.html', {'captcha_question': captcha_question})
 
         if not roll_number or not password:
+            login_ip_register_failure(request, kind='student_login')
             messages.error(request, 'Please enter both roll number and password.')
             return render(request, 'school_app/student/student_login.html', {'captcha_question': captcha_question})
 
@@ -172,9 +209,19 @@ def student_login(request):
                         student.save(update_fields=['password'])
 
             if password_valid:
-                # Reset failed attempts
+                # Reset per-account and per-IP failure counters
                 student.failed_login_attempts = 0
                 student.locked_until = None
+                login_ip_reset(request, kind='student_login')
+
+                # Concurrent-session control: kill any previously active session for this student.
+                # Defeats parallel-session hijacking — only one device can be logged in at a time.
+                if student.current_session_key:
+                    try:
+                        Session.objects.filter(session_key=student.current_session_key).delete()
+                    except Exception:
+                        logger.exception('student_login: failed to invalidate prior session')
+
                 # Cycle session key to prevent session fixation
                 request.session.cycle_key()
                 # Store student info in session
@@ -184,18 +231,29 @@ def student_login(request):
                 request.session['student_school'] = student.school.name
                 request.session['student_class'] = student.class_name
                 request.session['is_student'] = True
+                request.session['must_change_password'] = bool(student.must_change_password)
                 # Clean up captcha from session
                 request.session.pop('captcha_answer', None)
 
-                # Update last login
+                # Persist the new session key so we can kill it from elsewhere
+                if not request.session.session_key:
+                    request.session.save()
+                student.current_session_key = request.session.session_key
                 student.last_login = timezone.now()
-                student.save(update_fields=['last_login', 'failed_login_attempts', 'locked_until'])
+                student.save(update_fields=['last_login', 'failed_login_attempts', 'locked_until', 'current_session_key'])
 
                 log_activity(request, 'STUDENT_LOGIN', f'Student logged in: {student.name} ({student.roll_number})', student=student)
+
+                # Force password change if account still has the default password
+                if student.must_change_password:
+                    messages.warning(request, 'For security, please change your default password before continuing.')
+                    return redirect('student_change_password')
+
                 messages.success(request, f'Welcome, {student.name}!')
                 return redirect('student_dashboard')
             else:
-                # Failed login — increment counter
+                # Failed login — increment both per-account and per-IP counters
+                login_ip_register_failure(request, kind='student_login')
                 from django.conf import settings as django_settings
                 max_attempts = getattr(django_settings, 'ACCOUNT_LOCKOUT_ATTEMPTS', 5)
                 lockout_mins = getattr(django_settings, 'ACCOUNT_LOCKOUT_DURATION', 30)
@@ -210,6 +268,8 @@ def student_login(request):
                 log_activity(request, 'STUDENT_LOGIN', f'Failed student login attempt: {roll_number}', student=student)
                 messages.error(request, 'Invalid password. Please try again.')
         except Student.DoesNotExist:
+            # Critical: this is the path used by roll-number-rotation attacks
+            login_ip_register_failure(request, kind='student_login')
             log_activity(request, 'STUDENT_LOGIN', f'Failed student login (roll not found): {roll_number}')
             messages.error(request, 'Invalid roll number or password.')
 
@@ -222,30 +282,70 @@ def student_login(request):
 
 @require_http_methods(["POST"])
 def student_logout(request):
-    """Handle student logout."""
-    # Log before clearing session
+    """Handle student logout.
+    Invalidates ALL active sessions for this student (kills hijacked parallel sessions).
+    """
+    # Log + invalidate all sessions for this student before clearing local data
     student_id = request.session.get('student_id')
     if student_id:
         try:
             student = Student.objects.get(id=student_id)
             log_activity(request, 'STUDENT_LOGOUT', f'Student logged out: {student.name} ({student.roll_number})', student=student)
+            # Kill any session we've been tracking for this student
+            if student.current_session_key:
+                try:
+                    Session.objects.filter(session_key=student.current_session_key).delete()
+                except Exception:
+                    logger.exception('student_logout: failed to delete tracked session')
+            # Defence in depth: if the current session key differs (e.g. attacker is logging out),
+            # delete that one too
+            current_key = request.session.session_key
+            if current_key and current_key != student.current_session_key:
+                try:
+                    Session.objects.filter(session_key=current_key).delete()
+                except Exception:
+                    pass
+            student.current_session_key = None
+            student.save(update_fields=['current_session_key'])
         except Student.DoesNotExist:
             pass
-    # Clear student session data
-    keys_to_remove = ['student_id', 'student_name', 'student_roll', 'student_school', 'student_class', 'is_student']
-    for key in keys_to_remove:
-        request.session.pop(key, None)
+
+    # Flush local session entirely (also drops Django's own session entry)
+    request.session.flush()
 
     messages.success(request, 'You have been logged out successfully.')
     return redirect('student_login')
 
 
+def get_logged_in_student(request):
+    """Return the active Student for the current session, or None.
+
+    Use this instead of `Student.objects.get(id=request.session.get('student_id'))`.
+    It verifies the session flag, the student exists, AND `is_active=True`,
+    so deactivated accounts cannot continue to use a stale session.
+    """
+    if not request.session.get('is_student'):
+        return None
+    sid = request.session.get('student_id')
+    if not sid:
+        return None
+    return Student.objects.filter(id=sid, is_active=True).select_related('school').first()
+
+
 def student_required(view_func):
-    """Decorator to ensure student is logged in."""
+    """Decorator to ensure student is logged in.
+    Also forces password change if `must_change_password` flag is set.
+    Allowed views during forced change: change-password and logout.
+    """
+    EXEMPT = {'student_change_password', 'student_logout'}
+
     def wrapper(request, *args, **kwargs):
         if not request.session.get('is_student'):
             messages.error(request, 'Please login to access this page.')
             return redirect('student_login')
+        if request.session.get('must_change_password') and view_func.__name__ not in EXEMPT:
+            messages.warning(request, 'Please change your default password before continuing.')
+            return redirect('student_change_password')
         return view_func(request, *args, **kwargs)
     return wrapper
 

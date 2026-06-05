@@ -2,8 +2,8 @@
 Student learning portal views.
 """
 from .utils import *
-from .utils import _strip_think
-from .auth import student_required
+from .utils import _strip_think, _generate_math_captcha
+from .auth import student_required, get_logged_in_student
 from .question_paper import get_available_books, get_book_chapters, get_book_language
 
 SARVAM_MAX_TOKENS = int(os.getenv("SARVAM_MAX_TOKENS", "4000"))
@@ -12,10 +12,11 @@ SARVAM_MAX_TOKENS = int(os.getenv("SARVAM_MAX_TOKENS", "4000"))
 @student_required
 def student_dashboard(request):
     """Student dashboard with overview of performance."""
-    student_id = request.session.get('student_id')
+    student = get_logged_in_student(request)
+    if not student:
+        return redirect('student_login')
 
     try:
-        student = Student.objects.select_related('school').get(id=student_id)
 
         # Get all marks (ordered by latest test first)
         all_marks = Marks.objects.filter(student=student).select_related('test').order_by('-test__test_number')
@@ -54,18 +55,20 @@ def student_dashboard(request):
 
         return render(request, 'school_app/student/student_dashboard.html', context)
 
-    except Student.DoesNotExist:
-        messages.error(request, 'Student not found. Please login again.')
+    except Exception:
+        logger.exception('student_dashboard failed')
+        messages.error(request, 'Could not load dashboard. Please try again.')
         return redirect('student_login')
 
 
 @student_required
 def student_performance(request):
     """Detailed performance analysis for student."""
-    student_id = request.session.get('student_id')
+    student = get_logged_in_student(request)
+    if not student:
+        return redirect('student_login')
 
     try:
-        student = Student.objects.get(id=student_id)
 
         # Get all marks with test details
         marks_list = Marks.objects.filter(student=student).select_related('test').order_by('-test__test_date', '-date')
@@ -131,18 +134,16 @@ def student_performance(request):
 
         return render(request, 'school_app/student/student_performance.html', context)
 
-    except Student.DoesNotExist:
-        messages.error(request, 'Student not found.')
+    except Exception:
+        logger.exception('student_performance failed')
+        messages.error(request, 'Could not load performance page.')
         return redirect('student_login')
 
 
 def student_practice_test(request):
     """Practice test page where students can select topic and give test."""
-    student_id = request.session.get('student_id')
-
-    try:
-        student = Student.objects.get(id=student_id)
-    except Student.DoesNotExist:
+    student = get_logged_in_student(request)
+    if not student:
         messages.error(request, 'Please login to access this page.')
         return redirect('student_login')
 
@@ -186,8 +187,7 @@ def generate_practice_questions(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid method'}, status=405)
 
-    student_id = request.session.get('student_id')
-    if not student_id:
+    if not get_logged_in_student(request):
         return JsonResponse({'error': 'Not logged in'}, status=401)
 
     # Rate limiting: 5-second cooldown between AI calls per session
@@ -442,22 +442,22 @@ Return ONLY the JSON, no other text."""
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Failed to parse AI response', 'raw': ai_response[:500]}, status=500)
 
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    except Exception:
+        logger.exception('generate_practice_questions failed')
+        return JsonResponse({'error': 'Could not generate practice questions. Please try again.'}, status=500)
 
-
+@student_required
 @ensure_csrf_cookie
 def submit_practice_test(request):
     """Submit practice test results."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Invalid method'}, status=405)
 
-    student_id = request.session.get('student_id')
-    if not student_id:
+    student = get_logged_in_student(request)
+    if not student:
         return JsonResponse({'error': 'Not logged in'}, status=401)
 
     try:
-        student = Student.objects.get(id=student_id)
         data = json.loads(request.body)
 
         # --- Input validation (C4: prevent client-side score manipulation) ---
@@ -506,8 +506,6 @@ def submit_practice_test(request):
             'message': 'Practice test submitted successfully!'
         })
 
-    except Student.DoesNotExist:
-        return JsonResponse({'error': 'Student not found'}, status=404)
     except Exception:
         logger.exception("submit_practice_test error")
         return JsonResponse({'error': 'Unable to save results. Please try again.'}, status=500)
@@ -515,11 +513,8 @@ def submit_practice_test(request):
 
 def student_practice_progress(request):
     """View practice test progress and history."""
-    student_id = request.session.get('student_id')
-
-    try:
-        student = Student.objects.get(id=student_id)
-    except Student.DoesNotExist:
+    student = get_logged_in_student(request)
+    if not student:
         messages.error(request, 'Please login to access this page.')
         return redirect('student_login')
 
@@ -579,10 +574,8 @@ def student_practice_progress(request):
 @student_required
 def student_recommendations(request):
     """Student recommendations page - analyzes weak topics from school tests and practice tests."""
-    student_id = request.session.get('student_id')
-    try:
-        student = Student.objects.select_related('school').get(id=student_id)
-    except Student.DoesNotExist:
+    student = get_logged_in_student(request)
+    if not student:
         messages.error(request, 'Please login to access this page.')
         return redirect('student_login')
 
@@ -652,6 +645,7 @@ def student_recommendations(request):
 
 
 @require_http_methods(["POST"])
+@student_required
 def get_study_tips(request):
     """AJAX endpoint - get AI-generated study tips for weak topics."""
     import logging
@@ -726,10 +720,8 @@ def get_study_tips(request):
 @student_required
 def student_video_learning(request):
     """Student video learning page - AI-generated YouTube search suggestions."""
-    student_id = request.session.get('student_id')
-    try:
-        student = Student.objects.select_related('school').get(id=student_id)
-    except Student.DoesNotExist:
+    student = get_logged_in_student(request)
+    if not student:
         messages.error(request, 'Please login to access this page.')
         return redirect('student_login')
 
@@ -913,39 +905,65 @@ def get_video_suggestions(request):
 
 @student_required
 def student_change_password(request):
-    """Allow student to change their password."""
-    student_id = request.session.get('student_id')
-
-    try:
-        student = Student.objects.get(id=student_id)
-
-        if request.method == 'POST':
-            current_password = request.POST.get('current_password', '')
-            new_password = request.POST.get('new_password', '')
-            confirm_password = request.POST.get('confirm_password', '')
-
-            # Verify current password (support both hashed and legacy plain text)
-            current_valid = False
-            if student.password:
-                if student.password.startswith(('pbkdf2_sha256$', 'bcrypt', 'argon2')):
-                    current_valid = check_password(current_password, student.password)
-                else:
-                    current_valid = (student.password == current_password)
-
-            if not current_valid:
-                messages.error(request, 'Current password is incorrect.')
-            elif new_password != confirm_password:
-                messages.error(request, 'New passwords do not match.')
-            elif len(new_password) < 4:
-                messages.error(request, 'Password must be at least 4 characters.')
-            else:
-                student.password = make_password(new_password)
-                student.save(update_fields=['password'])
-                messages.success(request, 'Password changed successfully!')
-                return redirect('student_dashboard')
-
-        return render(request, 'school_app/student/student_change_password.html', {'student': student})
-
-    except Student.DoesNotExist:
-        messages.error(request, 'Student not found.')
+    """Allow student to change their password.
+    Captcha is required to slow down brute-force attempts on `current_password`
+    if a session is hijacked but the attacker does not know the password.
+    """
+    student = get_logged_in_student(request)
+    if not student:
+        messages.error(request, 'Please log in to change your password.')
         return redirect('student_login')
+
+    if request.method == 'POST':
+        # ── Captcha check (single-use; pop expected answer before regenerating) ──
+        captcha_input = request.POST.get('captcha', '').strip()
+        expected = request.session.pop('captcha_answer', None)
+        request.session.modified = True
+        captcha_question = _generate_math_captcha(request)
+
+        captcha_ok = False
+        if expected is not None and captcha_input:
+            try:
+                captcha_ok = int(captcha_input) == int(expected)
+            except (ValueError, TypeError):
+                captcha_ok = False
+        if not captcha_ok:
+            messages.error(request, 'Please correctly answer the math question.')
+            return render(request, 'school_app/student/student_change_password.html',
+                          {'student': student, 'captcha_question': captcha_question})
+
+        current_password = request.POST.get('current_password', '')
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        # Verify current password (support both hashed and legacy plain text)
+        current_valid = False
+        if student.password:
+            if student.password.startswith(('pbkdf2_sha256$', 'bcrypt', 'argon2')):
+                current_valid = check_password(current_password, student.password)
+            else:
+                current_valid = (student.password == current_password)
+
+        if not current_valid:
+            messages.error(request, 'Current password is incorrect.')
+        elif new_password != confirm_password:
+            messages.error(request, 'New passwords do not match.')
+        elif len(new_password) < 4:
+            messages.error(request, 'Password must be at least 4 characters.')
+        elif new_password == current_password:
+            messages.error(request, 'New password must be different from your current password.')
+        else:
+            student.password = make_password(new_password)
+            student.must_change_password = False
+            student.save(update_fields=['password', 'must_change_password'])
+            request.session.pop('must_change_password', None)
+            messages.success(request, 'Password changed successfully!')
+            return redirect('student_dashboard')
+
+        return render(request, 'school_app/student/student_change_password.html',
+                      {'student': student, 'captcha_question': captcha_question})
+
+    # GET — generate fresh captcha
+    captcha_question = _generate_math_captcha(request)
+    return render(request, 'school_app/student/student_change_password.html',
+                  {'student': student, 'captcha_question': captcha_question})

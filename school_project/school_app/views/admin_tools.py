@@ -66,17 +66,13 @@ def school_add(request):
 
 @login_required
 def upload_student_data(request):
-    if request.method == 'POST' and request.FILES['excel_file']:
+    if request.method == 'POST' and request.FILES.get('excel_file'):
         excel_file = request.FILES['excel_file']
 
-        # File upload validation
-        allowed_extensions = ('.xlsx', '.xls')
-        if not excel_file.name.lower().endswith(allowed_extensions):
-            messages.error(request, 'Only Excel files (.xlsx, .xls) are allowed.')
-            return redirect('upload_student_data')
-        max_size = 5 * 1024 * 1024  # 5 MB
-        if excel_file.size > max_size:
-            messages.error(request, 'File size exceeds 5 MB limit.')
+        # File upload validation (extension + size + magic bytes)
+        ok, err = validate_excel_upload(excel_file)
+        if not ok:
+            messages.error(request, err)
             return redirect('upload_student_data')
 
         try:
@@ -87,9 +83,9 @@ def upload_student_data(request):
             roll_number_errors = []  # Store errors related to duplicate roll numbers
 
             for index, row in df.iterrows():
-                name = row['name']
-                roll_number = row['roll_number']
-                class_name = row['class_name']
+                name = sanitize_cell(row['name'])
+                roll_number = sanitize_cell(row['roll_number'])
+                class_name = sanitize_cell(row['class_name'])
                 gender = str(row.get('gender', '')).strip().upper()
                 if gender not in ('M', 'F', 'O'):
                     gender = ''
@@ -111,7 +107,8 @@ def upload_student_data(request):
                         roll_number=roll_number,
                         class_name=class_name,
                         gender=gender,
-                        password=make_password('1234')
+                        password=make_password('1234'),
+                        must_change_password=True,
                     )
                     successfully_created += 1
                 except Exception as e:
@@ -150,6 +147,12 @@ def upload_school_users(request):
             excel_file = request.FILES['excel_file']
             successfully_created = 0  # Counter
 
+            # File upload validation (extension + size + magic bytes)
+            ok, err = validate_excel_upload(excel_file)
+            if not ok:
+                messages.error(request, err)
+                return redirect('upload_school_users')
+
             try:
                 # Load Excel data
                 df = pd.read_excel(excel_file, engine='openpyxl')
@@ -161,11 +164,11 @@ def upload_school_users(request):
                     return redirect('upload_school_users')
 
                 for index, row in df.iterrows():
-                    email = str(row['email']).strip()
-                    username = str(row['username']).strip()
-                    password = str(row['password']).strip()
-                    school_name = str(row['school_name']).strip()
-                    nic_code = str(row['nic_code']).strip() if not pd.isna(row['nic_code']) else ''
+                    email = sanitize_cell(row['email']).strip()
+                    username = sanitize_cell(row['username']).strip()
+                    password = str(row['password']).strip()  # passwords are stored hashed, no cell-sanitization needed
+                    school_name = sanitize_cell(row['school_name']).strip()
+                    nic_code = sanitize_cell(row['nic_code']).strip() if not pd.isna(row['nic_code']) else ''
                     block_id = row['block_id']
 
                     # Skip if email or block_id is missing
@@ -242,12 +245,18 @@ def upload_school_users(request):
 #11/01/2025
 @login_required
 def update_block_name_from_excel(request):
-    if request.method == 'POST' and request.FILES['excel_file']:
+    if request.method == 'POST' and request.FILES.get('excel_file'):
         excel_file = request.FILES['excel_file']
+
+        # File upload validation (extension + size + magic bytes)
+        ok, err = validate_excel_upload(excel_file)
+        if not ok:
+            messages.error(request, err)
+            return redirect('update_block_name')
 
         try:
             # Read the Excel file using pandas
-            df = pd.read_excel(excel_file)
+            df = pd.read_excel(excel_file, engine='openpyxl')
 
             updates = []
             # Iterate over rows in the DataFrame
@@ -266,8 +275,9 @@ def update_block_name_from_excel(request):
 
             return JsonResponse({'updates': updates})
 
-        except Exception as e:
-            return JsonResponse({'error': f'Error processing file: {str(e)}'}, status=400)
+        except Exception:
+            logger.exception('update_block_name_from_excel: processing failed')
+            return JsonResponse({'error': 'Could not process the uploaded file.'}, status=400)
 
     return render(request, 'school_app/manage/update_block_name_form.html')
 

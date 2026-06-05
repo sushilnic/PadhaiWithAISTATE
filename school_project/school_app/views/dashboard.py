@@ -200,7 +200,7 @@ def school_report(request):
     }
     return render(request, 'school_app/reports/school_report.html', context)
 
-
+@login_required
 def block_dashboard(request):
     """Block dashboard with hierarchy-based filtering."""
     if not request.user.is_block_user:

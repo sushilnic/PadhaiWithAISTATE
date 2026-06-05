@@ -10,6 +10,8 @@ from django.conf import settings
 from django.utils import timezone
 from PIL import Image
 
+#from school_project.school_app.views.auth import student_required
+from .auth import student_required
 from .utils import *
 from .utils import _strip_think
 from ..models import AISathiClass, AISathiSubject, AISathiChapter
@@ -278,7 +280,7 @@ def ai_sathi_chat_ajax(request):
     if len(user_msgs) >= _MSG_LIMIT:
         return JsonResponse({"error": "limit_reached"}, status=429)
 
-    # Process optional image
+    # Process optional image (decompression-bomb safe)
     b64_image = None
     image_file = request.FILES.get("image")
     if image_file:
@@ -286,13 +288,13 @@ def ai_sathi_chat_ajax(request):
         if len(raw) > 5 * 1024 * 1024:
             return JsonResponse({"error": "Image too large (max 5 MB)."}, status=400)
         try:
-            img = Image.open(io.BytesIO(raw)).convert("RGB")
+            img = open_image_safely(raw, mode="RGB")
             img.thumbnail((1024, 1024), Image.LANCZOS)
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=70, optimize=True)
             b64_image = base64.b64encode(buf.getvalue()).decode("utf-8")
-        except Exception:
-            b64_image = base64.b64encode(raw).decode("utf-8")
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
     # Build system prompt (with chapter description for richer context)
     description = _get_chapter_description(class_level, subject, chapter)
@@ -465,6 +467,7 @@ def ask_pai(request):
 
 
 @require_http_methods(["GET", "POST"])
+@student_required
 def student_doubt_solver(request):
     """AI Doubt Solver — Try Sarvam first; fall back to OpenAI on any error."""
     if request.method == "GET":
@@ -497,13 +500,13 @@ def student_doubt_solver(request):
         if len(raw) > 5 * 1024 * 1024:
             return JsonResponse({"error": "Image too large. Please upload an image under 5 MB."}, status=400)
         try:
-            img = Image.open(io.BytesIO(raw)).convert("RGB")
+            img = open_image_safely(raw, mode="RGB")
             img.thumbnail((1024, 1024), Image.LANCZOS)
             buf = io.BytesIO()
             img.save(buf, format="JPEG", quality=70, optimize=True)
             b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-        except Exception:
-            b64 = base64.b64encode(raw).decode("utf-8")
+        except ValueError as e:
+            return JsonResponse({"error": str(e)}, status=400)
 
     sarvam_answer = None
     sarvam_error  = None
@@ -580,9 +583,11 @@ def student_doubt_solver(request):
             return JsonResponse({"error": NOT_EDU_MSG}, status=400)
         return JsonResponse({"answer": oai_answer})
     except ImportError:
-        return JsonResponse({"error": "openai package not installed. Run: pip install openai"}, status=503)
-    except Exception as e:
-        return JsonResponse({"error": f"All AI services failed. Sarvam: {sarvam_error}. OpenAI: {str(e)}"}, status=500)
+        logger.error('student_doubt_solver: openai package not installed')
+        return JsonResponse({"error": "AI service is not available."}, status=503)
+    except Exception:
+        logger.exception('student_doubt_solver: all AI services failed. sarvam_error=%s', sarvam_error)
+        return JsonResponse({"error": "AI service is temporarily unavailable. Please try again."}, status=500)
 
 
 @require_http_methods(["GET"])

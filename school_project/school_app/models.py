@@ -249,6 +249,8 @@ class Student(models.Model):
     last_login = models.DateTimeField(null=True, blank=True)
     failed_login_attempts = models.IntegerField(default=0)
     locked_until = models.DateTimeField(null=True, blank=True)
+    must_change_password = models.BooleanField(default=False, help_text="Force change on next login (default-password accounts)")
+    current_session_key = models.CharField(max_length=40, null=True, blank=True, help_text="Active session key — used to enforce single-session and kill hijacked parallel sessions")
 
     class Meta:
         verbose_name = 'Student'
