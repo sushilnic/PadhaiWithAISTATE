@@ -183,6 +183,7 @@ async def async_generate_similar_questions(
             temperature=temperature,
             top_p=top_p,
             max_tokens=SARVAM_MAX_TOKENS,
+            reasoning_effort=None
         )
 
     msg = response.choices[0].message
@@ -296,6 +297,7 @@ async def async_solve_math_problem(
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=SARVAM_MAX_TOKENS,
+                reasoning_effort=None
             )
             msg = response.choices[0].message
             raw = msg.content or getattr(msg, 'reasoning_content', None) or ''

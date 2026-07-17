@@ -247,6 +247,7 @@ def generate_question_paper_ai(request):
                 temperature=0.3,
                 max_tokens=max_tok,
                 top_p=0.9,
+                reasoning_effort=None
             )
             msg = resp.choices[0].message
             raw = msg.content or msg.reasoning_content
