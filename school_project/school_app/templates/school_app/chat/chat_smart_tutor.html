@@ -923,13 +923,21 @@
             </div>
         </div>
 
-        <!-- ===== STARTER CHIPS ===== -->
+        <!-- ===== STARTER CHIPS (language-aware defaults; overwritten by AJAX after chapter selection) ===== -->
         <div class="starter-chips" id="starterChips" style="display:{% if guardrail and not history %}flex{% else %}none{% endif %}">
+            {% if language == 'Hindi' %}
+            <button class="starter-chip" onclick="sendStarter(this)">यह अध्याय किस बारे में है?</button>
+            <button class="starter-chip" onclick="sendStarter(this)">मुख्य सूत्र / परिभाषाएं बताइए</button>
+            <button class="starter-chip" onclick="sendStarter(this)">वास्तविक जीवन के उदाहरण से समझाइए</button>
+            <button class="starter-chip" onclick="sendStarter(this)">इस अध्याय से परीक्षा में क्या प्रश्न आते हैं?</button>
+            <button class="starter-chip" onclick="sendStarter(this)">इस अध्याय पर मेरा क्विज़ लीजिए</button>
+            {% else %}
             <button class="starter-chip" onclick="sendStarter(this)">What is this chapter about?</button>
             <button class="starter-chip" onclick="sendStarter(this)">Give me key formulas / definitions</button>
             <button class="starter-chip" onclick="sendStarter(this)">Explain with a real-life example</button>
             <button class="starter-chip" onclick="sendStarter(this)">What are common exam questions?</button>
             <button class="starter-chip" onclick="sendStarter(this)">Quiz me on this chapter</button>
+            {% endif %}
         </div>
 
         <!-- ===== CHAT BODY ===== -->
@@ -1313,21 +1321,56 @@
         updateSuggestions(this.value);
     });
 
-    // ── Typing suggestions ─────────────────────────────────────────────────────
-    var _suggestStarters = [
-        "What is this chapter about?",
-        "Give me key formulas / definitions",
-        "Explain with a real-life example",
-        "What are common exam questions?",
-        "Quiz me on this chapter",
-        "Solve a practice problem step by step",
-        "What mistakes do students commonly make here?",
-        "How is this topic connected to real life?",
-        "Explain this like I'm a beginner",
-        "Give me a memory trick to remember this",
-        "What should I revise before this chapter?",
-        "Create a short summary I can use for revision",
-    ];
+    // ── Typing suggestions (language-aware) ────────────────────────────────────
+    // Bilingual starter suggestions. Picked based on the currently selected
+    // language in the header dropdown. Also swapped on-the-fly when the user
+    // changes the language.
+    window._STARTERS_BY_LANG = {
+        'English': [
+            "What is this chapter about?",
+            "Give me key formulas / definitions",
+            "Explain with a real-life example",
+            "What are common exam questions?",
+            "Quiz me on this chapter",
+            "Solve a practice problem step by step",
+            "What mistakes do students commonly make here?",
+            "How is this topic connected to real life?",
+            "Explain this like I'm a beginner",
+            "Give me a memory trick to remember this",
+            "What should I revise before this chapter?",
+            "Create a short summary I can use for revision"
+        ],
+        'Hindi': [
+            "यह अध्याय किस बारे में है?",
+            "मुख्य सूत्र / परिभाषाएं बताइए",
+            "वास्तविक जीवन के उदाहरण से समझाइए",
+            "इस अध्याय से परीक्षा में क्या प्रश्न आते हैं?",
+            "इस अध्याय पर मेरा क्विज़ लीजिए",
+            "एक अभ्यास प्रश्न चरण-दर-चरण हल कीजिए",
+            "इस अध्याय में विद्यार्थी कौन-सी सामान्य गलतियां करते हैं?",
+            "यह विषय वास्तविक जीवन से कैसे जुड़ा है?",
+            "इसे आसान भाषा में शुरुआती की तरह समझाइए",
+            "इसे याद रखने का कोई आसान तरीका बताइए",
+            "इस अध्याय से पहले मुझे क्या दोहराना चाहिए?",
+            "पुनरावृत्ति के लिए एक संक्षिप्त सारांश बनाइए"
+        ]
+    };
+
+    // Current active list — starts with whichever language is preselected
+    function _getCurrentLang() {
+        var el = document.getElementById('language') || document.getElementById('languageSelect');
+        var v = el && el.value ? el.value : 'Hindi';
+        return window._STARTERS_BY_LANG[v] ? v : 'Hindi';
+    }
+    var _suggestStarters = window._STARTERS_BY_LANG[_getCurrentLang()].slice();
+
+    // Gate: typing suggestions are hidden until "Start Learning" is clicked.
+    // The button's onclick handler flips this flag (see guardrail script).
+    // If the page reloads with an existing session (chatPrompt not disabled), consider it already started.
+    window._chatSessionStarted = (function(){
+        var p = document.getElementById('chatPrompt');
+        return !!(p && !p.disabled);
+    })();
     var _suggestActive = -1;
     var suggestBox = document.getElementById('suggestDropdown');
 
@@ -1335,6 +1378,8 @@
 
     function updateSuggestions(val){
         if(!suggestBox) return;
+        // Don't show typing suggestions until the user has clicked "Start Learning"
+        if(!window._chatSessionStarted){ hideSuggestions(); return; }
         val = val.trim().toLowerCase();
         if(!val){ hideSuggestions(); return; }
         var matches = _suggestStarters.filter(function(s){
@@ -1836,6 +1881,28 @@ var chapters = {};  // kept for compatibility — not used for data
     var sendBtn = document.getElementById('sendBtn');
     var langSel = document.getElementById('languageSelect');
 
+    // Swap starter suggestions instantly when the language dropdown changes.
+    // Also update the hidden #language input + context bar so downstream code sees the new value.
+    if (langSel) {
+        langSel.addEventListener('change', function () {
+            var v = langSel.value;
+            // Update hidden field so form submissions carry the new language
+            var hidden = document.getElementById('language');
+            if (hidden) hidden.value = v;
+            // Update context bar label if visible
+            var ctxLang = document.getElementById('ctxLanguage');
+            if (ctxLang) ctxLang.textContent = v;
+            // Update mic language
+            window._micLang = v;
+            // Refresh typing-dropdown starter list
+            if (window._STARTERS_BY_LANG && window._STARTERS_BY_LANG[v]) {
+                window._updateSuggestStarters(window._STARTERS_BY_LANG[v]);
+            }
+            // Refresh visible chip buttons (only if a chapter is already picked)
+            if (ch && ch.value) _refreshStarters();
+        });
+    }
+
     function setLoading(select, on) {
         select.disabled = on;
         if (on) {
@@ -1897,11 +1964,17 @@ var chapters = {};  // kept for compatibility — not used for data
     ch.onchange = function () {
         btn.disabled = !ch.value;
         if(!ch.value) return;
-        // Fetch dynamic starters for this chapter
+        _refreshStarters();
+    };
+
+    // Extracted so it can be re-called on language change too
+    function _refreshStarters(){
+        if(!ch.value || !sub.value || !cls.value) return;
         fetch(_START_URL
-            + '?class='   + encodeURIComponent(cls.value)
-            + '&subject=' + encodeURIComponent(sub.value)
-            + '&chapter=' + encodeURIComponent(ch.value))
+            + '?class='    + encodeURIComponent(cls.value)
+            + '&subject='  + encodeURIComponent(sub.value)
+            + '&chapter='  + encodeURIComponent(ch.value)
+            + '&language=' + encodeURIComponent(langSel ? langSel.value : 'Hindi'))
         .then(function(r){ return r.json(); })
         .then(function(data){
             var chips = document.getElementById('starterChips');
@@ -1915,14 +1988,17 @@ var chapters = {};  // kept for compatibility — not used for data
                 b.onclick = function(){ sendStarter(b); };
                 chips.appendChild(b);
             });
-            // Keep suggestion list in sync with chapter starters
+            // Keep typing-dropdown list in sync with chip starters
             if(window._updateSuggestStarters) window._updateSuggestStarters(data.starters);
         })
         .catch(function(){});
-    };
+    }
 
     btn.onclick = function () {
         document.getElementById('guardrailPanel').style.display = 'none';
+
+        // Unlock typing suggestions (hidden before user chose class/subject/chapter)
+        window._chatSessionStarted = true;
 
         // Enable chat
         prompt.disabled = false;

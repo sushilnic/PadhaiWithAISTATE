@@ -376,13 +376,17 @@ def ai_sathi_feedback(request):
 
 @require_http_methods(["GET"])
 def ai_sathi_starters(request):
-    """Return chapter-specific starter questions from DB, or generic defaults."""
+    """Return chapter-specific starter questions from DB, or language-appropriate defaults."""
     try:
         class_number = int(request.GET.get('class', ''))
         subject_name = request.GET.get('subject', '').strip()
         chapter_name = request.GET.get('chapter', '').strip()
     except (ValueError, TypeError):
         return JsonResponse({'starters': []})
+
+    language = request.GET.get('language', 'Hindi').strip()
+    if language not in ('Hindi', 'English'):
+        language = 'Hindi'
 
     starters = []
     try:
@@ -397,21 +401,39 @@ def ai_sathi_starters(request):
         pass
 
     if not starters:
-        starters = [
-            "What is this chapter about?",
-            "Give me key formulas / definitions",
-            "Explain with a real-life example",
-            "What are common exam questions?",
-            "Quiz me on this chapter",
-            "Solve a practice problem step by step",
-            "What mistakes do students commonly make here?",
-            "How is this topic connected to real life?",
-            "Explain this like I'm a beginner",
-            "Give me a memory trick to remember this",
-            "What should I revise before this chapter?",
-            "Create a short summary I can use for revision",
-        ]
+        starters = _DEFAULT_STARTERS_HI if language == 'Hindi' else _DEFAULT_STARTERS_EN
     return JsonResponse({'starters': starters})
+
+
+_DEFAULT_STARTERS_EN = [
+    "What is this chapter about?",
+    "Give me key formulas / definitions",
+    "Explain with a real-life example",
+    "What are common exam questions?",
+    "Quiz me on this chapter",
+    "Solve a practice problem step by step",
+    "What mistakes do students commonly make here?",
+    "How is this topic connected to real life?",
+    "Explain this like I'm a beginner",
+    "Give me a memory trick to remember this",
+    "What should I revise before this chapter?",
+    "Create a short summary I can use for revision",
+]
+
+_DEFAULT_STARTERS_HI = [
+    "यह अध्याय किस बारे में है?",
+    "मुख्य सूत्र / परिभाषाएं बताइए",
+    "वास्तविक जीवन के उदाहरण से समझाइए",
+    "इस अध्याय से परीक्षा में क्या प्रश्न आते हैं?",
+    "इस अध्याय पर मेरा क्विज़ लीजिए",
+    "एक अभ्यास प्रश्न चरण-दर-चरण हल कीजिए",
+    "इस अध्याय में विद्यार्थी कौन-सी सामान्य गलतियां करते हैं?",
+    "यह विषय वास्तविक जीवन से कैसे जुड़ा है?",
+    "इसे आसान भाषा में शुरुआती की तरह समझाइए",
+    "इसे याद रखने का कोई आसान तरीका बताइए",
+    "इस अध्याय से पहले मुझे क्या दोहराना चाहिए?",
+    "पुनरावृत्ति के लिए एक संक्षिप्त सारांश बनाइए",
+]
 
 
 def ask_pai(request):
