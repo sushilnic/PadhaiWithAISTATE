@@ -584,24 +584,44 @@
         setTimeout(typesetMath, 200);
     });
 
+    // Build an AI-content disclaimer node — PDF-only (never rendered on screen).
+    function _buildPdfDisclaimer() {
+        const wrap = document.createElement('div');
+        wrap.className = 'pdf-only-disclaimer';
+        wrap.style.cssText =
+            'background:#fef3c7;border-left:4px solid #f59e0b;border-radius:6px;' +
+            'padding:10px 14px;margin:0 0 14px 0;color:#78350f;' +
+            "font-family:'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.5;";
+        wrap.innerHTML =
+            '<div style="margin-bottom:4px;"><strong>&#9888; AI-generated solution.</strong> ' +
+            'Cross-check calculations and methods before using in exams. AI can occasionally make mistakes.</div>' +
+            '<div style="opacity:.9;font-size:11px;"><strong>&#9888; AI द्वारा तैयार समाधान।</strong> ' +
+            'परीक्षा में उपयोग से पूर्व गणना एवं विधियों की जांच अवश्य करें।</div>';
+        return wrap;
+    }
+
     // PDF Download function using html2canvas + jsPDF
     function downloadPDF(btn, questionNum) {
         const card = btn.closest('.solution-card');
         const cardBody = card.querySelector('.solution-card-body');
         const watermark = cardBody.querySelector('.pdf-watermark');
         const actionButtons = cardBody.querySelector('.action-buttons-row');
-        
+
         // Show watermark
         if (watermark) watermark.style.display = 'block';
-        
+
         // Hide buttons
         if (actionButtons) actionButtons.style.display = 'none';
-        
+
+        // Inject the AI disclaimer at the top of the card body (PDF-only)
+        const disclaimer = _buildPdfDisclaimer();
+        cardBody.insertBefore(disclaimer, cardBody.firstChild);
+
         // Change button text
         const originalText = btn.innerHTML;
         btn.innerHTML = '⏳ Generating...';
         btn.disabled = true;
-        
+
         // Use html2canvas to capture
         html2canvas(cardBody, {
             scale: 2,
@@ -645,18 +665,20 @@
             }
             
             pdf.save(`PadhaiWithAI_Q${questionNum}.pdf`);
-            
+
             // Restore
             if (watermark) watermark.style.display = 'none';
             if (actionButtons) actionButtons.style.display = 'flex';
+            if (disclaimer && disclaimer.parentNode) disclaimer.parentNode.removeChild(disclaimer);
             btn.innerHTML = originalText;
             btn.disabled = false;
-            
+
         }).catch(function(err) {
             console.error('PDF generation error:', err);
             alert('Error: ' + err.message);
             if (watermark) watermark.style.display = 'none';
             if (actionButtons) actionButtons.style.display = 'flex';
+            if (disclaimer && disclaimer.parentNode) disclaimer.parentNode.removeChild(disclaimer);
             btn.innerHTML = originalText;
             btn.disabled = false;
         });

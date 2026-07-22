@@ -199,6 +199,32 @@
     .instructions-box h4 { color: #92400e; margin-bottom: 15px; }
     .instructions-box ul { margin-bottom: 0; }
     .instructions-box li { margin-bottom: 8px; color: #78350f; }
+
+    /* AI-generated content disclaimer */
+    .ai-disclaimer {
+        background: #fef3c7;
+        border-left: 4px solid #f59e0b;
+        border-radius: 6px;
+        padding: 10px 14px;
+        margin: 0 0 16px 0;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    .ai-disclaimer-icon {
+        color: #d97706;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .ai-disclaimer-body {
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: #78350f;
+    }
+    .ai-disclaimer-line.en { margin-bottom: 4px; }
+    .ai-disclaimer-line.hi { opacity: 0.9; font-size: 0.82rem; }
+    .ai-disclaimer strong { color: #7c2d12; }
 </style>
 
 <!-- Page Header -->
@@ -367,6 +393,8 @@
                                     <li>Use <b>Solve</b> to get AI-based step-by-step solutions.</li>
                                     <li>Use <b>Generate More</b> to create new practice questions with AI.</li>
                                     <li>Click <b>Clear Selected</b> to remove questions from the queue.</li>
+                                    <li><strong>⚠ AI-generated content.</strong>
+                                    Cross-check calculations and methods before using in exams. AI can occasionally make mistakes.</li>
                                 </ul>
                                 <hr style="border-color: #f59e0b;">
                                  <ul><b>हिन्दी:</b>
@@ -376,6 +404,7 @@
                                     <li><b>Solve</b> बटन दबाकर AI से स्टेप-बाय-स्टेप समाधान देखें।</li>
                                     <li><b>Generate More</b> पर क्लिक कर नए अभ्यास प्रश्न प्राप्त करें।</li>
                                     <li><b>Clear Selected</b> क्लिक करके चुने हुए प्रश्न हटाएँ।</li>
+                                    <li><strong>⚠ AI द्वारा तैयार सामग्री।</strong>परीक्षा में उपयोग से पूर्व गणना एवं विधियों की जांच अवश्य करें। AI कभी-कभी त्रुटि कर सकता है।</li>
                                 </ul>
                             </div>
                         {% endif %}
@@ -395,6 +424,25 @@
                                 {% if chapter_name %}<small style="font-weight: 400; color: var(--text-secondary);"> - {{ chapter_name }}</small>{% endif %}
                             {% endif %}
                         </h5>
+
+                        <!-- AI-content disclaimer (legal + educational safety) -->
+                        <div class="ai-disclaimer" role="note">
+                            <div class="ai-disclaimer-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="ai-disclaimer-body">
+                                <div class="ai-disclaimer-line en">
+                                    <strong>⚠ AI-generated content.</strong>
+                                    {% if solution %}Cross-check calculations and methods before using in exams.
+                                    {% else %}Review questions and answers before printing or assigning to students.
+                                    {% endif %}
+                                    AI can occasionally make mistakes.
+                                </div>
+                                <div class="ai-disclaimer-line hi">
+                                    <strong>⚠ AI द्वारा तैयार सामग्री।</strong>
+                                    परीक्षा में उपयोग से पूर्व गणना एवं विधियों की जांच अवश्य करें। AI कभी-कभी त्रुटि कर सकता है।
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="result-content">
                             {{ solution|safe }}
                             {{ generated_questions|safe }}
@@ -409,6 +457,22 @@
     <div class="card-math mt-4">
         <div class="card-body">
             <h5 class="card-title">✨ AI Solutions</h5>
+
+            <!-- AI-content disclaimer -->
+            <div class="ai-disclaimer" role="note">
+                <div class="ai-disclaimer-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="ai-disclaimer-body">
+                    <div class="ai-disclaimer-line en">
+                        <strong>⚠ AI-generated solutions.</strong>
+                        Cross-check calculations before using in exams. AI can occasionally make mistakes.
+                    </div>
+                    <div class="ai-disclaimer-line hi">
+                        <strong>⚠ AI द्वारा तैयार समाधान।</strong>
+                        परीक्षा में उपयोग से पूर्व गणना की जांच अवश्य करें।
+                    </div>
+                </div>
+            </div>
+
             {% for solution in solutions %}
                 <div class="solution-item mb-4" style="background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid var(--primary);">
                     <div class="question mb-2">
