@@ -211,8 +211,12 @@ STATICFILES_DIRS = [
 CONTENT_DIR = os.path.join(BASE_DIR, 'school_app/content')
 
 # Media settings
-MEDIA_ROOT = env("MEDIA_ROOT", default=BASE_DIR / "media")  
+MEDIA_ROOT = env("MEDIA_ROOT", default=BASE_DIR / "media")
 MEDIA_URL = env("MEDIA_PATH", default="/media/")
+# When True, Django serves user-uploaded files at MEDIA_URL. Fine for dev and
+# small deployments. Set to False in production if IIS/nginx serves /media/
+# directly (much faster and avoids running Python for every image request).
+SERVE_MEDIA_LOCALLY = env.bool("SERVE_MEDIA_LOCALLY", default=True)
 
 
 # Default primary key field type

@@ -10,7 +10,7 @@ from django.core.validators import RegexValidator
 
 from captcha.fields import CaptchaField
 
-from .models import Student, Marks, School, CustomUser, Test, State, District, Block
+from .models import Student, Marks, School, CustomUser, Test, State, District, Block, Topper
 
 
 class LoginForm(forms.Form):
@@ -370,3 +370,76 @@ class SchoolEditForm(forms.ModelForm):
             'name': forms.TextInput(attrs=FORM_CONTROL_ATTRS),
             'nic_code': forms.TextInput(attrs=FORM_CONTROL_ATTRS),
         }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Topper — weekly showcase upload form (district admin)
+# ─────────────────────────────────────────────────────────────────────────────
+
+TOPPER_IMAGE_MAX_BYTES = 2 * 1024 * 1024                       # 2 MB
+TOPPER_IMAGE_ALLOWED = ('image/jpeg', 'image/png', 'image/webp')
+TOPPER_MAGIC_JPEG = b'\xff\xd8\xff'
+TOPPER_MAGIC_PNG  = b'\x89PNG\r\n\x1a\n'
+TOPPER_MAGIC_WEBP_PREFIX = (b'RIFF', b'WEBP')
+
+
+class TopperForm(forms.ModelForm):
+    """Form used by district admins to upload/edit a topper."""
+
+    class Meta:
+        model = Topper
+        fields = ['name', 'caption', 'school', 'image',
+                  'week_start', 'week_end', 'is_active', 'order']
+        widgets = {
+            'name':       forms.TextInput(attrs=FORM_CONTROL_ATTRS),
+            'caption':    forms.TextInput(attrs=FORM_CONTROL_ATTRS),
+            'school':     forms.Select(attrs=FORM_CONTROL_ATTRS),
+            'week_start': forms.DateInput(attrs={**FORM_CONTROL_ATTRS, 'type': 'date'}),
+            'week_end':   forms.DateInput(attrs={**FORM_CONTROL_ATTRS, 'type': 'date'}),
+            'order':      forms.NumberInput(attrs={**FORM_CONTROL_ATTRS, 'min': 0}),
+        }
+
+    def __init__(self, *args, district=None, **kwargs):
+        """`district` limits the School dropdown to that district's schools."""
+        super().__init__(*args, **kwargs)
+        if district is not None:
+            self.fields['school'].queryset = School.objects.filter(block__district=district).order_by('name')
+        # Image is mandatory only on create; on edit, keep existing if user leaves it blank.
+        if self.instance and self.instance.pk:
+            self.fields['image'].required = False
+
+    def clean(self):
+        data = super().clean()
+        ws = data.get('week_start')
+        we = data.get('week_end')
+        if ws and we and we < ws:
+            raise ValidationError({'week_end': 'Week end must be on or after week start.'})
+        return data
+
+    def clean_image(self):
+        img = self.cleaned_data.get('image')
+        if not img:
+            # Only allowed on edit (see __init__); the parent field enforcement covers create
+            return img
+
+        # Size cap
+        if img.size > TOPPER_IMAGE_MAX_BYTES:
+            raise ValidationError('Image must be smaller than 2 MB.')
+
+        # Content-type check (browser-declared — weak but fast)
+        ct = getattr(img, 'content_type', '') or mimetypes.guess_type(img.name)[0] or ''
+        if ct not in TOPPER_IMAGE_ALLOWED:
+            raise ValidationError('Only JPEG, PNG, or WEBP images are allowed.')
+
+        # Magic-byte check — defence against renamed extensions
+        head = img.read(16)
+        img.seek(0)
+        ok = (
+            head.startswith(TOPPER_MAGIC_JPEG) or
+            head.startswith(TOPPER_MAGIC_PNG) or
+            (head[:4] == TOPPER_MAGIC_WEBP_PREFIX[0] and head[8:12] == TOPPER_MAGIC_WEBP_PREFIX[1])
+        )
+        if not ok:
+            raise ValidationError('The uploaded file is not a valid image.')
+
+        return img

@@ -1,0 +1,168 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+<style>
+    .tp-header {
+        background: linear-gradient(135deg,#1e3c72,#2a5298);
+        border-radius: 12px; padding: 22px 28px; margin-bottom: 24px; color: white;
+    }
+    .tp-header h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+    .tp-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08);
+              border: 1px solid #e2e8f0; margin-bottom: 20px; padding: 24px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+    .form-full { grid-column: 1 / -1; }
+    .form-label { font-weight: 600; font-size: .85rem; color: #374151; margin-bottom: 5px; display: block; }
+    .form-control, .form-select, textarea.form-control {
+        width: 100%; border: 1.5px solid #d1d5db; border-radius: 8px; padding: 9px 12px; font-size: .93rem;
+    }
+    .form-control:focus, .form-select:focus { border-color: #1e3c72; outline: none;
+        box-shadow: 0 0 0 3px rgba(30,60,114,.1); }
+    .field-help { font-size: .78rem; color: #6b7280; margin-top: 4px; }
+    .field-error { color: #dc2626; font-size: .82rem; margin-top: 4px; font-weight: 600; }
+    .preview-wrap { margin-top: 10px; }
+    .preview-img {
+        width: 180px; height: 180px;                 /* square, matches final crop */
+        border-radius: 10px; border: 2px solid #e2e8f0;
+        object-fit: cover;                            /* preview the crop */
+        object-position: center 40%;                  /* match server's centering=(0.5, 0.4) */
+        background: #f1f5f9;
+    }
+    .preview-note {
+        font-size: .75rem; color: #6b7280; margin-top: 6px; font-style: italic;
+    }
+    .btn-primary-tp {
+        background: linear-gradient(135deg,#1e3c72,#2a5298); color: white; border: none;
+        padding: 10px 24px; border-radius: 8px; font-weight: 600; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-secondary-tp {
+        background: #6b7280; color: white; border: none; padding: 10px 20px;
+        border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none;
+    }
+    .alert-msg { padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: .9rem; font-weight: 600; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+    @media (max-width: 640px) {
+        .form-row { grid-template-columns: 1fr; }
+    }
+</style>
+
+<div class="tp-header">
+    <h1>
+        <i class="fas fa-award"></i>
+        {% if mode == 'edit' %}Edit Topper{% else %}Upload New Topper{% endif %}
+    </h1>
+    <p style="margin:4px 0 0;opacity:.85;font-size:.9rem;">
+        {% if mode == 'edit' %}Update the details or replace the photo.
+        {% else %}Add a new weekly topper to appear on the login page.{% endif %}
+    </p>
+</div>
+
+{% if messages %}
+    {% for m in messages %}
+        <div class="alert-msg alert-{{ m.tags|default:'error' }}">{{ m }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="tp-card">
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert-msg alert-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-row">
+            <div class="form-full">
+                <label class="form-label" for="{{ form.name.id_for_label }}">Name *</label>
+                {{ form.name }}
+                {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-full">
+                <label class="form-label" for="{{ form.caption.id_for_label }}">Caption</label>
+                {{ form.caption }}
+                <div class="field-help">Optional. e.g. "Class 10 — 98% in Maths"</div>
+                {% if form.caption.errors %}<div class="field-error">{{ form.caption.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="form-full">
+                <label class="form-label" for="{{ form.school.id_for_label }}">School</label>
+                {{ form.school }}
+                <div class="field-help">Optional. Only schools in your district are shown.</div>
+                {% if form.school.errors %}<div class="field-error">{{ form.school.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div>
+                <label class="form-label" for="{{ form.week_start.id_for_label }}">Week Start *</label>
+                {{ form.week_start }}
+                {% if form.week_start.errors %}<div class="field-error">{{ form.week_start.errors.0 }}</div>{% endif %}
+            </div>
+            <div>
+                <label class="form-label" for="{{ form.week_end.id_for_label }}">Week End *</label>
+                {{ form.week_end }}
+                {% if form.week_end.errors %}<div class="field-error">{{ form.week_end.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div>
+                <label class="form-label" for="{{ form.order.id_for_label }}">Display Order</label>
+                {{ form.order }}
+                <div class="field-help">Lower numbers appear first.</div>
+                {% if form.order.errors %}<div class="field-error">{{ form.order.errors.0 }}</div>{% endif %}
+            </div>
+            <div>
+                <label class="form-label">Active</label>
+                <label style="display:flex;align-items:center;gap:8px;padding:9px 0;">
+                    {{ form.is_active }}
+                    <span style="font-size:.9rem;color:#374151;">Show on login page (during its week)</span>
+                </label>
+            </div>
+
+            <div class="form-full">
+                <label class="form-label" for="{{ form.image.id_for_label }}">
+                    Photo {% if mode == 'upload' %}*{% endif %}
+                </label>
+                {{ form.image }}
+                <div class="field-help">JPEG, PNG, or WEBP · Max 2 MB · Square photo recommended.</div>
+                {% if form.image.errors %}<div class="field-error">{{ form.image.errors.0 }}</div>{% endif %}
+
+                {% if mode == 'edit' and topper.image %}
+                <div class="preview-wrap">
+                    <div class="field-help" style="margin-bottom:6px;">Current photo:</div>
+                    <img src="{{ topper.image.url }}" class="preview-img" alt="{{ topper.name }}">
+                </div>
+                {% endif %}
+
+                <div class="preview-wrap" id="previewWrap" style="display:none;">
+                    <div class="field-help" style="margin-bottom:6px;">Preview (auto-cropped to square 400×400):</div>
+                    <img id="previewImg" class="preview-img" alt="Preview">
+                    <div class="preview-note">
+                        Photo will be automatically resized, cropped to square, and stripped of EXIF metadata on upload.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:22px;">
+            <button type="submit" class="btn-primary-tp">
+                <i class="fas fa-save"></i> {% if mode == 'edit' %}Save Changes{% else %}Upload{% endif %}
+            </button>
+            <a href="{% url 'topper_list' %}" class="btn-secondary-tp">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function() {
+        var fileInput = document.getElementById('{{ form.image.id_for_label }}');
+        var preview = document.getElementById('previewImg');
+        var wrap = document.getElementById('previewWrap');
+        if (!fileInput) return;
+        fileInput.addEventListener('change', function() {
+            var f = fileInput.files && fileInput.files[0];
+            if (!f) { wrap.style.display = 'none'; return; }
+            preview.src = URL.createObjectURL(f);
+            wrap.style.display = 'block';
+        });
+    })();
+</script>
+{% endblock %}

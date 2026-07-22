@@ -1,0 +1,166 @@
+{% extends 'school_app/base.html' %}
+{% block content %}
+<style>
+    .tp-header {
+        background: linear-gradient(135deg,#1e3c72,#2a5298);
+        border-radius: 12px; padding: 22px 28px; margin-bottom: 24px;
+        color: white; display: flex; justify-content: space-between; align-items: center;
+        flex-wrap: wrap; gap: 12px;
+    }
+    .tp-header h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+    .tp-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.08);
+              border: 1px solid #e2e8f0; margin-bottom: 20px; overflow: hidden; }
+    .tp-card-header { background: linear-gradient(135deg,#1e3c72,#2a5298); color: white;
+                      padding: 12px 18px; font-weight: 700; }
+    .tp-card-body { padding: 18px; }
+    .tp-filter { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+    .form-label { font-weight: 600; font-size: .8rem; color: #374151; margin-bottom: 4px; display: block; }
+    .form-select, .form-control {
+        border: 1.5px solid #d1d5db; border-radius: 8px; padding: 8px 12px; font-size: .9rem;
+    }
+    .btn-primary-tp {
+        background: linear-gradient(135deg,#1e3c72,#2a5298); color: white; border: none;
+        padding: 9px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-primary-tp:hover { color: white; opacity: .95; }
+
+    .tp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+    .tp-item {
+        background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;
+        display: flex; flex-direction: column; transition: transform .2s;
+    }
+    .tp-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+    .tp-item-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: #f1f5f9; }
+    .tp-item-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .tp-item-name { font-weight: 700; font-size: .95rem; color: #1e3c72; }
+    .tp-item-caption { font-size: .8rem; color: #64748b; }
+    .tp-item-meta { font-size: .75rem; color: #6b7280; margin-top: auto; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+    .badge-now, .badge-scheduled, .badge-past, .badge-hidden {
+        display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: .7rem; font-weight: 700;
+    }
+    .badge-now       { background: #d1fae5; color: #065f46; }
+    .badge-scheduled { background: #dbeafe; color: #1e3a8a; }
+    .badge-past      { background: #f3f4f6; color: #6b7280; }
+    .badge-hidden    { background: #fee2e2; color: #991b1b; }
+
+    .tp-item-actions { display: flex; gap: 6px; padding: 10px 14px; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+    .btn-mini {
+        padding: 5px 10px; border-radius: 6px; font-size: .78rem; font-weight: 600;
+        text-decoration: none; border: none; cursor: pointer; color: white;
+    }
+    .btn-edit-mini    { background: #3b82f6; }
+    .btn-toggle-mini  { background: #f59e0b; }
+    .btn-delete-mini  { background: #ef4444; }
+    .alert-msg { padding: 10px 16px; border-radius: 8px; margin-bottom: 16px; font-size: .9rem; font-weight: 600; }
+    .alert-success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    .alert-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .alert-warning { background: #fef3c7; color: #78350f; border: 1px solid #fbbf24; }
+    .empty {
+        text-align: center; padding: 40px 20px; color: #64748b;
+    }
+</style>
+
+<div class="tp-header">
+    <div>
+        <h1><i class="fas fa-award"></i> Toppers of the Week</h1>
+        <p style="margin:4px 0 0;opacity:.85;font-size:.9rem;">Upload weekly toppers — they appear on the public login page.</p>
+    </div>
+    <a href="{% url 'topper_upload' %}" class="btn-primary-tp" style="background:white;color:#1e3c72;">
+        <i class="fas fa-plus"></i> Upload New Topper
+    </a>
+</div>
+
+{% if messages %}
+    {% for m in messages %}
+        <div class="alert-msg alert-{{ m.tags|default:'success' }}">{{ m }}</div>
+    {% endfor %}
+{% endif %}
+
+<div class="tp-card">
+    <div class="tp-card-header">🔍 Filter</div>
+    <div class="tp-card-body">
+        <form method="get" class="tp-filter">
+            <div>
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select" style="min-width:140px;">
+                    <option value="all"      {% if q_status == 'all' %}selected{% endif %}>All</option>
+                    <option value="active"   {% if q_status == 'active' %}selected{% endif %}>Active only</option>
+                    <option value="inactive" {% if q_status == 'inactive' %}selected{% endif %}>Hidden only</option>
+                </select>
+            </div>
+            <div>
+                <label class="form-label">School</label>
+                <select name="school" class="form-select" style="min-width:220px;">
+                    <option value="">All Schools</option>
+                    {% for s in schools %}
+                        <option value="{{ s.id }}" {% if q_school == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary-tp">Filter</button>
+            <a href="{% url 'topper_list' %}" class="btn-primary-tp" style="background:#6b7280;">Clear</a>
+        </form>
+    </div>
+</div>
+
+<div class="tp-card">
+    <div class="tp-card-header">📋 Toppers ({{ toppers|length }})</div>
+    <div class="tp-card-body">
+        {% if toppers %}
+            <div class="tp-grid">
+                {% for t in toppers %}
+                    <div class="tp-item">
+                        <img src="{{ t.image.url }}" alt="{{ t.name }}" class="tp-item-img">
+                        <div class="tp-item-body">
+                            <div class="tp-item-name">{{ t.name }}</div>
+                            {% if t.caption %}<div class="tp-item-caption">{{ t.caption }}</div>{% endif %}
+                            {% if t.school %}<div class="tp-item-caption">🏫 {{ t.school.name }}</div>{% endif %}
+                            <div class="tp-item-meta">
+                                <div>📅 {{ t.week_start|date:"d M" }} → {{ t.week_end|date:"d M Y" }}</div>
+                                <div style="margin-top:4px;">
+                                    {% if not t.is_active %}
+                                        <span class="badge-hidden">Hidden</span>
+                                    {% elif t.is_now %}
+                                        <span class="badge-now">Live now</span>
+                                    {% elif t.week_start > today %}
+                                        <span class="badge-scheduled">Scheduled</span>
+                                    {% else %}
+                                        <span class="badge-past">Past</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tp-item-actions">
+                            <a href="{% url 'topper_edit' t.pk %}" class="btn-mini btn-edit-mini">✏️ Edit</a>
+                            <form method="post" action="{% url 'topper_toggle' t.pk %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-mini btn-toggle-mini">
+                                    {% if t.is_active %}🙈 Hide{% else %}👁 Show{% endif %}
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'topper_delete' t.pk %}" style="display:inline;"
+                                  onsubmit="return confirm('Delete topper \'{{ t.name|escapejs }}\'? This cannot be undone.');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-mini btn-delete-mini">🗑 Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">
+                <i class="fas fa-inbox" style="font-size:2rem;opacity:.4;"></i>
+                <p style="margin-top:8px;font-weight:600;">No toppers yet.</p>
+                <p>Click "Upload New Topper" above to add one.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div style="margin-top:20px;">
+    <a href="{% url 'collector_dashboard' %}" style="color:#1e3c72;font-weight:600;text-decoration:none;">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

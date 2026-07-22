@@ -712,3 +712,50 @@ class AISathiMessage(models.Model):
 
     def __str__(self):
         return f"{self.role} | {self.content[:60]}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Toppers — weekly showcase on the public login page
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Topper(models.Model):
+    """Weekly topper — uploaded by district admins, displayed on the login page
+    during the topper's active week (week_start ≤ today ≤ week_end).
+    """
+    name        = models.CharField(max_length=150)
+    caption     = models.CharField(max_length=255, blank=True, null=True,
+                                   help_text="e.g. 'Class 10 — 98% in Maths'")
+    school      = models.ForeignKey(
+        School, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='toppers',
+    )
+    image       = models.ImageField(upload_to='toppers/', max_length=200)
+    week_start  = models.DateField()
+    week_end    = models.DateField()
+    is_active   = models.BooleanField(default=True)
+    order       = models.PositiveIntegerField(default=0)
+    created_by  = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='created_toppers',
+    )
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'school_app_topper'   # matches existing production table
+        indexes = [
+            models.Index(fields=['week_start', 'week_end', 'is_active'],
+                         name='idx_topper_week_active'),
+        ]
+        ordering = ['order', '-created_at']
+        verbose_name = 'Topper'
+        verbose_name_plural = 'Toppers'
+
+    def __str__(self):
+        return f'{self.name} ({self.week_start} → {self.week_end})'
+
+    @property
+    def is_current(self):
+        """True if this topper should be shown on the login page right now."""
+        from datetime import date
+        today = date.today()
+        return self.is_active and self.week_start <= today <= self.week_end

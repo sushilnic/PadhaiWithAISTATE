@@ -15,18 +15,29 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
-from django.conf.urls.static import static
 from django.shortcuts import render
+from django.views.static import serve as media_serve
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('school_app.urls')),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve user-uploaded media (uploads/toppers etc.) via Django itself.
+# Enabled whenever SERVE_MEDIA_LOCALLY is True (default: True unless explicitly
+# set to False in production, where the webserver — IIS/nginx — should serve
+# /media/ directly for better performance).
+#
+# NOTE: we use django.views.static.serve directly because Django's static()
+# helper silently returns [] whenever DEBUG=False.
+if getattr(settings, 'SERVE_MEDIA_LOCALLY', True):
+    media_prefix = settings.MEDIA_URL.lstrip('/').rstrip('/')
+    urlpatterns += [
+        re_path(rf'^{media_prefix}/(?P<path>.*)$', media_serve,
+                {'document_root': settings.MEDIA_ROOT}),
+    ]
 
 
 # Custom error handlers

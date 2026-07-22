@@ -8,7 +8,7 @@ from django.utils.html import format_html
 
 from .models import (
     CustomUser, School, Student, Marks, Attendance, Block, District, Test, State,
-    AISathiClass, AISathiSubject, AISathiChapter,
+    AISathiClass, AISathiSubject, AISathiChapter, Topper,
 )
 
 
@@ -220,3 +220,19 @@ class AISathiChapterAdmin(admin.ModelAdmin):
     list_filter = ('subject__class_ref', 'subject', 'is_active')
     list_editable = ('order', 'is_active')
     search_fields = ('name',)
+
+
+@admin.register(Topper)
+class TopperAdmin(admin.ModelAdmin):
+    list_display = ('name', 'school', 'week_start', 'week_end', 'is_active', 'order', 'created_by', 'created_at')
+    list_filter = ('is_active', 'week_start', 'school__block__district')
+    list_editable = ('is_active', 'order')
+    search_fields = ('name', 'caption', 'school__name')
+    date_hierarchy = 'week_start'
+    autocomplete_fields = ['school']
+    readonly_fields = ('created_at', 'created_by')
+    fieldsets = (
+        (None,  {'fields': ('name', 'caption', 'school', 'image')}),
+        ('Schedule',  {'fields': ('week_start', 'week_end', 'is_active', 'order')}),
+        ('Audit',     {'fields': ('created_by', 'created_at'), 'classes': ('collapse',)}),
+    )

@@ -196,5 +196,12 @@ urlpatterns = [
     path('academic-calendar/manage/', views.academic_calendar_manage, name='academic_calendar_manage'),
     path('academic-calendar/add/', views.academic_calendar_add, name='academic_calendar_add'),
     path('academic-calendar/delete/<int:event_id>/', views.academic_calendar_delete, name='academic_calendar_delete'),
+
+    # Topper Management (district admin only)
+    path('district/toppers/',                  views.topper_list,   name='topper_list'),
+    path('district/toppers/upload/',           views.topper_upload, name='topper_upload'),
+    path('district/toppers/<int:pk>/edit/',    views.topper_edit,   name='topper_edit'),
+    path('district/toppers/<int:pk>/toggle/',  views.topper_toggle, name='topper_toggle'),
+    path('district/toppers/<int:pk>/delete/',  views.topper_delete, name='topper_delete'),
 ]
 

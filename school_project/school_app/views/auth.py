@@ -9,6 +9,12 @@ from .hierarchy import get_user_hierarchy
 def is_system_admin(user):
     return user.is_authenticated and user.is_system_admin
 
+def _login_context(form):
+    """Shared context for every login_view render — always includes current toppers."""
+    from .topper import get_current_toppers
+    return {'form': form, 'toppers': get_current_toppers(limit=20)}
+
+
 def login_view(request):
     if request.method == 'POST':
         # IP-level brute-force guard (defeats email-rotation attacks)
@@ -16,7 +22,7 @@ def login_view(request):
         if blocked:
             form = LoginForm()
             messages.error(request, f'Too many failed attempts from this network. Try again in {retry_mins} minutes.')
-            return render(request, 'school_app/login.html', {'form': form})
+            return render(request, 'school_app/login.html', _login_context(form))
 
         form = LoginForm(request.POST)
         if form.is_valid():
@@ -30,7 +36,7 @@ def login_view(request):
                     remaining = int((target_user.locked_until - timezone.now()).total_seconds() // 60) + 1
                     log_activity(request, 'LOGIN', f'Login blocked (account locked): {email}')
                     messages.error(request, f'Account locked. Try again in {remaining} minutes.')
-                    return render(request, 'school_app/login.html', {'form': form})
+                    return render(request, 'school_app/login.html', _login_context(form))
                 # Clear expired lock
                 if target_user.locked_until and target_user.locked_until <= timezone.now():
                     target_user.locked_until = None
@@ -83,12 +89,12 @@ def login_view(request):
                         target_user.save(update_fields=['failed_login_attempts', 'locked_until'])
                         log_activity(request, 'LOGIN', f'Account locked after {max_attempts} failed attempts: {email}')
                         messages.error(request, f'Account locked for {lockout_mins} minutes due to too many failed attempts.')
-                        return render(request, 'school_app/login.html', {'form': form})
+                        return render(request, 'school_app/login.html', _login_context(form))
                     target_user.save(update_fields=['failed_login_attempts'])
                 messages.error(request, 'Invalid credentials')
     else:
         form = LoginForm()
-    return render(request, 'school_app/login.html', {'form': form})
+    return render(request, 'school_app/login.html', _login_context(form))
 
 
 @require_http_methods(["POST"])

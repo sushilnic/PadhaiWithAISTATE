@@ -577,25 +577,41 @@
             <h2>Toppers of the Week</h2>
             <div class="toppers-grid">
                 <div class="toppers-scroll">
-                    <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/45.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/46.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/47.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/48.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/49.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/50.jpeg' %}" alt="Topper"></div>
-                    <!-- Duplicate for seamless scroll -->
-                    <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
-                    <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
+                    {% if toppers %}
+                        {# DB-driven — set 1 (real toppers uploaded by districts) #}
+                        {% for t in toppers %}
+                        <div class="topper-card">
+                            <img src="{{ t.image.url }}" alt="{{ t.name }}" title="{{ t.name }}{% if t.caption %} — {{ t.caption }}{% endif %}">
+                        </div>
+                        {% endfor %}
+                        <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
+                    {% else %}
+                        {# Fallback: static placeholders when no active toppers exist yet #}
+                        <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/45.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/46.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/47.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/48.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/49.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/50.jpeg' %}" alt="Topper"></div>
+                        {# Duplicate for seamless scroll #}
+                        <div class="topper-card"><img src="{% static 'school_app/images/61.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/62.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/41.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/42.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/43.jpeg' %}" alt="Topper"></div>
+                        <div class="topper-card"><img src="{% static 'school_app/images/44.jpeg' %}" alt="Topper"></div>
+                    {% endif %}
                 </div>
             </div>
         </div>
