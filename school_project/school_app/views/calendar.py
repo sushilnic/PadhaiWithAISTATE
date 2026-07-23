@@ -31,7 +31,7 @@ def academic_calendar_manage(request):
     except District.DoesNotExist:
         messages.error(request, 'District not found.')
         return redirect('dashboard')
-    events = AcademicCalendarEvent.objects.filter(district=district).order_by('start_date')
+    events = AcademicCalendarEvent.objects.filter(district=district).order_by('-start_date', '-id')
     return render(request, 'school_app/calendar/academic_calendar_manage.html', {
         'district': district,
         'events': events,
