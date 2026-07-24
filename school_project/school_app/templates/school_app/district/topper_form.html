@@ -72,24 +72,46 @@
         {% endif %}
 
         <div class="form-row">
+            <!-- STEP 1: pick the school first -->
             <div class="form-full">
-                <label class="form-label" for="{{ form.name.id_for_label }}">Name *</label>
+                <label class="form-label" for="{{ form.school.id_for_label }}">
+                    <span style="background:#1e3c72;color:#fff;padding:2px 8px;border-radius:999px;font-size:.7rem;margin-right:6px;">STEP 1</span>
+                    School
+                </label>
+                {{ form.school }}
+                <div class="field-help">Only schools in your district are shown.</div>
+                {% if form.school.errors %}<div class="field-error">{{ form.school.errors.0 }}</div>{% endif %}
+            </div>
+
+            <!-- STEP 2: pick a student from that school (JS-populated) -->
+            <div class="form-full">
+                <label class="form-label" for="studentPicker">
+                    <span style="background:#1e3c72;color:#fff;padding:2px 8px;border-radius:999px;font-size:.7rem;margin-right:6px;">STEP 2</span>
+                    Pick Student <span style="color:#6b7280;font-weight:400;font-size:.78rem;">(auto-fills Name)</span>
+                </label>
+                <select id="studentPicker" class="form-select" disabled>
+                    <option value="">Select a school first…</option>
+                </select>
+                <div class="field-help" id="studentPickerHelp">
+                    Selecting a student here avoids typing mistakes in the Name. You can still edit it manually below.
+                </div>
+            </div>
+
+            <div class="form-full">
+                <label class="form-label" for="{{ form.name.id_for_label }}">
+                    <span style="background:#059669;color:#fff;padding:2px 8px;border-radius:999px;font-size:.7rem;margin-right:6px;">STEP 3</span>
+                    Name *
+                </label>
                 {{ form.name }}
+                <div class="field-help">Auto-filled when you pick a student, or type manually.</div>
                 {% if form.name.errors %}<div class="field-error">{{ form.name.errors.0 }}</div>{% endif %}
             </div>
 
             <div class="form-full">
                 <label class="form-label" for="{{ form.caption.id_for_label }}">Caption</label>
                 {{ form.caption }}
-                <div class="field-help">Optional. e.g. "Class 10 — 98% in Maths"</div>
+                <div class="field-help">Optional. e.g. "Class 10 — 98% in Maths".</div>
                 {% if form.caption.errors %}<div class="field-error">{{ form.caption.errors.0 }}</div>{% endif %}
-            </div>
-
-            <div class="form-full">
-                <label class="form-label" for="{{ form.school.id_for_label }}">School</label>
-                {{ form.school }}
-                <div class="field-help">Optional. Only schools in your district are shown.</div>
-                {% if form.school.errors %}<div class="field-error">{{ form.school.errors.0 }}</div>{% endif %}
             </div>
 
             <div>
@@ -152,6 +174,7 @@
 </div>
 
 <script>
+    // ---------- Image preview ----------
     (function() {
         var fileInput = document.getElementById('{{ form.image.id_for_label }}');
         var preview = document.getElementById('previewImg');
@@ -163,6 +186,76 @@
             preview.src = URL.createObjectURL(f);
             wrap.style.display = 'block';
         });
+    })();
+
+    // ---------- School → Student cascading dropdown ----------
+    (function() {
+        var schoolSel  = document.getElementById('{{ form.school.id_for_label }}');
+        var studentSel = document.getElementById('studentPicker');
+        var nameInput  = document.getElementById('{{ form.name.id_for_label }}');
+        var capInput   = document.getElementById('{{ form.caption.id_for_label }}');
+        var help       = document.getElementById('studentPickerHelp');
+        if (!schoolSel || !studentSel) return;
+
+        function setPlaceholder(text, enabled) {
+            studentSel.innerHTML = '<option value="">' + text + '</option>';
+            studentSel.disabled = !enabled;
+        }
+
+        function loadStudents(schoolId) {
+            if (!schoolId) {
+                setPlaceholder('Select a school first…', false);
+                return;
+            }
+            setPlaceholder('Loading students…', false);
+            var url = '{% url "topper_api_school_students" 0 %}'.replace('/0/', '/' + schoolId + '/');
+            fetch(url, { credentials: 'same-origin' })
+                .then(function(r) { return r.ok ? r.json() : Promise.reject(r.status); })
+                .then(function(data) {
+                    var list = data.students || [];
+                    if (!list.length) {
+                        setPlaceholder('No students found in this school', false);
+                        help.textContent = 'This school has no students on record. Type the topper name manually below.';
+                        return;
+                    }
+                    studentSel.innerHTML = '<option value="">— Select a student —</option>';
+                    list.forEach(function(s) {
+                        var opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.dataset.name       = s.name;
+                        opt.dataset.roll       = s.roll_number || '';
+                        opt.dataset.className  = s.class_name || '';
+                        opt.textContent = 'Class ' + (s.class_name || '?') + ' · ' + s.name +
+                                          (s.roll_number ? ' (Roll: ' + s.roll_number + ')' : '');
+                        studentSel.appendChild(opt);
+                    });
+                    studentSel.disabled = false;
+                    help.textContent = list.length + ' student(s) loaded. Pick one to auto-fill Name & Caption.';
+                })
+                .catch(function() {
+                    setPlaceholder('Could not load students. Type name manually.', false);
+                });
+        }
+
+        // On school change → reload the student list
+        schoolSel.addEventListener('change', function() {
+            loadStudents(schoolSel.value);
+        });
+
+        // On student pick → auto-fill Name only (Caption is left for the user)
+        studentSel.addEventListener('change', function() {
+            var opt = studentSel.options[studentSel.selectedIndex];
+            if (!opt || !opt.value) return;
+            if (nameInput && !nameInput.value.trim()) {
+                // only overwrite if empty — protect any manual edit
+                nameInput.value = opt.dataset.name || '';
+            } else if (nameInput && confirm('Replace current Name "' + nameInput.value + '" with "' + opt.dataset.name + '"?')) {
+                nameInput.value = opt.dataset.name || '';
+            }
+        });
+
+        // If a school is already selected (edit mode / server re-render), preload
+        if (schoolSel.value) loadStudents(schoolSel.value);
     })();
 </script>
 {% endblock %}

@@ -3,9 +3,11 @@ from . import views
 from django.contrib.auth.views import LogoutView
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic.base import RedirectView
 
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url='/static/school_app/images/favicon.ico', permanent=True)),
     path('', views.login_view, name='home'),
     path('login/', views.login_view, name='login'),
     path('dashboard/', views.dashboard, name='dashboard'),
@@ -203,5 +205,7 @@ urlpatterns = [
     path('district/toppers/<int:pk>/edit/',    views.topper_edit,   name='topper_edit'),
     path('district/toppers/<int:pk>/toggle/',  views.topper_toggle, name='topper_toggle'),
     path('district/toppers/<int:pk>/delete/',  views.topper_delete, name='topper_delete'),
+    path('district/toppers/api/school/<int:school_id>/students/',
+         views.api_school_students, name='topper_api_school_students'),
 ]
 

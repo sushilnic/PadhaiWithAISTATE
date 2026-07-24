@@ -233,6 +233,31 @@ def topper_delete(request, pk):
     return redirect('topper_list')
 
 
+@login_required
+def api_school_students(request, school_id):
+    """AJAX: return students of a school, scoped to district admin's district.
+
+    Used by the topper form's cascading School → Student dropdown to avoid
+    typing mistakes in the topper's name.
+    """
+    district = _require_district(request)
+    if district is None:
+        return JsonResponse({'error': 'forbidden'}, status=403)
+
+    # Belt-and-braces: only allow schools inside the caller's district.
+    try:
+        school = School.objects.select_related('block__district').get(pk=school_id)
+    except School.DoesNotExist:
+        return JsonResponse({'error': 'not_found'}, status=404)
+    if school.block.district_id != district.id:
+        return JsonResponse({'error': 'forbidden'}, status=403)
+
+    students = (Student.objects.filter(school=school)
+                .order_by('class_name', 'name')
+                .values('id', 'name', 'roll_number', 'class_name'))
+    return JsonResponse({'students': list(students)})
+
+
 def get_current_toppers(limit=20):
     """Public helper: return active toppers whose week overlaps today.
     Used by the login page.

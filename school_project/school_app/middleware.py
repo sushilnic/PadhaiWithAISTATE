@@ -55,7 +55,7 @@ class SecurityMiddleware:
             "https://cdn.datatables.net https://fonts.googleapis.com; "
             "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
             "img-src 'self' data:; "
-            "connect-src 'self'; "
+            "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; "
             "frame-ancestors 'none';"
         )
 
