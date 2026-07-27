@@ -131,8 +131,27 @@
     .question-item {
         margin-bottom: 14px; font-size: 0.92rem; line-height: 1.6;
         page-break-inside: avoid;
+        position: relative;
+        padding-left: 30px;
     }
     .question-item .q-num { font-weight: 700; color: #1e3c72; }
+
+    /* Per-question delete button (only shown for saved papers, hidden in print) */
+    .q-del-btn {
+        position: absolute;
+        left: 0; top: 2px;
+        width: 22px; height: 22px;
+        border-radius: 50%;
+        border: 1px solid #fca5a5;
+        background: #fee2e2;
+        color: #dc2626;
+        font-size: 14px; line-height: 1;
+        cursor: pointer;
+        display: inline-flex; align-items: center; justify-content: center;
+        transition: background .15s, transform .1s;
+    }
+    .q-del-btn:hover { background: #dc2626; color: #fff; transform: scale(1.08); }
+    @media print { .q-del-btn { display: none !important; } }
     .options-list { margin: 6px 0 0 20px; list-style: none; padding: 0; }
     .options-list li { margin-bottom: 3px; }
     .marks-tag { float: right; font-size: 0.8rem; color: #64748b; font-style: italic; }
@@ -634,6 +653,7 @@
                 stopTimer();
                 document.getElementById('spinnerWrap').classList.remove('active');
                 document.getElementById('generateBtn').disabled = false;
+                _lastPaperId = data.paper_id || null;
                 renderPaper(data.paper, payload.language);
                 document.getElementById('paperPreview').style.display = 'block';
                 document.getElementById('paperPreview').scrollIntoView({ behavior: 'smooth' });
@@ -660,6 +680,34 @@
     let currentPaperClass   = '';
     let _lastPaperData      = null;
     let _lastPaperLanguage  = 'Hindi';
+    let _lastPaperId        = null;   // set after generation; enables per-question delete
+
+    // ---- Delete a single question (off-topic / irrelevant) ----
+    function deleteQuestion(section, qNo) {
+        if (!_lastPaperId) {
+            alert('Please generate the paper first.');
+            return;
+        }
+        if (!confirm('Delete Q' + qNo + ' from Section ' + section + '?\n\n' +
+                     'Remaining questions will be renumbered and the total marks recalculated.')) {
+            return;
+        }
+        fetch('/question-paper/' + _lastPaperId + '/delete-question/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ section: section, q_no: qNo })
+        })
+        .then(function(r) { return r.json().then(function(j){ return { ok: r.ok, body: j }; }); })
+        .then(function(res) {
+            if (!res.ok || !res.body.success) {
+                alert('Could not delete: ' + (res.body.error || 'server error'));
+                return;
+            }
+            // Re-render with updated paper JSON. Total marks was recalculated server-side.
+            renderPaper(res.body.paper, _lastPaperLanguage);
+        })
+        .catch(function() { alert('Network error while deleting the question.'); });
+    }
 
     function renderPaper(p, language) {
         _lastPaperData     = p;
@@ -699,7 +747,17 @@
             ansHtml += `<h6 class="fw-700 mt-3" style="color:var(--primary);">Section ${sec.section} — ${sec.section_title}</h6>`;
 
             sec.questions.forEach(q => {
-                html += `<div class="question-item">
+                // Delete button shown only if we have a paper_id (saved paper).
+                // Hidden in print via .no-print class.
+                const delBtn = _lastPaperId
+                    ? `<button type="button" class="q-del-btn no-print"
+                              onclick="deleteQuestion('${sec.section}', ${q.q_no})"
+                              title="Delete this question (off-topic / irrelevant)">
+                         &times;
+                       </button>`
+                    : '';
+                html += `<div class="question-item" data-section="${sec.section}" data-qno="${q.q_no}">
+                    ${delBtn}
                     <span class="q-num">Q${q.q_no}.</span> ${q.question}
                     <span class="marks-tag">[${sec.marks_each}]</span>`;
                 if (q.options && q.options.length) {

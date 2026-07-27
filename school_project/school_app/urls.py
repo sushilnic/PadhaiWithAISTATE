@@ -175,6 +175,8 @@ urlpatterns = [
     path('question-paper/', views.question_paper_generator, name='question_paper_generator'),
     path('question-paper/generate/', views.generate_question_paper_ai, name='generate_question_paper_ai'),
     path('question-paper/history/', views.question_paper_history, name='question_paper_history'),
+    path('question-paper/<int:paper_id>/delete-question/',
+         views.delete_question_from_paper, name='delete_question_from_paper'),
 
     # Assigned Papers — teacher
     path('question-paper/<int:pk>/assign/', views.assign_paper, name='assign_paper'),
