@@ -141,6 +141,50 @@ def sanitize_cell(value):
     return s
 
 
+def read_excel_safely(uploaded_file):
+    """Read an uploaded .xlsx / .xls into a pandas DataFrame, tolerant to
+    slightly malformed files exported by Google Sheets / LibreOffice /
+    custom scripts (which sometimes ship a broken ``xl/styles.xml`` that
+    openpyxl refuses to parse).
+
+    Returns ``(df, None)`` on success or ``(None, user_friendly_message)``
+    on failure. Never raises — callers can render the error directly.
+    """
+    import pandas as pd
+
+    # ---- Primary: pandas + openpyxl (works for 99% of files) ----
+    try:
+        uploaded_file.seek(0)
+        return pd.read_excel(uploaded_file, engine='openpyxl'), None
+    except Exception as first_err:
+        logger.info('read_excel_safely: primary path failed (%s), trying fallback', first_err)
+
+    # ---- Fallback: openpyxl read_only mode skips most style parsing ----
+    try:
+        uploaded_file.seek(0)
+        from openpyxl import load_workbook
+        wb = load_workbook(uploaded_file, read_only=True, data_only=True)
+        ws = wb.active
+        rows = list(ws.values)
+        if not rows:
+            return None, 'The uploaded Excel file appears to be empty.'
+        headers = [str(c).strip() if c is not None else '' for c in rows[0]]
+        df = pd.DataFrame(rows[1:], columns=headers)
+        return df, None
+    except Exception as second_err:
+        logger.warning('read_excel_safely: fallback also failed (%s)', second_err)
+
+    # ---- Both failed: return a recovery-oriented message ----
+    return None, (
+        'Could not read the uploaded Excel file. This usually means the file was '
+        'created or edited by a third-party tool (Google Sheets, LibreOffice, an '
+        'online converter, etc.) and contains formatting that Excel considers '
+        'invalid. To fix: open the file in Microsoft Excel, click File → Save As, '
+        'choose "Excel Workbook (*.xlsx)" as the format, overwrite the original, '
+        'and re-upload. Or download our sample file, copy your data into it, and upload.'
+    )
+
+
 # ===== Login brute-force protection (per IP) =====
 # Per-account lockout doesn't help when an attacker rotates through many usernames
 # trying the same default password (e.g. "1234"). Per-IP counter caps the total

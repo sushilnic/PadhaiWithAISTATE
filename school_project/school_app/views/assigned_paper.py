@@ -9,6 +9,28 @@ from django.utils import timezone
 # Helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _mcq_letter(s):
+    """Extract the leading option letter (A/B/C/D) from an MCQ answer string.
+
+    Handles all these AI-generated formats:
+        "B"                           -> "b"
+        "B."                          -> "b"
+        "B)"                          -> "b"
+        "B. एक परिमेय संख्या"          -> "b"
+        "b. एक परिमेय संख्या"          -> "b"
+        "  B  "                       -> "b"
+
+    Falls back to the whole normalised string if no leading letter is found
+    (so we don't silently lose real answers on odd inputs).
+    """
+    if not s:
+        return ''
+    s = s.strip().lower()
+    if s and s[0] in ('a', 'b', 'c', 'd'):
+        return s[0]
+    return s.replace('.', '').replace(' ', '')
+
+
 def _auto_grade(paper_json, answers):
     """
     Auto-grade a student attempt.
@@ -38,8 +60,14 @@ def _auto_grade(paper_json, answers):
             correct = correct_raw.lower().replace('.', '').replace(' ', '')
             student = student_raw.lower().replace('.', '').replace(' ', '')
 
-            if sec_id in ('A', 'B', 'C'):
-                # Exact match (MCQ, T/F, Fill-in-blank)
+            if sec_id == 'A':
+                # MCQ — the AI-generated answer typically starts with the option
+                # letter (e.g. "B. एक परिमेय संख्या" or "B) foo" or just "B").
+                # Compare on the leading letter only, since the student input is
+                # just the letter (A/B/C/D).
+                earned = marks_each if (student and _mcq_letter(student) == _mcq_letter(correct)) else 0.0
+            elif sec_id in ('B', 'C'):
+                # Exact match (T/F, Fill-in-blank)
                 earned = marks_each if (student and student == correct) else 0.0
             else:
                 # Short/Long: keyword-based partial credit

@@ -75,10 +75,14 @@ def upload_student_data(request):
             messages.error(request, err)
             return redirect('upload_student_data')
 
-        try:
-            # Load the Excel file into a pandas DataFrame
-            df = pd.read_excel(excel_file, engine='openpyxl')
+        # Load the Excel file into a pandas DataFrame (tolerant to slightly
+        # malformed files exported by Google Sheets / LibreOffice / etc.)
+        df, read_err = read_excel_safely(excel_file)
+        if df is None:
+            messages.error(request, read_err)
+            return redirect('upload_student_data')
 
+        try:
             successfully_created = 0  # Counter for successfully created students
             roll_number_errors = []  # Store errors related to duplicate roll numbers
 
@@ -153,10 +157,13 @@ def upload_school_users(request):
                 messages.error(request, err)
                 return redirect('upload_school_users')
 
-            try:
-                # Load Excel data
-                df = pd.read_excel(excel_file, engine='openpyxl')
+            # Load Excel data (tolerant reader)
+            df, read_err = read_excel_safely(excel_file)
+            if df is None:
+                messages.error(request, read_err)
+                return redirect('upload_school_users')
 
+            try:
                 # Optional: check required columns
                 required_cols = {'email', 'username', 'password', 'school_name', 'nic_code', 'block_id'}
                 if not required_cols.issubset(set(df.columns)):
@@ -254,10 +261,12 @@ def update_block_name_from_excel(request):
             messages.error(request, err)
             return redirect('update_block_name')
 
-        try:
-            # Read the Excel file using pandas
-            df = pd.read_excel(excel_file, engine='openpyxl')
+        # Read the Excel file using the tolerant reader
+        df, read_err = read_excel_safely(excel_file)
+        if df is None:
+            return JsonResponse({'error': read_err}, status=400)
 
+        try:
             updates = []
             # Iterate over rows in the DataFrame
             for _, row in df.iterrows():
