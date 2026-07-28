@@ -28,6 +28,9 @@ pillow==11.3.0
 sarvamai==0.1.28
 openai==1.58.1
 
+# YouTube Data API (used by student_learning.get_video_suggestions)
+google-api-python-client==2.151.0
+
 # Utilities
 requests==2.32.3
 beautifulsoup4==4.12.3
