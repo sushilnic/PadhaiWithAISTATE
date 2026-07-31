@@ -130,6 +130,56 @@ def question_paper_generator(request):
     return render(request, 'school_app/question_paper/question_paper_generator.html', {'school_name': school_name})
 
 
+def _is_paper_quality_ok(paper):
+    """Python port of the client-side isPaperValid() — catches AI-generated
+    junk before it hits the DB. Returns False if:
+        - No sections
+        - Any section has zero questions
+        - Any question text or answer is placeholder (dots/spaces only, or
+          too short after stripping)
+        - MCQ (Section A) has fewer than 4 options, or an option looks
+          like a placeholder, or two options are identical
+    """
+    if not paper or not isinstance(paper, dict):
+        return False
+    sections = paper.get('sections') or []
+    if not sections:
+        return False
+    import re
+    dots_ws = re.compile(r'[.\s]')
+    for sec in sections:
+        qs = sec.get('questions') or []
+        if not qs:
+            return False
+        section_id = str(sec.get('section', '')).strip()
+        for q in qs:
+            qtext = str(q.get('question', '')).strip()
+            atext = str(q.get('answer', '')).strip()
+            # Placeholder question (<8 real chars after stripping dots/whitespace)
+            if len(dots_ws.sub('', qtext)) < 8:
+                return False
+            # Placeholder / empty answer
+            if len(dots_ws.sub('', atext)) < 1:
+                return False
+            # MCQ-specific checks
+            if section_id == 'A':
+                options = q.get('options') or []
+                if len(options) < 4:
+                    return False
+                cleaned = []
+                for opt in options:
+                    s = str(opt or '')
+                    # Strip common A./B./ prefixes and dots/spaces
+                    stripped = re.sub(r'[A-D.\s]', '', s)
+                    if len(stripped) < 3:
+                        return False
+                    cleaned.append(s.strip().lower())
+                # Duplicate option texts
+                if len(set(cleaned)) < len(cleaned):
+                    return False
+    return True
+
+
 @login_required
 @require_http_methods(["POST"])
 def generate_question_paper_ai(request):
@@ -453,6 +503,21 @@ Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentenc
 
         paper_data = json.loads(json.dumps(paper_data))  # validate round-trip
 
+        # ── Server-side quality gate (defensive) ─────────────────────────
+        # The validator is best-effort — if it itself blows up on some odd
+        # AI output, we default to quality_ok=True so the paper still saves.
+        try:
+            quality_ok = _is_paper_quality_ok(paper_data)
+        except Exception:
+            logger.exception("Quality validator crashed — treating as OK")
+            quality_ok = True
+        if not quality_ok:
+            logger.warning(
+                "Paper quality check failed — inserting with warning. "
+                "subject=%s chapter=%s user=%s",
+                subject, chapter, request.user.pk,
+            )
+
         from ..models import QuestionPaperHistory
         history = QuestionPaperHistory.objects.create(
             user=request.user,
@@ -466,11 +531,22 @@ Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentenc
             paper_json=paper_data,
         )
 
-        return JsonResponse({'success': True, 'paper': paper_data, 'paper_id': history.pk})
+        return JsonResponse({
+            'success':         True,
+            'paper':           paper_data,
+            'paper_id':        history.pk,
+            'quality_warning': not quality_ok,
+        })
 
-    except Exception:
+    except Exception as exc:
         logger.exception("generate_question_paper_ai error")
-        return JsonResponse({'error': 'Could not generate the paper. Please try again.'}, status=500)
+        # Include the exception class + message in the client response so we
+        # can see WHY generation is failing (e.g. AI timeout, DB error, JSON
+        # parse). Full traceback still goes to server log.
+        return JsonResponse({
+            'error': f'Could not generate the paper. Please try again. '
+                     f'[Debug: {type(exc).__name__}: {str(exc)[:200]}]'
+        }, status=500)
 
 
 @login_required

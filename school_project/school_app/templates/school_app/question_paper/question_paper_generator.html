@@ -319,7 +319,7 @@
                         <div class="marks-box">
                             <span class="section-badge badge-a">Section A — MCQ</span>
                             <label>No. of Questions</label>
-                            <input type="number" id="mcq_count" class="form-control mb-2" value="10" min="0" max="30" oninput="updateBreakdown()">
+                            <input type="number" id="mcq_count" class="form-control mb-2" value="5" min="0" max="30" oninput="updateBreakdown()">
                             <label>Marks Each</label>
                             <input type="number" id="mcq_marks" class="form-control" value="1" min="1" max="5" oninput="updateBreakdown()">
                         </div>
@@ -398,6 +398,14 @@
                         <button class="btn-print" onclick="printSection('questionPaper')">🖨️ Print Question Paper</button>
                         <button class="btn-print-ans" onclick="printSection('answerKey')">🗝️ Print Answer Key</button>
                     </div>
+                </div>
+
+                <!-- Quality-warning banner — shown only if server flagged quality issues -->
+                <div id="qualityWarning" role="alert" style="display:none;background:#fef3c7;border:1px solid #f59e0b;border-left:5px solid #d97706;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:.92rem;color:#78350f;">
+                    <strong>⚠ AI quality check found issues in this paper.</strong>
+                    Some questions may have placeholder text, be off-topic, or have duplicate MCQ options.
+                    Please review each question and use the red <strong>✕</strong> button to delete anything that doesn't fit &mdash;
+                    or click <strong>Generate</strong> again for a fresh attempt.
                 </div>
 
                 <!-- AI-content disclaimer (legal + educational safety) -->
@@ -625,10 +633,11 @@
             return true;
         }
 
-        // ── Fetch with 1 auto-retry on bad quality ───────────────────────
-        function doFetch(attempt) {
+        // ── Single fetch — server-side quality gate ensures ONE DB row per Generate.
+        // (Previous client-side doFetch(attempt+1) retry loop was the root cause
+        //  of duplicate rows on quality failures — moved to server-side gating.)
+        function doFetch() {
             _abortController = new AbortController();
-            if (attempt > 1) stepEl.textContent = '⚠ Quality check failed — retrying…';
 
             fetch('{% url "generate_question_paper_ai" %}', {
                 method: 'POST',
@@ -638,24 +647,26 @@
             })
             .then(r => r.json())
             .then(data => {
-                if (data.error) {
-                    stopTimer();
-                    document.getElementById('spinnerWrap').classList.remove('active');
-                    document.getElementById('generateBtn').disabled = false;
-                    alert('Error: ' + data.error);
-                    return;
-                }
-                if (!isPaperValid(data.paper) && attempt < 2) {
-                    // Quality check failed — retry once automatically
-                    doFetch(attempt + 1);
-                    return;
-                }
                 stopTimer();
                 document.getElementById('spinnerWrap').classList.remove('active');
                 document.getElementById('generateBtn').disabled = false;
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
                 _lastPaperId = data.paper_id || null;
                 renderPaper(data.paper, payload.language);
                 document.getElementById('paperPreview').style.display = 'block';
+
+                // If server flagged imperfect quality, show a non-blocking warning
+                // so the teacher can prune bad questions with the ✕ button.
+                if (data.quality_warning) {
+                    showQualityWarning();
+                } else {
+                    hideQualityWarning();
+                }
+
                 document.getElementById('paperPreview').scrollIntoView({ behavior: 'smooth' });
             })
             .catch(err => {
@@ -668,7 +679,7 @@
             });
         }
 
-        doFetch(1);
+        doFetch();
     }
 
     let _abortController = null;
@@ -681,6 +692,16 @@
     let _lastPaperData      = null;
     let _lastPaperLanguage  = 'Hindi';
     let _lastPaperId        = null;   // set after generation; enables per-question delete
+
+    // ---- Quality warning banner helpers ----
+    function showQualityWarning() {
+        var el = document.getElementById('qualityWarning');
+        if (el) el.style.display = 'block';
+    }
+    function hideQualityWarning() {
+        var el = document.getElementById('qualityWarning');
+        if (el) el.style.display = 'none';
+    }
 
     // ---- Delete a single question (off-topic / irrelevant) ----
     function deleteQuestion(section, qNo) {
