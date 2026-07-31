@@ -633,6 +633,45 @@ def schools_with_student_counts(request):
 
 
 @login_required
+def block_wise_summary(request):
+    """District-admin report: per-block totals of schools and students.
+
+    Rows: one per block in the caller's district.
+    Columns: Block name, total schools, total students.
+    Also shows a grand total across the district.
+    """
+    if not request.user.is_district_user:
+        return render(request, 'school_app/errors/403.html', status=403)
+
+    try:
+        district = District.objects.get(admin=request.user)
+    except District.DoesNotExist:
+        messages.error(request, 'No district associated with your account.')
+        return redirect('dashboard')
+
+    # One query — count schools and students in one pass per block.
+    # Reverse-relation name on Block → School is `block_schools`, and
+    # the Block model has `name_english` / `name_hindi` (no plain `name`).
+    blocks = (Block.objects
+              .filter(district=district)
+              .annotate(
+                  total_schools=Count('block_schools', distinct=True),
+                  total_students=Count('block_schools__students', distinct=True),
+              )
+              .order_by('name_english'))
+
+    grand_total_schools  = sum(b.total_schools  for b in blocks)
+    grand_total_students = sum(b.total_students for b in blocks)
+
+    return render(request, 'school_app/reports/block_wise_summary.html', {
+        'district':             district,
+        'blocks':               blocks,
+        'grand_total_schools':  grand_total_schools,
+        'grand_total_students': grand_total_students,
+    })
+
+
+@login_required
 def activity_logs(request):
     """Display activity logs for district admin only."""
     if not request.user.is_district_user:

@@ -1,0 +1,128 @@
+{% extends 'school_app/base.html' %}
+{% load humanize %}
+{% block content %}
+<style>
+    .bws-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #fff;
+        border-radius: 12px;
+        padding: 22px 28px;
+        margin-bottom: 24px;
+    }
+    .bws-header h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+    .bws-header p  { margin: 4px 0 0; opacity: .9; font-size: .9rem; }
+
+    .bws-summary-cards {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px; margin-bottom: 20px;
+    }
+    .bws-card {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 16px 20px; box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+    .bws-card .label { font-size: .78rem; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+    .bws-card .value { font-size: 1.7rem; font-weight: 700; color: #1e3c72; margin-top: 4px; }
+
+    .bws-table-wrap {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.06); overflow: hidden;
+    }
+    table.bws-table { width: 100%; border-collapse: collapse; }
+    table.bws-table thead th {
+        background: #f8fafc; color: #1e3c72; text-align: left;
+        font-size: .82rem; font-weight: 700; padding: 12px 16px;
+        border-bottom: 2px solid #e2e8f0; text-transform: uppercase; letter-spacing: .03em;
+    }
+    table.bws-table tbody td {
+        padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: .93rem;
+    }
+    table.bws-table tbody tr:hover { background: #f8fafc; }
+    table.bws-table tfoot td {
+        background: #eef2ff; font-weight: 700; padding: 12px 16px;
+        border-top: 2px solid #c7d2fe; color: #1e3c72;
+    }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .block-name { font-weight: 600; color: #1e293b; }
+    .empty {
+        padding: 40px 20px; text-align: center; color: #6b7280;
+    }
+
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+        background: #6b7280; color: #fff; padding: 8px 16px; border-radius: 8px;
+        font-size: .88rem; margin-bottom: 16px;
+    }
+    .btn-back:hover { background: #4b5563; color: #fff; }
+
+    .btn-print {
+        background: linear-gradient(135deg, #059669, #10b981); color: #fff;
+        border: none; padding: 8px 16px; border-radius: 8px; font-size: .88rem;
+        cursor: pointer; margin-left: 8px;
+    }
+    @media print {
+        .bws-header { background: #1e3c72 !important; -webkit-print-color-adjust: exact; }
+        .btn-back, .btn-print { display: none; }
+        .bws-card { break-inside: avoid; }
+    }
+</style>
+
+<a href="{% url 'collector_dashboard' %}" class="btn-back">← Back to Dashboard</a>
+<button type="button" class="btn-print" onclick="window.print()">🖨 Print</button>
+
+<div class="bws-header">
+    <h1><i class="fas fa-chart-bar"></i> Block-wise Schools &amp; Students Summary</h1>
+    <p>{{ district.name }} district &mdash; totals per block</p>
+</div>
+
+<div class="bws-summary-cards">
+    <div class="bws-card">
+        <div class="label">Total Blocks</div>
+        <div class="value">{{ blocks|length }}</div>
+    </div>
+    <div class="bws-card">
+        <div class="label">Total Schools</div>
+        <div class="value">{{ grand_total_schools|intcomma }}</div>
+    </div>
+    <div class="bws-card">
+        <div class="label">Total Students</div>
+        <div class="value">{{ grand_total_students|intcomma }}</div>
+    </div>
+</div>
+
+<div class="bws-table-wrap">
+    {% if blocks %}
+    <table class="bws-table">
+        <thead>
+            <tr>
+                <th style="width:6%;">#</th>
+                <th>Block</th>
+                <th class="num" style="width:20%;">Total Schools</th>
+                <th class="num" style="width:20%;">Total Students</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in blocks %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td class="block-name">{{ b.name_english }}{% if b.name_hindi %} <span style="color:#6b7280;font-weight:400;font-size:.85em;">({{ b.name_hindi }})</span>{% endif %}</td>
+                <td class="num">{{ b.total_schools|intcomma }}</td>
+                <td class="num">{{ b.total_students|intcomma }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2">Grand Total</td>
+                <td class="num">{{ grand_total_schools|intcomma }}</td>
+                <td class="num">{{ grand_total_students|intcomma }}</td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-info-circle" style="font-size:2rem; opacity:.4; display:block; margin-bottom:8px;"></i>
+        No blocks found in this district yet.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
