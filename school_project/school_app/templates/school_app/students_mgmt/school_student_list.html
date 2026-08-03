@@ -26,7 +26,7 @@
     .ssl-filters {
         background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
         padding: 16px 18px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04);
-        display: grid; grid-template-columns: 2fr 1fr 2fr 1fr auto auto; gap: 10px;
+        display: grid; grid-template-columns: 2fr 1fr 1.5fr 2fr 1fr auto auto; gap: 10px;
         align-items: end;
     }
     .ssl-filters label {
@@ -137,6 +137,15 @@
         </select>
     </div>
     <div>
+        <label for="block">Block</label>
+        <select name="block" id="block">
+            <option value="">All blocks</option>
+            {% for b in blocks_qs %}
+                <option value="{{ b.id }}" {% if block_id == b.id|stringformat:"s" %}selected{% endif %}>{{ b.name_english }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
         <label for="school">School</label>
         <select name="school" id="school">
             <option value="">All schools</option>
@@ -167,7 +176,7 @@
         <i class="fas fa-file-csv"></i> Export current view as CSV
     </a>
     <span style="margin-left:8px; color:#6b7280; font-size:.85rem;">
-        {% if q or class_filter or school_id %}Filtered result &middot; {% endif %}
+        {% if q or class_filter or block_id or school_id %}Filtered result &middot; {% endif %}
         {{ total_students|intcomma }} student{{ total_students|pluralize }} match
     </span>
 </div>
@@ -234,7 +243,7 @@
     {% else %}
     <div class="empty">
         <i class="fas fa-search" style="font-size:2rem; opacity:.4; display:block; margin-bottom:8px;"></i>
-        {% if q or class_filter or school_id %}
+        {% if q or class_filter or block_id or school_id %}
             No students match your filters. <a href="{% url 'school_student_list' %}">Clear filters</a>.
         {% else %}
             No students are recorded in your scope yet.

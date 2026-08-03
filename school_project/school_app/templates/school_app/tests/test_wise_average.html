@@ -209,6 +209,34 @@
     <p>View average marks and performance categories for each test</p>
 </div>
 
+{% if not data %}
+<!-- ═══ Empty state ══════════════════════════════════════════════════════════ -->
+<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;
+            padding:60px 30px;text-align:center;
+            box-shadow:0 2px 15px rgba(0,0,0,0.06);margin-bottom:25px;">
+    <div style="font-size:4rem;margin-bottom:16px;opacity:.35;">📊</div>
+    <h3 style="color:#1e3c72;font-weight:700;margin-bottom:10px;">No test data available yet</h3>
+    <p style="color:#64748b;font-size:.95rem;max-width:520px;margin:0 auto 20px;line-height:1.6;">
+        There are no marks entered for any test within your scope. Once schools
+        record marks against an active test, results will appear here as tables,
+        charts, and category breakdowns.
+    </p>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;
+                padding:16px 22px;max-width:520px;margin:0 auto;text-align:left;
+                font-size:.9rem;color:#475569;">
+        <strong style="display:block;margin-bottom:8px;color:#1e3c72;">To see data on this page:</strong>
+        <ol style="margin:0;padding-left:22px;line-height:1.7;">
+            <li>District Officer creates a test (<em>Schedule Test</em>) &amp; activates it</li>
+            <li>Schools enter student marks against the active test</li>
+            <li>Refresh this page &mdash; charts and tables will populate</li>
+        </ol>
+    </div>
+    <div style="margin-top:24px;">
+        <a onclick="window.history.back();" class="btn-back" style="cursor:pointer;">← Back to Dashboard</a>
+    </div>
+</div>
+{% else %}
+
 <!-- Statistics Row -->
 <div class="stats-row">
     <div class="stat-box">
@@ -310,9 +338,11 @@
         ← Back to Dashboard
     </a>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
+{% if data %}
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script>
     $(document).ready(function() {
@@ -665,4 +695,5 @@
         });
     });
 </script>
+{% endif %}
 {% endblock %}

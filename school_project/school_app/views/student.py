@@ -3,7 +3,7 @@ Student management views.
 """
 from .utils import *
 from .utils import _get_user_district
-from .hierarchy import get_user_hierarchy, get_user_schools
+from .hierarchy import get_user_hierarchy, get_user_schools, get_user_students
 
 logger = logging.getLogger(__name__)
 
@@ -96,13 +96,16 @@ def school_student_list(request):
     import csv
 
     # ── Scope ────────────────────────────────────────────────────────────
-    students_qs = (get_user_students(request.user)
+    hierarchy   = get_user_hierarchy(request.user)
+    students_qs = (hierarchy['students']
                    .select_related('school', 'school__block'))
-    schools_qs  = get_user_schools(request.user)
+    schools_qs  = hierarchy['schools']
+    blocks_qs   = hierarchy['blocks']
 
     # ── Filters (from GET) ───────────────────────────────────────────────
     q            = (request.GET.get('q', '') or '').strip()
     class_filter = (request.GET.get('class_name', '') or '').strip()
+    block_id     = (request.GET.get('block', '') or '').strip()
     school_id    = (request.GET.get('school', '') or '').strip()
     sort_by      = (request.GET.get('sort', 'name') or 'name').strip()
 
@@ -112,6 +115,13 @@ def school_student_list(request):
         )
     if class_filter:
         students_qs = students_qs.filter(class_name=class_filter)
+    if block_id:
+        try:
+            students_qs = students_qs.filter(school__block_id=int(block_id))
+            # Also narrow the schools dropdown to that block for a cleaner UX
+            schools_qs = schools_qs.filter(block_id=int(block_id))
+        except (TypeError, ValueError):
+            pass
     if school_id:
         try:
             students_qs = students_qs.filter(school_id=int(school_id))
@@ -166,7 +176,8 @@ def school_student_list(request):
     # Preserve current filters when building pagination links
     filter_qs = urlencode({
         k: v for k, v in {
-            'q': q, 'class_name': class_filter, 'school': school_id, 'sort': sort_by,
+            'q': q, 'class_name': class_filter, 'block': block_id,
+            'school': school_id, 'sort': sort_by,
         }.items() if v
     })
 
@@ -176,9 +187,11 @@ def school_student_list(request):
         'total_schools':   total_schools,
         'q':               q,
         'class_filter':    class_filter,
+        'block_id':        block_id,
         'school_id':       school_id,
         'sort_by':         sort_by,
         'class_choices':   class_choices,
+        'blocks_qs':       blocks_qs.order_by('name_english'),
         'schools_qs':      schools_qs.order_by('name'),
         'filter_qs':       filter_qs,
     })
@@ -191,10 +204,15 @@ def student_ranking(request):
     rankings = []
 
     if request.user.is_district_user:
+        # Scope to students in this district only — previously this branch
+        # ranked marks across ALL districts (data-leak bug).
+        students_in_district = get_user_students(request.user)
+
         if selected_test:
             # Ranking for a specific test
             rankings = (
-                Marks.objects.filter(test__test_number=selected_test)
+                Marks.objects.filter(student__in=students_in_district,
+                                     test__test_number=selected_test)
                 .select_related('student', 'student__school', 'test')
                 .annotate(
                     percentage=ExpressionWrapper(
@@ -211,7 +229,7 @@ def student_ranking(request):
         else:
             # Cumulative ranking for district user (all tests)
             rankings = (
-                Marks.objects
+                Marks.objects.filter(student__in=students_in_district)
                 .select_related('student', 'student__school')
                 .values('student__id', 'student__name', 'student__school__name')
                 .annotate(
@@ -264,12 +282,59 @@ def student_ranking(request):
                 .order_by('-total_marks')
             )
 
+    elif request.user.is_state_user or request.user.is_system_admin:
+        # State user (or system admin) — rank all students in their scope
+        students_in_scope = get_user_students(request.user)
+
+        if selected_test:
+            # Ranking for a specific test within the state
+            rankings = (
+                Marks.objects.filter(student__in=students_in_scope,
+                                     test__test_number=selected_test)
+                .select_related('student', 'student__school', 'test')
+                .annotate(
+                    percentage=ExpressionWrapper(
+                        F('marks') * 100 / F('test__max_marks'),
+                        output_field=FloatField()
+                    )
+                )
+                .values(
+                    'student__id', 'student__name', 'student__school__name',
+                    'marks', 'percentage', 'test__test_name'
+                )
+                .order_by('-marks')
+            )
+        else:
+            # Cumulative ranking for state / system-admin user (all tests)
+            rankings = (
+                Marks.objects.filter(student__in=students_in_scope)
+                .select_related('student', 'student__school')
+                .values('student__id', 'student__name', 'student__school__name')
+                .annotate(
+                    total_marks=Sum('marks'),
+                    total_max_marks=Sum('test__max_marks'),
+                    percentage=ExpressionWrapper(
+                        (Sum('marks') * 100.0) / Sum('test__max_marks'),
+                        output_field=FloatField()
+                    )
+                )
+                .order_by('-total_marks')
+            )
+
     else:
         return HttpResponseForbidden("You are not authorized to access this page.")
 
-    # Get tests for dropdown scoped to user's district
+    # Get tests for dropdown scoped to user's district (state/system admins see all in scope)
     _district = _get_user_district(request)
-    tests = Test.objects.filter(district=_district) if _district else Test.objects.all()
+    if _district:
+        tests = Test.objects.filter(district=_district)
+    elif request.user.is_state_user or request.user.is_system_admin:
+        # State user: all tests within their state's districts
+        from .hierarchy import get_user_hierarchy
+        _hier = get_user_hierarchy(request.user)
+        tests = Test.objects.filter(district__in=_hier['districts'])
+    else:
+        tests = Test.objects.all()
 
     return render(request, 'school_app/students_mgmt/student_ranking.html', {
         'rankings': rankings,
