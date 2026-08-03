@@ -325,7 +325,8 @@ def create_block(request):
         if user.is_district_user:
             form.fields['district'].queryset = District.objects.filter(id=district.id)
         else:
-            form.fields['district'].queryset = District.objects.all()
+            # System admin: only allow assigning to ACTIVE districts
+            form.fields['district'].queryset = District.objects.filter(is_active=True)
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -353,7 +354,8 @@ def create_block(request):
             form.fields['district'].queryset = District.objects.filter(id=district.id)
             form.fields['district'].initial = district
         else:
-            form.fields['district'].queryset = District.objects.all()
+            # System admin: only allow assigning to ACTIVE districts
+            form.fields['district'].queryset = District.objects.filter(is_active=True)
     return render(request, 'school_app/manage/manage_form.html', {
         'title': 'Create Block',
         'form': form,

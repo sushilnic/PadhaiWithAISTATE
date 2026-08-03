@@ -1,120 +1,245 @@
 {% extends 'school_app/base.html' %}
+{% load humanize %}
 
-{% block title %}School-Wise Student Report{% endblock %}
+{% block title %}Students{% endblock %}
 
 {% block content %}
+<style>
+    .ssl-header {
+        background: linear-gradient(135deg, #1e3c72, #2a5298);
+        color: #fff; border-radius: 12px; padding: 22px 28px; margin-bottom: 20px;
+    }
+    .ssl-header h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+    .ssl-header p  { margin: 4px 0 0; opacity: .92; font-size: .9rem; }
 
-<!-- Dashboard Header -->
-<div class="dashboard-header">
-    <h1>School-Wise Student Report</h1>
-    <p>View all students organized by their schools</p>
+    .ssl-stats {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px; margin-bottom: 18px;
+    }
+    .ssl-stat {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,.05);
+    }
+    .ssl-stat .label { font-size: .74rem; color: #6b7280; text-transform: uppercase; letter-spacing: .04em; }
+    .ssl-stat .value { font-size: 1.5rem; font-weight: 700; color: #1e3c72; margin-top: 2px; }
+
+    .ssl-filters {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+        padding: 16px 18px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        display: grid; grid-template-columns: 2fr 1fr 2fr 1fr auto auto; gap: 10px;
+        align-items: end;
+    }
+    .ssl-filters label {
+        font-size: .74rem; font-weight: 600; color: #64748b;
+        text-transform: uppercase; letter-spacing: .03em; margin-bottom: 4px; display: block;
+    }
+    .ssl-filters input, .ssl-filters select {
+        width: 100%; padding: 8px 10px; border: 1.5px solid #d1d5db;
+        border-radius: 8px; font-size: .92rem;
+    }
+    .ssl-filters input:focus, .ssl-filters select:focus {
+        border-color: #1e3c72; outline: none; box-shadow: 0 0 0 3px rgba(30,60,114,.1);
+    }
+    .btn-apply, .btn-csv, .btn-clear {
+        padding: 8px 16px; border-radius: 8px; font-size: .88rem; font-weight: 600;
+        border: none; cursor: pointer; text-decoration: none; white-space: nowrap;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .btn-apply { background: linear-gradient(135deg, #1e3c72, #2a5298); color: #fff; }
+    .btn-clear { background: #6b7280; color: #fff; }
+    .btn-csv   { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
+    .btn-apply:hover, .btn-clear:hover, .btn-csv:hover { color: #fff; opacity: .93; }
+
+    .ssl-table-wrap {
+        background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0,0,0,.06); overflow: hidden;
+    }
+    table.ssl-table { width: 100%; border-collapse: collapse; }
+    table.ssl-table thead th {
+        background: #f8fafc; color: #1e3c72; text-align: left;
+        font-size: .78rem; font-weight: 700; padding: 11px 14px;
+        border-bottom: 2px solid #e2e8f0; text-transform: uppercase; letter-spacing: .03em;
+        white-space: nowrap;
+    }
+    table.ssl-table thead th a { color: inherit; text-decoration: none; }
+    table.ssl-table thead th a:hover { color: #0284c7; }
+    table.ssl-table tbody td {
+        padding: 10px 14px; border-bottom: 1px solid #f1f5f9; font-size: .92rem;
+    }
+    table.ssl-table tbody tr:hover { background: #f8fafc; }
+    .roll { color: #1e3c72; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .cls-badge {
+        display: inline-block; padding: 2px 8px; border-radius: 999px;
+        background: #dbeafe; color: #1d4ed8; font-size: .74rem; font-weight: 700;
+    }
+    .empty { padding: 40px 20px; text-align: center; color: #6b7280; }
+
+    .ssl-pager {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 14px 18px; background: #f8fafc; border-top: 1px solid #e2e8f0;
+        font-size: .88rem; color: #475569;
+    }
+    .pager-links a, .pager-links span {
+        display: inline-block; padding: 5px 11px; border-radius: 6px;
+        margin: 0 2px; font-size: .86rem;
+    }
+    .pager-links a { background: #fff; border: 1px solid #d1d5db; color: #1e3c72; text-decoration: none; }
+    .pager-links a:hover { background: #eef2ff; }
+    .pager-links .current { background: #1e3c72; color: #fff; font-weight: 700; }
+    .pager-links .disabled { color: #cbd5e1; }
+
+    .btn-back {
+        display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+        background: #6b7280; color: #fff; padding: 8px 16px; border-radius: 8px;
+        font-size: .88rem; margin-bottom: 16px;
+    }
+    .btn-back:hover { background: #4b5563; color: #fff; }
+
+    @media (max-width: 900px) {
+        .ssl-filters { grid-template-columns: 1fr 1fr; }
+    }
+</style>
+
+<a href="{% url 'dashboard' %}" class="btn-back">&larr; Back to Dashboard</a>
+
+<div class="ssl-header">
+    <h1><i class="fas fa-user-graduate"></i> Students</h1>
+    <p>Search, filter, sort and export your students.</p>
 </div>
 
-{% if school_students %}
-
-<!-- Search Box -->
-<div class="form-container mb-30">
-    <input type="text" id="schoolSearch" placeholder="Search by school name or student name..." class="form-control" style="max-width: 500px; margin: 0 auto;">
+<div class="ssl-stats">
+    <div class="ssl-stat">
+        <div class="label">Total Students</div>
+        <div class="value">{{ total_students|intcomma }}</div>
+    </div>
+    <div class="ssl-stat">
+        <div class="label">Across Schools</div>
+        <div class="value">{{ total_schools|intcomma }}</div>
+    </div>
+    <div class="ssl-stat">
+        <div class="label">Showing on this page</div>
+        <div class="value">{{ page|length }}</div>
+    </div>
 </div>
 
-<!-- Schools Container -->
-<div class="dashboard-grid">
-    {% for school, students in school_students.items %}
-    <div class="dashboard-card school-card-item" data-school="{{ school.name|lower }}">
-        <div class="card-header">
-            <span class="card-header-icon"><i class="fas fa-school"></i></span>
-            <h3>{{ school.name }}</h3>
+<form method="get" class="ssl-filters">
+    <div>
+        <label for="q">Search (name / roll)</label>
+        <input type="text" name="q" id="q" value="{{ q }}" placeholder="e.g. Rahul or 20241023">
+    </div>
+    <div>
+        <label for="class_name">Class</label>
+        <select name="class_name" id="class_name">
+            <option value="">All classes</option>
+            {% for code, label in class_choices.items %}
+                <option value="{{ code }}" {% if class_filter == code %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label for="school">School</label>
+        <select name="school" id="school">
+            <option value="">All schools</option>
+            {% for s in schools_qs %}
+                <option value="{{ s.id }}" {% if school_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label for="sort">Sort by</label>
+        <select name="sort" id="sort">
+            <option value="name"    {% if sort_by == 'name' %}selected{% endif %}>Name (A→Z)</option>
+            <option value="-name"   {% if sort_by == '-name' %}selected{% endif %}>Name (Z→A)</option>
+            <option value="class"   {% if sort_by == 'class' %}selected{% endif %}>Class ↑</option>
+            <option value="-class"  {% if sort_by == '-class' %}selected{% endif %}>Class ↓</option>
+            <option value="roll"    {% if sort_by == 'roll' %}selected{% endif %}>Roll No ↑</option>
+            <option value="-roll"   {% if sort_by == '-roll' %}selected{% endif %}>Roll No ↓</option>
+            <option value="school"  {% if sort_by == 'school' %}selected{% endif %}>School (A→Z)</option>
+            <option value="-school" {% if sort_by == '-school' %}selected{% endif %}>School (Z→A)</option>
+        </select>
+    </div>
+    <button type="submit" class="btn-apply"><i class="fas fa-filter"></i> Apply</button>
+    <a class="btn-clear" href="{% url 'school_student_list' %}"><i class="fas fa-times"></i> Clear</a>
+</form>
+
+<div style="margin-bottom:12px;">
+    <a class="btn-csv" href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}export=csv">
+        <i class="fas fa-file-csv"></i> Export current view as CSV
+    </a>
+    <span style="margin-left:8px; color:#6b7280; font-size:.85rem;">
+        {% if q or class_filter or school_id %}Filtered result &middot; {% endif %}
+        {{ total_students|intcomma }} student{{ total_students|pluralize }} match
+    </span>
+</div>
+
+<div class="ssl-table-wrap">
+    {% if page.object_list %}
+    <table class="ssl-table">
+        <thead>
+            <tr>
+                <th style="width:5%;">#</th>
+                <th>Roll No</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Gender</th>
+                <th>School</th>
+                <th>Block</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in page.object_list %}
+            <tr>
+                <td>{{ page.start_index|add:forloop.counter0 }}</td>
+                <td class="roll">{{ s.roll_number|default:"—" }}</td>
+                <td>{{ s.name }}</td>
+                <td>
+                    {% if s.class_name %}
+                        <span class="cls-badge">Class {{ s.class_name }}</span>
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ s.get_gender_display|default:"—" }}</td>
+                <td>{{ s.school.name|default:"—" }}</td>
+                <td>{{ s.school.block.name_english|default:"—" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="ssl-pager">
+        <div>
+            Page {{ page.number }} of {{ page.paginator.num_pages }} &middot;
+            {{ total_students|intcomma }} total
         </div>
-        <div class="card-body">
-            <div class="d-flex flex-between mb-10" style="border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
-                <span style="color: #666;">
-                    {% if school.block %}<i class="fas fa-map-marker-alt"></i> {{ school.block.name_english }}{% endif %}
-                </span>
-                <span class="status-badge success">
-                    <i class="fas fa-users"></i> {{ students.count }} Students
-                </span>
-            </div>
-
-            {% if students %}
-            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                <table class="data-table" style="font-size: 0.9rem;">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Roll No.</th>
-                            <th>Student Name</th>
-                            <th>Gender</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in students %}
-                        <tr class="student-row" data-student="{{ student.name|lower }}">
-                            <td>{{ forloop.counter }}</td>
-                            <td><strong style="color: var(--primary-color);">{{ student.roll_number }}</strong></td>
-                            <td>{{ student.name }}</td>
-                            <td>{{ student.get_gender_display|default:"—" }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="pager-links">
+            {% if page.has_previous %}
+                <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page=1">&laquo; First</a>
+                <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page.previous_page_number }}">Prev</a>
             {% else %}
-            <div class="text-center p-20" style="color: #666;">
-                <i class="fas fa-inbox"></i><br>
-                <p>No students in this school</p>
-            </div>
+                <span class="disabled">&laquo; First</span>
+                <span class="disabled">Prev</span>
+            {% endif %}
+
+            <span class="current">{{ page.number }}</span>
+
+            {% if page.has_next %}
+                <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page.next_page_number }}">Next</a>
+                <a href="?{% if filter_qs %}{{ filter_qs }}&{% endif %}page={{ page.paginator.num_pages }}">Last &raquo;</a>
+            {% else %}
+                <span class="disabled">Next</span>
+                <span class="disabled">Last &raquo;</span>
             {% endif %}
         </div>
     </div>
-    {% endfor %}
+
+    {% else %}
+    <div class="empty">
+        <i class="fas fa-search" style="font-size:2rem; opacity:.4; display:block; margin-bottom:8px;"></i>
+        {% if q or class_filter or school_id %}
+            No students match your filters. <a href="{% url 'school_student_list' %}">Clear filters</a>.
+        {% else %}
+            No students are recorded in your scope yet.
+        {% endif %}
+    </div>
+    {% endif %}
 </div>
-
-{% else %}
-
-<!-- Empty State -->
-<div class="alert-box info text-center">
-    <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 15px; display: block;"></i>
-    <h3>No Schools Found</h3>
-    <p>No schools with students are available at this time.</p>
-</div>
-
-{% endif %}
-
-<!-- Back Button -->
-<div class="dashboard-actions">
-    <button onclick="window.history.back();" class="back-link" style="cursor: pointer; border: none;">
-        <i class="fas fa-arrow-left me-2"></i> Back to Dashboard
-    </button>
-</div>
-
-<!-- Search Functionality -->
-<script>
-    document.getElementById('schoolSearch').addEventListener('keyup', function() {
-        const searchValue = this.value.toLowerCase();
-        const schoolCards = document.querySelectorAll('.school-card-item');
-
-        schoolCards.forEach(card => {
-            const schoolName = card.getAttribute('data-school');
-            const studentRows = card.querySelectorAll('.student-row');
-            let hasVisibleStudent = false;
-
-            studentRows.forEach(row => {
-                const studentName = row.getAttribute('data-student');
-                if (studentName.includes(searchValue)) {
-                    row.style.display = '';
-                    hasVisibleStudent = true;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            if (schoolName.includes(searchValue) || hasVisibleStudent) {
-                card.style.display = '';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    });
-</script>
-
 {% endblock %}

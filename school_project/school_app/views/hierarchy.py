@@ -21,19 +21,25 @@ def get_user_hierarchy(user):
 
     try:
         if user.is_system_admin:
-            result['districts'] = District.objects.all()
-            result['blocks'] = Block.objects.all()
-            result['schools'] = School.objects.all()
-            result['students'] = Student.objects.all()
+            # Only ACTIVE districts (and everything cascading from them) show up
+            # in higher-level scoping. Inactive districts remain in the DB but
+            # are hidden from every list/aggregation view that goes through
+            # this helper. To reactivate them, use the "Manage Districts" page.
+            active_districts = District.objects.filter(is_active=True)
+            result['districts'] = active_districts
+            result['blocks'] = Block.objects.filter(district__in=active_districts)
+            result['schools'] = School.objects.filter(block__district__in=active_districts)
+            result['students'] = Student.objects.filter(school__block__district__in=active_districts)
             result['role'] = 'system_admin'
 
         elif user.is_state_user:
             state = State.objects.get(admin=user)
             result['state'] = state
-            result['districts'] = District.objects.filter(state=state)
-            result['blocks'] = Block.objects.filter(district__state=state)
-            result['schools'] = School.objects.filter(block__district__state=state)
-            result['students'] = Student.objects.filter(school__block__district__state=state)
+            active_districts = District.objects.filter(state=state, is_active=True)
+            result['districts'] = active_districts
+            result['blocks'] = Block.objects.filter(district__in=active_districts)
+            result['schools'] = School.objects.filter(block__district__in=active_districts)
+            result['students'] = Student.objects.filter(school__block__district__in=active_districts)
             result['role'] = 'state'
 
         elif user.is_district_user:

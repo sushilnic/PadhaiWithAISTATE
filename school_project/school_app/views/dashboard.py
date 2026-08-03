@@ -503,17 +503,19 @@ def state_dashboard(request):
         else:
             return render(request, 'school_app/errors/403.html', {'message': 'State not found for this user.'})
 
-    # Get all data based on state
+    # Get all data based on state — only ACTIVE districts (inactive ones are hidden).
+    # Blocks / schools / students cascade from the districts queryset, so filtering
+    # here automatically hides everything belonging to inactive districts too.
     if state:
-        districts = District.objects.filter(state=state)
+        districts = District.objects.filter(state=state, is_active=True)
         blocks = Block.objects.filter(district__in=districts)
         schools = School.objects.filter(block__in=blocks)
         students = Student.objects.filter(school__in=schools)
     else:
-        districts = District.objects.all()
-        blocks = Block.objects.all()
-        schools = School.objects.all()
-        students = Student.objects.all()
+        districts = District.objects.filter(is_active=True)
+        blocks = Block.objects.filter(district__in=districts)
+        schools = School.objects.filter(block__in=blocks)
+        students = Student.objects.filter(school__in=schools)
 
     # Get test statistics
     tests = Test.objects.all()
