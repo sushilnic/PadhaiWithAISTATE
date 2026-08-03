@@ -470,22 +470,8 @@ def weakest_students(request):
 
 @login_required
 def schools_without_students(request):
-    # Filter based on user role — scope strictly to caller's district / block / own school
-    user = request.user
-    if user.is_district_user:
-        try:
-            district = District.objects.get(admin=user)
-            schools = School.objects.filter(block__district=district)
-        except District.DoesNotExist:
-            schools = School.objects.none()
-    elif user.is_block_user:
-        try:
-            block = Block.objects.get(admin=user)
-            schools = School.objects.filter(block=block)
-        except Block.DoesNotExist:
-            schools = School.objects.none()
-    else:  # School user (or anyone else) — only their own school
-        schools = School.objects.filter(admin=user)
+    # Scope through get_user_schools() — supports every role uniformly.
+    schools = get_user_schools(request.user)
 
     schools = schools.annotate(student_count=Count('students')).filter(student_count=0)
     context = {'schools': schools}
@@ -506,28 +492,11 @@ def inactive_schools(request):
         last_login_date=F('admin__last_login')  # Get last login date
     ).order_by(F('last_login_date').asc(nulls_last=True))
 
-    # Apply filters based on user role
-    if user.is_district_user:
-        # District user sees only inactive schools within their own district
-        try:
-            district = District.objects.get(admin=user)
-            schools = schools.filter(block__district=district)
-        except District.DoesNotExist:
-            schools = schools.none()
-        schools = schools.values('id', 'name', 'admin__email', 'block__name_english', 'last_login_date')
-
-    elif user.is_block_user:
-        # Block user sees only schools in their own block
-        try:
-            block = Block.objects.get(admin=user)
-            schools = schools.filter(block=block)
-        except Block.DoesNotExist:
-            schools = schools.none()
-        schools = schools.values('id', 'name', 'admin__email', 'block__name_english', 'last_login_date')
-
-    else:
-        # School user should only see their own school (if applicable)
-        schools = schools.filter(admin=user).values('id', 'name', 'admin__email', 'block__name_english', 'last_login_date')
+    # Scope through the hierarchy helper — supports every role uniformly.
+    allowed_school_ids = list(get_user_schools(user).values_list('id', flat=True))
+    schools = schools.filter(id__in=allowed_school_ids).values(
+        'id', 'name', 'admin__email', 'block__name_english', 'last_login_date'
+    )
 
     context = {'schools': schools}
     return render(request, 'school_app/reports/inactive_schools.html', context)
@@ -542,25 +511,8 @@ def schools_with_test_counts(request):
     # Get selected test ID from query parameters
     selected_test = request.GET.get('test_id')
 
-    # Determine the user role and filter schools accordingly — scope strictly
-    # to caller's district / block / own school. Missing records fall back to
-    # an empty queryset (safer than a 404 / 500).
-    user = request.user
-    if user.is_district_user:
-        try:
-            district = District.objects.get(admin=user)
-            schools = School.objects.filter(block__district=district).select_related('block')
-        except District.DoesNotExist:
-            schools = School.objects.none()
-    elif user.is_block_user:
-        try:
-            block = Block.objects.get(admin=user)
-            schools = School.objects.filter(block=block)
-        except Block.DoesNotExist:
-            schools = School.objects.none()
-    else:
-        # School user (or anyone else) — only their own school
-        schools = School.objects.filter(admin=user)
+    # Scope through get_user_schools() — supports every role uniformly.
+    schools = get_user_schools(request.user).select_related('block')
 
     # Base query for schools, counting total students per school
     schools = schools.annotate(
@@ -619,22 +571,8 @@ def schools_with_test_counts(request):
 
 @login_required
 def schools_without_tests(request):
-    # Filter based on user role — scope strictly to caller's district / block / own school
-    user = request.user
-    if user.is_district_user:
-        try:
-            district = District.objects.get(admin=user)
-            schools = School.objects.filter(block__district=district)
-        except District.DoesNotExist:
-            schools = School.objects.none()
-    elif user.is_block_user:
-        try:
-            block = Block.objects.get(admin=user)
-            schools = School.objects.filter(block=block)
-        except Block.DoesNotExist:
-            schools = School.objects.none()
-    else:  # School user (or anyone else) — only their own school
-        schools = School.objects.filter(admin=user)
+    # Scope through get_user_schools() — supports every role uniformly.
+    schools = get_user_schools(request.user)
 
     schools = schools.annotate(test_count=Count('students__marks_records__test')).filter(test_count=0)
     context = {'schools': schools}
@@ -643,22 +581,9 @@ def schools_without_tests(request):
 
 @login_required
 def schools_with_student_counts(request):
-    # Filter based on user role — scope strictly to caller's district / block / own school
-    user = request.user
-    if user.is_district_user:
-        try:
-            district = District.objects.get(admin=user)
-            schools = School.objects.filter(block__district=district)
-        except District.DoesNotExist:
-            schools = School.objects.none()
-    elif user.is_block_user:
-        try:
-            block = Block.objects.get(admin=user)
-            schools = School.objects.filter(block=block)
-        except Block.DoesNotExist:
-            schools = School.objects.none()
-    else:  # School user (or anyone else) — only their own school
-        schools = School.objects.filter(admin=user)
+    # Scope through get_user_schools() so every role (state, district, block,
+    # school, system-admin) sees only what they're authorised to see.
+    schools = get_user_schools(request.user)
 
     schools = schools.annotate(student_count=Count('students')).order_by('-student_count')
 
