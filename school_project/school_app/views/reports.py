@@ -156,17 +156,11 @@ def test_wise_average_marks(request):
     from django.db.models import Avg, F, ExpressionWrapper, FloatField
     from django.db.models import Count, Case, When, IntegerField
 
-    if request.user.is_district_user:
-        district = get_object_or_404(District, admin=request.user)
-        qs = Test.objects.filter(marks__student__school__block__district=district)
-    elif request.user.is_block_user:
-        block = get_object_or_404(Block, admin=request.user)
-        qs = Test.objects.filter(marks__student__school__block=block)
-    elif request.user.is_school_user:
-        school = get_object_or_404(School, admin=request.user)
-        qs = Test.objects.filter(marks__student__school=school)
-    else:
-        qs = Test.objects.all()
+    # Scope through the hierarchy helper — supports every role uniformly.
+    # State/system-admin users used to fall into `Test.objects.all()` which
+    # leaked test data across ALL states.
+    scoped_schools = get_user_schools(request.user)
+    qs = Test.objects.filter(marks__student__school__in=scoped_schools).distinct()
 
     data = (
         qs.annotate(

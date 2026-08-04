@@ -92,11 +92,13 @@ def view_test_results(request, test_number):
 
     # Apply the sorting to the results
     results = results.order_by(sort_by)
-# Calculate percentage for each result based on max_marks from the test
-    max_marks = Decimal(test.max_marks)   # Get the maximum marks for the test
-    for result in results:
-        result.percentage = (Decimal(result.marks) / max_marks) * 100 if max_marks > 0 else 0
-   # Pass the context to the template
+
+    # NOTE: `result.percentage` is a @property on the Marks model that computes
+    # (marks / test.max_marks) * 100 on access — the template uses it directly.
+    # The old manual loop tried to ASSIGN to that property, which raises
+    # AttributeError because @property has no setter. Loop removed.
+
+    # Pass the context to the template
     context = {
         'test': test,
         'results': results,

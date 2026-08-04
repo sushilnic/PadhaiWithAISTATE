@@ -159,14 +159,11 @@ def report_dashboard(request):
 
 @login_required
 def school_report(request):
-    # Filter based on user role
-    if request.user.is_district_user:
-        base_schools = School.objects.all()
-    elif request.user.is_block_user:
-        block = Block.objects.get(admin=request.user)
-        base_schools = School.objects.filter(block=block)
-    else:  # School user
-        base_schools = School.objects.filter(admin=request.user)
+    # Scope through the hierarchy helper — supports every role uniformly
+    # (previously district user saw School.objects.all() → data-leak across
+    #  every other district in the state).
+    from .hierarchy import get_user_schools
+    base_schools = get_user_schools(request.user)
 
     # 1. Schools without student entries
     schools_without_students = base_schools.annotate(student_count=Count('students')).filter(student_count=0)
@@ -588,35 +585,43 @@ def state_dashboard(request):
             ]
         test_performance = test_data
 
-    # Today's attendance summary
+    # Today's attendance summary — two distinct metrics:
+    #   Presence  = present / marked          (how many showed up, among those checked in)
+    #   Coverage  = marked  / total_students  (how many students had attendance recorded)
     today = date.today()
     today_attendance = Attendance.objects.filter(
         date=today,
         student__school__in=schools
     ).aggregate(
         present=Count('id', filter=Q(is_present=True)),
-        total=Count('id')
+        marked=Count('id'),
     )
+    total_students_count = students.count()
+    today_marked  = today_attendance['marked']  or 0
+    today_present = today_attendance['present'] or 0
 
-    attendance_percentage = 0
-    if today_attendance['total'] > 0:
-        attendance_percentage = round((today_attendance['present'] / today_attendance['total']) * 100, 2)
+    presence_pct = round((today_present / today_marked)       * 100, 2) if today_marked         else 0
+    coverage_pct = round((today_marked  / total_students_count) * 100, 2) if total_students_count else 0
 
     context = {
         'state_name': state_name,
         'total_districts': districts.count(),
         'total_blocks': blocks.count(),
         'total_schools': schools.count(),
-        'total_students': students.count(),
+        'total_students': total_students_count,
         'total_tests': tests.count(),
         'active_tests': active_tests.count(),
         'active_users': live_sessions.count(),
         'districts': districts,
         'district_stats': district_stats,
         'test_performance': test_performance,
-        'today_present': today_attendance['present'] or 0,
-        'today_total': today_attendance['total'] or 0,
-        'attendance_percentage': attendance_percentage,
+        # ── Attendance ─────────────────────────────────────────────────
+        'today_present':          today_present,
+        'today_marked':           today_marked,
+        'today_total':            today_marked,   # kept for template backward-compat
+        'attendance_percentage':  presence_pct,   # kept for template backward-compat
+        'presence_pct':           presence_pct,
+        'coverage_pct':           coverage_pct,
     }
 
     return render(request, 'school_app/dashboards/state_dashboard.html', context)

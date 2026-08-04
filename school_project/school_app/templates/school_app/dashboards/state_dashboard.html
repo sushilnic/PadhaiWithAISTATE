@@ -90,15 +90,20 @@
             <canvas id="districtComparisonChart"></canvas>
         </div>
 
-        <!-- Today's Attendance -->
+        <!-- Today's Attendance Coverage -->
         <div class="chart-card">
-            <h4>Today's Attendance</h4>
-            <div class="attendance-card {% if attendance_percentage >= 80 %}success{% elif attendance_percentage >= 50 %}warning{% else %}danger{% endif %}">
-                <div class="attendance-value">{{ attendance_percentage }}%</div>
+            <h4>Today's Attendance Coverage</h4>
+
+            <div class="attendance-card {% if coverage_pct >= 80 %}success{% elif coverage_pct >= 50 %}warning{% else %}danger{% endif %}">
+                <div class="attendance-value">{{ coverage_pct }}%</div>
                 <div class="attendance-details">
-                    {{ today_present }} Present / {{ today_total }} Total
+                    <strong>Coverage</strong> &mdash; {{ today_marked }} marked of {{ total_students }} total students
                 </div>
             </div>
+
+            <p style="font-size:.75rem;color:#6b7280;margin-top:8px;line-height:1.4;">
+                <strong>Coverage</strong> = what fraction of all students had attendance recorded today.
+            </p>
         </div>
     </div>
 
