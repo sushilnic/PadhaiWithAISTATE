@@ -36,6 +36,13 @@ ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
 AUTH_USER_MODEL = 'school_app.CustomUser'
 
+# Allow login with EITHER email OR username. Our custom backend runs first;
+# Django's default ModelBackend stays as a fallback so nothing else breaks.
+AUTHENTICATION_BACKENDS = [
+    'school_app.auth_backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 
 # Expire sessions after 30 minutes of inactivity
 SESSION_COOKIE_AGE = 60 * 30  # 30 minutes

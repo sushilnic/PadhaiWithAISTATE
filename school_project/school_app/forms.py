@@ -14,20 +14,29 @@ from .models import Student, Marks, School, CustomUser, Test, State, District, B
 
 
 class LoginForm(forms.Form):
-    """Form for user authentication with email and CAPTCHA."""
-    email = forms.EmailField(
-        widget=forms.EmailInput(attrs={
+    """Form for user authentication. Accepts EITHER email OR username in
+    the `identifier` field — auth backend decides how to match."""
+    identifier = forms.CharField(
+        max_length=254,
+        label='Email or Username',
+        widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Login email'
+            'placeholder': 'Email or Username',
+            'autocomplete': 'username',
         })
     )
     password = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Password'
+            'placeholder': 'Password',
+            'autocomplete': 'current-password',
         })
     )
     captcha = CaptchaField()
+
+    def clean_identifier(self):
+        # Normalise whitespace but keep original casing (backend does iexact)
+        return (self.cleaned_data.get('identifier') or '').strip()
 
 
 class StudentForm(forms.ModelForm):

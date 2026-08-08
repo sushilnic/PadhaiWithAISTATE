@@ -26,15 +26,23 @@ def login_view(request):
 
         form = LoginForm(request.POST)
         if form.is_valid():
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
+            # `identifier` can be either an email address or a username —
+            # our EmailOrUsernameBackend figures out which and does an
+            # iexact match on either field.
+            identifier = form.cleaned_data['identifier']
+            password   = form.cleaned_data['password']
 
-            # Check account lockout
-            try:
-                target_user = CustomUser.objects.get(email=email)
+            # Check account lockout — look up by email OR username so a user
+            # trying to log in with their username also hits their lockout
+            # record (previously only email lookups triggered the lockout).
+            from django.db.models import Q
+            target_user = (CustomUser.objects
+                           .filter(Q(email__iexact=identifier) | Q(username__iexact=identifier))
+                           .first())
+            if target_user:
                 if target_user.locked_until and target_user.locked_until > timezone.now():
                     remaining = int((target_user.locked_until - timezone.now()).total_seconds() // 60) + 1
-                    log_activity(request, 'LOGIN', f'Login blocked (account locked): {email}')
+                    log_activity(request, 'LOGIN', f'Login blocked (account locked): {identifier}')
                     messages.error(request, f'Account locked. Try again in {remaining} minutes.')
                     return render(request, 'school_app/login.html', _login_context(form))
                 # Clear expired lock
@@ -42,10 +50,9 @@ def login_view(request):
                     target_user.locked_until = None
                     target_user.failed_login_attempts = 0
                     target_user.save(update_fields=['locked_until', 'failed_login_attempts'])
-            except CustomUser.DoesNotExist:
-                target_user = None
 
-            user = authenticate(request, email=email, password=password)
+            # Custom backend accepts the value under either kwarg.
+            user = authenticate(request, username=identifier, password=password)
             if user is not None:
                 # Reset per-account and per-IP failure counters
                 user.failed_login_attempts = 0
@@ -78,7 +85,7 @@ def login_view(request):
             else:
                 # Failed login — increment per-IP counter (works even when email doesn't exist)
                 login_ip_register_failure(request, kind='admin_login')
-                log_activity(request, 'LOGIN', f'Failed login attempt: {email}')
+                log_activity(request, 'LOGIN', f'Failed login attempt: {identifier}')
                 if target_user:
                     from django.conf import settings as django_settings
                     max_attempts = getattr(django_settings, 'ACCOUNT_LOCKOUT_ATTEMPTS', 5)
@@ -87,7 +94,7 @@ def login_view(request):
                     if target_user.failed_login_attempts >= max_attempts:
                         target_user.locked_until = timezone.now() + timezone.timedelta(minutes=lockout_mins)
                         target_user.save(update_fields=['failed_login_attempts', 'locked_until'])
-                        log_activity(request, 'LOGIN', f'Account locked after {max_attempts} failed attempts: {email}')
+                        log_activity(request, 'LOGIN', f'Account locked after {max_attempts} failed attempts: {identifier}')
                         messages.error(request, f'Account locked for {lockout_mins} minutes due to too many failed attempts.')
                         return render(request, 'school_app/login.html', _login_context(form))
                     target_user.save(update_fields=['failed_login_attempts'])

@@ -196,6 +196,22 @@
         <a href="{% url 'submit_attendance' %}" class="btn-primary-admin">Daily Attendance</a>
         <a href="{% url 'attendance_summary' %}" class="btn-secondary-admin">Summary</a>
     </div>
+    <div class="dashboard-card-admin">
+        <h5 class="card-title-admin">📄 Question Paper</h5>
+        <p class="card-text-admin">AI-generated papers &amp; answer keys</p>
+        <a href="{% url 'question_paper_generator' %}" class="btn-primary-admin">New Paper</a>
+        <a href="{% url 'question_paper_history' %}" class="btn-secondary-admin">History</a>
+    </div>
+    <div class="dashboard-card-admin">
+        <h5 class="card-title-admin">🗓 Academic Calendar</h5>
+        <p class="card-text-admin">Teaching days, exams &amp; holidays</p>
+        <a href="{% url 'academic_calendar' %}" class="btn-primary-admin">View Calendar</a>
+    </div>
+    <div class="dashboard-card-admin">
+        <h5 class="card-title-admin">🔐 Account</h5>
+        <p class="card-text-admin">Change your login password</p>
+        <a href="{% url 'change_password' %}" class="btn-primary-admin">Change Password</a>
+    </div>
 </div>
 
 <!-- Previous Years Results Section -->

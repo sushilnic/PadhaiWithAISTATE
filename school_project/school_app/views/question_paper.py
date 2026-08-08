@@ -538,15 +538,11 @@ Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentenc
             'quality_warning': not quality_ok,
         })
 
-    except Exception as exc:
+    except Exception:
+        # Full traceback goes to server log; client sees only a generic
+        # message to avoid leaking internal exception types / SQL / paths.
         logger.exception("generate_question_paper_ai error")
-        # Include the exception class + message in the client response so we
-        # can see WHY generation is failing (e.g. AI timeout, DB error, JSON
-        # parse). Full traceback still goes to server log.
-        return JsonResponse({
-            'error': f'Could not generate the paper. Please try again. '
-                     f'[Debug: {type(exc).__name__}: {str(exc)[:200]}]'
-        }, status=500)
+        return JsonResponse({'error': 'Could not generate the paper. Please try again.'}, status=500)
 
 
 @login_required
