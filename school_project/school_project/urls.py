@@ -21,7 +21,9 @@ from django.shortcuts import render
 from django.views.static import serve as media_serve
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # Django admin — moved off the default `/admin/` path so automated
+    # bot scanners hitting /admin/ get a 404 instead of a real login form.
+    path('pai_admin/', admin.site.urls),
     path('', include('school_app.urls')),
 ]
 
