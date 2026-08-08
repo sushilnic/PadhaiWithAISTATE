@@ -41,7 +41,10 @@
         background: #eef2ff; font-weight: 700; padding: 12px 16px;
         border-top: 2px solid #c7d2fe; color: #1e3c72;
     }
-    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    /* .num must beat `table.bws-table thead th { text-align: left }` above,
+       so we scope it under the table selector for higher specificity. */
+    table.bws-table th.num,
+    table.bws-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
     .block-name { font-weight: 600; color: #1e293b; }
     .empty {
         padding: 40px 20px; text-align: center; color: #6b7280;

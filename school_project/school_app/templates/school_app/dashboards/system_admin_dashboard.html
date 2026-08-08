@@ -238,11 +238,13 @@
     </div>
 {% endif %}
 <style>
-	/* Container for the grid layout */
+	/* Container for the grid layout — auto-fill so single tests stay small
+	   instead of stretching to full row width. */
 	.chart-container {
 		display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(240px, 300px));
         gap: 14px;
+        justify-content: start;
 		padding: 14px;
 		border: none;
         margin-bottom: 20px;
@@ -256,6 +258,7 @@
 		background-color: var(--surface);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
         transition: all 0.3s ease;
+        max-width: 300px;   /* hard cap so a lone pie doesn't grow huge */
 	}
     .chart-box:hover {
         transform: translateY(-2px);
@@ -268,17 +271,25 @@
         margin-bottom: 10px;
     }
 
-	/* Chart canvas wrapper */
-	.chart-box canvas {
+	/* Fixed-height wrapper — Chart.js needs a bounded parent to size
+	   the canvas correctly when maintainAspectRatio: false is used. */
+	.chart-canvas-wrap {
+		position: relative;
+		width: 100%;
+		height: 240px;
+	}
+	.chart-canvas-wrap canvas {
 		max-width: 100%;
-		height: auto !important;
+		max-height: 100%;
 	}
 
 	/* Responsive design */
 	@media (max-width: 768px) {
 		.chart-container {
 			grid-template-columns: 1fr;
+			justify-content: stretch;
 		}
+		.chart-box { max-width: none; }
 	}
 </style>
 
@@ -292,7 +303,9 @@
         <!-- Wrap each test in a container -->
         <div class="chart-box">
             <h6>{{ test_data.test_name }} ({{ test_data.subject_name }})</h6>
-            <canvas id="pieChart{{ forloop.counter }}"></canvas>
+            <div class="chart-canvas-wrap">
+                <canvas id="pieChart{{ forloop.counter }}"></canvas>
+            </div>
             <script>
                 // Prepare data for the pie chart
                 var ctx = document.getElementById('pieChart{{ forloop.counter }}').getContext('2d');
@@ -328,7 +341,7 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,   // parent .chart-canvas-wrap sets the height
                         plugins: {
                             legend: {
                                 position: 'bottom',
