@@ -1,4 +1,4 @@
-{% load static %}
+﻿{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -42,6 +42,11 @@
         .btn-back{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;padding:10px 24px;border-radius:8px;font-size:.9rem;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;}
         .action-bar{display:flex;gap:10px;padding:16px 20px;border-top:1px solid #f1f5f9;}
         @media print{.action-bar,.topbar{display:none!important;}}
+    
+        /* Mobile: allow wide tables inside cards to scroll horizontally
+           instead of overflowing the viewport. Injected by mobile audit. */
+        .card-body { overflow-x: auto; }
+        .card-body table { min-width: 100%; }
     </style>
 </head>
 <body>

@@ -85,6 +85,24 @@
                 display: none;
             }
         }
+
+        /* ═════════════════════════════════════════════════════════════
+           iOS auto-zoom prevention
+           ─────────────────────────────────────────────────────────────
+           When an input's font-size is < 16px, iOS Safari zooms the
+           whole page in on focus — jarring and often leaves the user
+           stuck at the wrong zoom level. Forcing >= 16px on mobile stops
+           this. Desktop layout is unaffected (media query targets ≤768px).
+           ═════════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+            textarea,
+            select {
+                font-size: 16px !important;
+                /* !important beats per-template rules like `font-size: 14px`
+                   without needing to edit every one individually. */
+            }
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
@@ -316,7 +334,7 @@
     <div style="height: 50px;"></div>
     <div class="footer">
         <img src="{% static 'school_app/images/pailogo.png' %}" alt="PadhaiWithAI Logo" class="pai-logo">
-        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan | All Right Reserved | Empowering Education Through Technology </span>
+        <span>© 2024 PadhaiWithAI - Tonk, Rajasthan  </span>
         <img src="{% static 'school_app/images/nic.png' %}" alt="NIC Logo">
     </div>
 </body>
