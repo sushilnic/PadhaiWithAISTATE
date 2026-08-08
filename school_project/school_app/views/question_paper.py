@@ -315,18 +315,33 @@ def generate_question_paper_ai(request):
                 return json.loads(repaired)
 
         def call_ai_robust(user_prompt, section_label, max_tok=sarvam_max_tokens):
-            """call_ai with one automatic retry; returns None on persistent failure."""
+            """call_ai with automatic retry — up to 2 attempts, on both JSON
+            errors AND network / API errors. Returns None only after all
+            attempts fail."""
+            import time
+            last_exc = None
             for attempt in range(2):
                 try:
                     return call_ai(user_prompt, max_tok)
-                except json.JSONDecodeError:
+                except json.JSONDecodeError as exc:
+                    last_exc = exc
                     if attempt == 0:
                         logger.warning("JSON parse failed for %s, retrying…", section_label)
                         continue
-                    logger.error("Both attempts failed for %s", section_label)
+                    logger.error("Both attempts failed (JSON) for %s: %s", section_label, exc)
                     return None
                 except Exception as exc:
-                    logger.error("AI call error for %s: %s", section_label, exc)
+                    # Network hiccup / Sarvam 5xx / timeout — retry once with
+                    # a small back-off. Previously we returned None on the
+                    # first exception, so a single blip killed the section.
+                    last_exc = exc
+                    if attempt == 0:
+                        logger.warning("AI call error for %s (will retry): %s: %s",
+                                       section_label, type(exc).__name__, exc)
+                        time.sleep(1.5)
+                        continue
+                    logger.error("Both attempts failed (network/API) for %s: %s: %s",
+                                 section_label, type(exc).__name__, exc)
                     return None
 
         # ── Call 1: header + Section A (MCQ) ──────────────────────────
@@ -499,7 +514,18 @@ Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentenc
                 paper_data['sections'].append(sec)
 
         if not paper_data['sections']:
-            return JsonResponse({'error': 'AI could not generate any questions. Please try again.'}, status=500)
+            # Every AI call returned nothing or failed. Usually means Sarvam
+            # is under heavy load, is down, or the prompt was rejected.
+            logger.error(
+                "generate_question_paper_ai: all sections empty. "
+                "subject=%s chapter=%s user=%s",
+                subject, chapter, request.user.pk,
+            )
+            return JsonResponse({
+                'error': ('AI could not generate any questions. This usually means '
+                          'the AI service is temporarily overloaded. Please wait a '
+                          'minute and try again, or try a simpler prompt (fewer questions).')
+            }, status=500)
 
         paper_data = json.loads(json.dumps(paper_data))  # validate round-trip
 
@@ -538,11 +564,33 @@ Rules: Generate {long_count} questions. Each answer must be at least 4-5 sentenc
             'quality_warning': not quality_ok,
         })
 
-    except Exception:
-        # Full traceback goes to server log; client sees only a generic
-        # message to avoid leaking internal exception types / SQL / paths.
+    except Exception as exc:
+        # Full traceback goes to server log for admin diagnosis. The client
+        # message is deliberately generic (no internal types / SQL / paths),
+        # but we categorise the error TYPE so users see actionable advice
+        # instead of a bare "try again".
         logger.exception("generate_question_paper_ai error")
-        return JsonResponse({'error': 'Could not generate the paper. Please try again.'}, status=500)
+
+        exc_class = type(exc).__name__
+        exc_str   = str(exc).lower()
+
+        # Categorise for user-friendly messaging (no internals leaked)
+        if any(t in exc_class.lower() for t in ('timeout', 'connectionerror', 'httperror', 'sslerror')):
+            msg = ('The AI service is temporarily slow or unreachable. '
+                   'Please wait 30 seconds and try again.')
+        elif '429' in exc_str or 'rate limit' in exc_str or 'too many requests' in exc_str:
+            msg = ('The AI service is busy right now. '
+                   'Please wait a minute before generating another paper.')
+        elif 'duplicate key' in exc_str or 'unique constraint' in exc_str:
+            msg = ('A database issue is preventing new papers from being saved. '
+                   'Please contact your system administrator. '
+                   '(Ref: sequence sync — run `python manage.py restore_db --fix-sequences`.)')
+        elif 'json' in exc_class.lower() or 'jsondecodeerror' in exc_class.lower():
+            msg = ('The AI returned an invalid response. Please click Generate again.')
+        else:
+            msg = 'Could not generate the paper. Please try again in a moment.'
+
+        return JsonResponse({'error': msg}, status=500)
 
 
 @login_required
